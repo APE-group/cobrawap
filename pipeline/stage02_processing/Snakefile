@@ -39,6 +39,11 @@ FILTER_FUNCTION = config["FILTER_FUNCTION"]
 PSD_FREQ_RES = config["PSD_FREQ_RES"]
 PSD_OVERLAP = config["PSD_OVERLAP"]
 DETRENDING_ORDER = config["DETRENDING_ORDER"]
+NEW_RESOLUTION = config["NEW_RESOLUTION"]
+MEAN = config["MEAN"]
+KERNEL = config["KERNEL"]
+PARAMETER1 = config["PARAMETER1"]
+PARAMETER2 = config["PARAMETER2"]
 INTENSITY_THRESHOLD = config["INTENSITY_THRESHOLD"]
 MUA_HIGHPASS_FREQ = config["MUA_HIGHPASS_FREQ"]
 MUA_LOWPASS_FREQ = config["MUA_LOWPASS_FREQ"]
@@ -328,3 +333,50 @@ rule zscore:
         python {input.script} --data "{input.data}" \
                               --output "{output.data}"
         """
+        
+rule deconvolution:
+    input:
+        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        data = input_file,
+        script = 'scripts/deconvolution.py',
+    params:
+        kernel = KERNEL,
+        parameter1 = PARAMETER1,
+        parameter2 = PARAMETER2
+    output:
+        data = os.path.join(OUTPUT_DIR, 'deconvolution',
+                            '{rule_name}.'+NEO_FORMAT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --kernel {params.kernel} \
+                              --parameter1 {params.parameter1} \
+                              --parameter2 {params.parameter2}
+        """
+
+rule downsampling:
+    input:
+        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        data = input_file,
+        script = 'scripts/downsampling.py',
+    params:
+        new_resolution = NEW_RESOLUTION,
+        mean = MEAN
+    output:
+        data = os.path.join(OUTPUT_DIR, 'downsampling',
+                            '{rule_name}.'+NEO_FORMAT),
+        img = report(os.path.join(OUTPUT_DIR, 'downsampling',
+                                    '{rule_name}.'+PLOT_FORMAT))
+	
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --output_img "{output.img}" \
+                              --new_resolution {params.new_resolution}\
+                              --mean {params.mean}
+        """
+
