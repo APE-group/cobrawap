@@ -27,7 +27,7 @@ PLOT_FORMAT: 'png'
 # and in which order. Execution order is from first to last entry.
 # The available blocks are:
 # 'background_substraction', 'frequency_filter', 'normalization', 'detrending',
-# 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore'
+# 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore',  'deconvolution', 'downsampling'
 BLOCK_ORDER: ['roi_selection', 'background_substraction', 'normalization', 'frequency_filter']
 
 # BLOCK - background_substraction
@@ -68,6 +68,23 @@ DETRENDING_ORDER: 2
 # Threshold below which the pixels are discarded (set to nan).
 # Given in percent of the range between minimum and maximum intensity.
 INTENSITY_THRESHOLD: 0.5
+
+# BLOCK - downsampling
+###########################
+# Downsampled image with macropixel of chosen side size.
+NEW_RESOLUTION: 0.1 #in mm, < Original spatial scale. Default = 0.10 mm
+MEAN: y #mean on pixels y/n. Default = n
+
+# BLOCK - deconvolution
+###########################
+# Choose the kernel function used in Fourier deconvolution..
+# Allowed functions are: 'lognormal','combination_exp','alpha'.
+KERNEL: 'alpha'
+#pARAMETER list for the chosen kernel: 
+#alpha : [1:tau, 2:n] - combination_exp : [1:trise, 2:tdecay], lognormal : [1:mu, 2:sigma]
+#Put None if you want to search automatically for an optimum parameter, es [None, None], or [0.27, None]- Work in progress
+PARAMETER1: None
+PARAMETER2: None
 
 # BLOCK - logMUA_estimation
 ########################
