@@ -20,19 +20,26 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # Plotting parameters
 PLOT_TSTART: 0  # in s
 PLOT_TSTOP: 10  # in s
-PLOT_CHANNELS: [4040, 5050, 6060]  # int or None. default 'None' -> randomly selected
+PLOT_CHANNELS: [900, 30, 800]  # int or None. default 'None' -> randomly selected
+
 PLOT_FORMAT: 'png'
 
 # The block order determines which processing steps (blocks) will be applied
 # and in which order. Execution order is from first to last entry.
 # The available blocks are:
 # 'background_substraction', 'frequency_filter', 'normalization', 'detrending',
-# 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore',  'deconvolution', 'downsampling'
-BLOCK_ORDER: ['roi_selection', 'background_substraction', 'normalization', 'frequency_filter']
+# 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore'
+# 'deconvolution', 'KDE_characterization'
+#BLOCK_ORDER: ['roi_selection', 'background_substraction', 'spatial_downsampling', 'normalization', 'frequency_filter']
+BLOCK_ORDER: ['roi_selection', 'background_substraction',  'normalization', 'frequency_filter']
 
 # BLOCK - background_substraction
 #################################
 # No parameters needed
+
+# BLOCK - spatial_smoothig
+#################################
+MACRO_PIXEL_DIM: 2
 
 # BLOCK - normalization
 #######################
@@ -63,28 +70,29 @@ PSD_OVERLAP: 0.5
 #             4 - cubic detrending.
 DETRENDING_ORDER: 2
 
-# BLOCK - img_roi_selection
+# BLOCK - KDE_characterization
 ###########################
-# Threshold below which the pixels are discarded (set to nan).
-# Given in percent of the range between minimum and maximum intensity.
-INTENSITY_THRESHOLD: 0.5
-
-# BLOCK - downsampling
-###########################
-# Downsampled image with macropixel of chosen side size.
-NEW_RESOLUTION: 0.1 #in mm, < Original spatial scale. Default = 0.10 mm
-MEAN: y #mean on pixels y/n. Default = n
+# Bandwidth of the kernels and fit quantile outliers
+# Allowed bandwidths are: 'silverman', 'scott'
+BANDWIDTH: 'silverman'
+QUANTILE: 0.05
 
 # BLOCK - deconvolution
 ###########################
 # Choose the kernel function used in Fourier deconvolution..
 # Allowed functions are: 'lognormal','combination_exp','alpha'.
-KERNEL: 'alpha'
+KERNEL: 'lognormal'
 #pARAMETER list for the chosen kernel: 
 #alpha : [1:tau, 2:n] - combination_exp : [1:trise, 2:tdecay], lognormal : [1:mu, 2:sigma]
 #Put None if you want to search automatically for an optimum parameter, es [None, None], or [0.27, None]- Work in progress
-PARAMETER1: None
-PARAMETER2: None
+PARAMETER1: 2.2
+PARAMETER2: 0.91
+
+# BLOCK - img_roi_selection
+###########################
+# Threshold below which the pixels are discarded (set to nan).
+# Given in percent of the range between minimum and maximum intensity.
+INTENSITY_THRESHOLD: 0.5
 
 # BLOCK - logMUA_estimation
 ########################
