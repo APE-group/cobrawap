@@ -1,11 +1,12 @@
 # Stage 02 Processing
+import os
 
-configfile: "config.yaml"
+configfile: os.path.join('configs', 'config_template.yaml')
 report: "report.rst"
 
-import os
 import sys
-utils_path = '../'
+utils_path = os.path.join('..', 'scripts')
+sys.path.append(os.path.join(os.getcwd(), '..'))
 sys.path.append(utils_path)
 
 from settings import output_path
@@ -13,23 +14,23 @@ from utils import parse_plot_channels
 
 STAGE_NAME = config["STAGE_NAME"]
 STAGE_OUTPUT = config["STAGE_OUTPUT"]
+PROFILE = config["PROFILE"]
 NEO_FORMAT = config["NEO_FORMAT"]
 USE_LINK_AS_STAGE_OUTPUT = config["USE_LINK_AS_STAGE_OUTPUT"]
 ADD_UTILS = f"export PYTHONPATH='$PYTHONPATH:{utils_path}'"
-OUTPUT_DIR = os.path.join(output_path, STAGE_NAME)
+OUTPUT_DIR = os.path.join(output_path, PROFILE, STAGE_NAME)
 
 if 'STAGE_INPUT' in config and config['STAGE_INPUT'] is not None:
     STAGE_INPUT = config["STAGE_INPUT"]
 else:
-    STAGE_INPUT = os.path.join(output_path, 'stage01_data_entry', 'data.nix')
-# N.B. the current version of config_template.yaml doesn't contain STAGE_INPUT,
-# thus the parameter is fixed at 'data.nix', meaning that this value has to be
-# set (and fixed) at 'data.nix' in stage01_data_entry/config_template.yaml
+    STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage01_data_entry', 'data.nix')
 
 PLOT_TSTART = config["PLOT_TSTART"]
 PLOT_TSTOP = config["PLOT_TSTOP"]
 PLOT_CHANNELS = parse_plot_channels(config["PLOT_CHANNELS"], STAGE_INPUT)
 PLOT_FORMAT = config["PLOT_FORMAT"]
+
+MACRO_PIXEL_DIM = config["MACRO_PIXEL_DIM"]
 
 BLOCK_ORDER = config["BLOCK_ORDER"]
 NORMALIZE_BY = config["NORMALIZE_BY"]
@@ -40,8 +41,6 @@ FILTER_FUNCTION = config["FILTER_FUNCTION"]
 PSD_FREQ_RES = config["PSD_FREQ_RES"]
 PSD_OVERLAP = config["PSD_OVERLAP"]
 DETRENDING_ORDER = config["DETRENDING_ORDER"]
-NEW_RESOLUTION = config["NEW_RESOLUTION"]
-MEAN = config["MEAN"]
 BANDWIDTH = config["BANDWIDTH"]
 QUANTILE = config["QUANTILE"]
 KERNEL = config["KERNEL"]
@@ -54,6 +53,11 @@ logMUA_RATE = config["logMUA_RATE"]
 FFT_SLICE = config["FFT_SLICE"]
 
 #### Housekeeping ####
+
+wildcard_constraints:
+    rule_name = '\w+'
+
+localrules: all, check_input
 
 def locate(str_list, string):
     if string in str_list:
@@ -71,15 +75,16 @@ def input_file(wildcards):
     elif len(BLOCK_ORDER):
         return os.path.join(OUTPUT_DIR, BLOCK_ORDER[-1],
                             BLOCK_ORDER[-1]+'.'+NEO_FORMAT)
-    return os.path.join(OUTPUT_DIR, STAGE_INPUT)
+    return os.path.join(STAGE_INPUT)
+
+#### UTILITY BLOCKS ####
 
 rule all:
     input:
+        check = os.path.join(OUTPUT_DIR, 'input.check'),
         data = input_file,
-        img = [os.path.join(OUTPUT_DIR,
-               f'processed_trace_{PLOT_TSTART}-{PLOT_TSTOP}s_channel{channel}.{PLOT_FORMAT}')
-               for channel in PLOT_CHANNELS],
-        configfile = 'config.yaml'
+        img = os.path.join(OUTPUT_DIR, f'processed_traces_{PLOT_TSTART}-{PLOT_TSTOP}s'),
+        # configfile = os.path.join('configs', f'config_{PROFILE}.yaml')
     params:
         command = 'ln -s' if USE_LINK_AS_STAGE_OUTPUT else 'cp'
     output:
@@ -89,30 +94,24 @@ rule all:
         {params.command} "{input.data}" "{output.data}"
         """
 
-rule plot_processed_traces:
+rule check_input:
     input:
-        stage_input = STAGE_INPUT,
-        stage_output = input_file,
-        script = 'scripts/plot_processed_trace.py'
+        data = STAGE_INPUT,
+        script = os.path.join('scripts', 'check_input.py')
     output:
-        img = report(os.path.join(OUTPUT_DIR,
-                                  'processed_trace_{t_start}-{t_stop}s_channel{channel}.'+PLOT_FORMAT))
+        temp(os.path.join('{dir}', 'input.check'))
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --original_data "{input.stage_input}" \
-                              --processed_data "{input.stage_output}" \
-                              --output "{output.img}" \
-                              --t_start {wildcards.t_start} \
-                              --t_stop {wildcards.t_stop} \
-                              --channel {wildcards.channel}
+        python {input.script} --data "{input.data}"
+        touch "{output}"
         """
 
 rule clear:
     output:
-        temp(os.path.join(OUTPUT_DIR, 'clear.done'))
+        temp(os.path.join('{path}', 'clear.done'))
     params:
-        block_folder = ['"'+os.path.join(OUTPUT_DIR, block)+'"'
+        block_folder = ['"'+os.path.join('{path}', block)+'"'
                         for block in BLOCK_ORDER]
     shell:
         """
@@ -120,19 +119,65 @@ rule clear:
         touch "{output}"
         """
 
-#### Blocks ####
+checkpoint plot_processed_traces:
+    input:
+        stage_input = STAGE_INPUT,
+        stage_output = input_file,
+        script = os.path.join('scripts', 'plot_processed_trace.py')
+    params:
+        img_name = 'processed_trace_{t_start}-{t_stop}s_channel0.'+PLOT_FORMAT,
+        channels = PLOT_CHANNELS
+    output:
+        img_dir = report(directory(os.path.join(OUTPUT_DIR,
+                                  'processed_traces_{t_start}-{t_stop}s')),
+                         patterns=["{img_name}."+PLOT_FORMAT])
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --original_data "{input.stage_input}" \
+                              --processed_data "{input.stage_output}" \
+                              --img_dir "{output.img_dir}" \
+                              --img_name {params.img_name} \
+                              --t_start {wildcards.t_start} \
+                              --t_stop {wildcards.t_stop} \
+                              --channels {params.channels}
+        """
+
+rule plot_power_spectrum:
+    input:
+        data = input_file,
+        script = os.path.join('scripts','plot_power_spectrum.py')
+    params:
+        highpass_freq = HIGHPASS_FREQ,
+        lowpass_freq = LOWPASS_FREQ,
+        psd_freq_res = PSD_FREQ_RES,
+        psd_overlap = PSD_OVERLAP
+    output:
+        img = report(os.path.join('{dir}', '{rule_name}', 'power_spectrum.'+PLOT_FORMAT))
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.img}" \
+                              --highpass_freq {params.highpass_freq} \
+                              --lowpass_freq {params.lowpass_freq} \
+                              --psd_freq_res {params.psd_freq_res} \
+                              --psd_overlap {params.psd_overlap} \
+        """
+
+#### PROCESSING BLOCKS (choose any)####
 
 rule background_substraction:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/background_substraction.py'
+        script = os.path.join('scripts','background_substraction.py')
     output:
-        data = os.path.join(OUTPUT_DIR, 'background_substraction',
+        data = os.path.join('{dir}', 'background_substraction',
                             '{rule_name}.'+NEO_FORMAT),
-        img = report(os.path.join(OUTPUT_DIR, '{rule_name}',
+        img = report(os.path.join('{dir}', '{rule_name}',
                                   'background.'+PLOT_FORMAT)),
-        array = os.path.join(OUTPUT_DIR, '{rule_name}',
+        array = os.path.join('{dir}', '{rule_name}',
                              'background.npy')
     shell:
         """
@@ -143,15 +188,38 @@ rule background_substraction:
                               --output_array "{output.array}"
         """
 
+rule spatial_downsampling:
+    input:
+        is_clear = os.path.join('{dir}', 'clear.done'),
+        data = input_file,
+        script = os.path.join('scripts', 'spatial_downsampling.py')
+    output:
+        data = os.path.join('{dir}', '{rule_name}',
+                            'spatial_downsampling.'+NEO_FORMAT),
+        img = report(os.path.join('{dir}', '{rule_name}',
+                                  'spatial_downsampling.'+PLOT_FORMAT))
+    params:
+        macro_pixel_dim = MACRO_PIXEL_DIM
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --output_img "{output.img}" \
+				              --macro_pixel_dim {params.macro_pixel_dim}
+
+        """
+
+
 rule normalization:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/normalization.py'
+        script = os.path.join('scripts', 'normalization.py')
     params:
         normalize_by = NORMALIZE_BY
     output:
-        data = os.path.join(OUTPUT_DIR, 'normalization',
+        data = os.path.join('{dir}', 'normalization',
                             '{rule_name}.'+NEO_FORMAT)
     shell:
         """
@@ -163,13 +231,13 @@ rule normalization:
 
 rule detrending:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/detrending.py'
+        script = os.path.join('scripts', 'detrending.py')
     params:
         order = DETRENDING_ORDER
     output:
-        data = os.path.join(OUTPUT_DIR, 'detrending',
+        data = os.path.join('{dir}', 'detrending',
                             '{rule_name}.'+NEO_FORMAT)
     shell:
         """
@@ -179,20 +247,61 @@ rule detrending:
                               --order {params.order}
         """
 
+rule deconvolution:
+    input:
+        is_clear = os.path.join('{dir}', 'clear.done'),
+        data = input_file,
+        script = os.path.join('scripts', 'deconvolution.py')
+    params:
+        kernel = KERNEL,
+        parameter1 = PARAMETER1,
+        parameter2 = PARAMETER2
+    output:
+        data = os.path.join('{dir}', 'deconvolution',
+                            '{rule_name}.'+NEO_FORMAT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --kernel {params.kernel} \
+                              --parameter1 {params.parameter1} \
+                              --parameter2 {params.parameter2}
+        """
+
+rule KDE_characterization:
+    input:
+        is_clear = os.path.join('{dir}', 'clear.done'),
+        data = input_file,
+        script = os.path.join('scripts', 'KDE_characterization.py')
+    params:
+        bandwidth = BANDWIDTH,
+        quantile = QUANTILE
+    output:
+        data = os.path.join('{dir}', 'KDE_characterization',
+                            '{rule_name}.'+NEO_FORMAT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --bandwidth {params.bandwidth} \
+                              --quantile {params.quantile}
+        """
+
 rule frequency_filter:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        img = os.path.join(OUTPUT_DIR,
-                           f'frequency_filter_power_spectrum.{PLOT_FORMAT}'),
-        script = 'scripts/frequency_filter.py',
+        img = os.path.join('{dir}', '{rule_name}', f'power_spectrum.{PLOT_FORMAT}'),
+        script = os.path.join('scripts', 'frequency_filter.py')
     params:
         highpass_freq = HIGHPASS_FREQ,
         lowpass_freq = LOWPASS_FREQ,
         order = FILTER_ORDER,
         filter_function = FILTER_FUNCTION,
     output:
-        data = os.path.join(OUTPUT_DIR, 'frequency_filter',
+        data = os.path.join('{dir}', 'frequency_filter',
                             '{rule_name}.'+NEO_FORMAT)
     shell:
         """
@@ -205,40 +314,18 @@ rule frequency_filter:
                               --filter_function {params.filter_function}
         """
 
-rule plot_power_spectrum:
-    input:
-        data = input_file,
-        script = 'scripts/plot_power_spectrum.py'
-    params:
-        highpass_freq = HIGHPASS_FREQ,
-        lowpass_freq = LOWPASS_FREQ,
-        psd_freq_res = PSD_FREQ_RES,
-        psd_overlap = PSD_OVERLAP
-    output:
-        img = report(os.path.join(OUTPUT_DIR, '{rule_name}_'\
-                                  +f'power_spectrum.{PLOT_FORMAT}'))
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.img}" \
-                              --highpass_freq {params.highpass_freq} \
-                              --lowpass_freq {params.lowpass_freq} \
-                              --psd_freq_res {params.psd_freq_res} \
-                              --psd_overlap {params.psd_overlap} \
-        """
 
 rule roi_selection:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/roi_selection.py'
+        script = os.path.join('scripts','roi_selection.py')
     params:
         intensity_threshold = INTENSITY_THRESHOLD
     output:
-        data = os.path.join(OUTPUT_DIR, 'roi_selection',
+        data = os.path.join('{dir}', 'roi_selection',
                             '{rule_name}.'+NEO_FORMAT),
-        img = report(os.path.join(OUTPUT_DIR, 'roi_selection',
+        img = report(os.path.join('{dir}', 'roi_selection',
                                     '{rule_name}.'+PLOT_FORMAT))
     shell:
         """
@@ -251,9 +338,9 @@ rule roi_selection:
 
 rule logMUA_estimation:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/logMUA_estimation.py'
+        script = os.path.join('scripts','logMUA_estimation.py')
     params:
         highpass_freq = MUA_HIGHPASS_FREQ,
         lowpass_freq = MUA_LOWPASS_FREQ,
@@ -263,14 +350,14 @@ rule logMUA_estimation:
         plot_tstart = PLOT_TSTART,
         plot_tstop = PLOT_TSTOP,
         plot_channels = PLOT_CHANNELS,
-        img = ','.join([os.path.join(OUTPUT_DIR, 'logMUA_estimation',
+        img = ','.join([os.path.join('{dir}', 'logMUA_estimation',
                                      f'logMUA_trace_{PLOT_TSTART}-{PLOT_TSTOP}s'
                                     +f'_channel{channel}.{PLOT_FORMAT}')
                                      for channel in PLOT_CHANNELS]),
     output:
-        data = os.path.join(OUTPUT_DIR, 'logMUA_estimation',
+        data = os.path.join('{dir}', 'logMUA_estimation',
                             '{rule_name}.'+NEO_FORMAT),
-        img = report(os.path.join(OUTPUT_DIR, '{rule_name}',
+        img = report(os.path.join('{dir}', '{rule_name}',
                                   f'logMUA_trace_{PLOT_TSTART}-{PLOT_TSTOP}s'
                                  +f'_channel{PLOT_CHANNELS[0]}.{PLOT_FORMAT}'))
     shell:
@@ -291,11 +378,11 @@ rule logMUA_estimation:
 
 rule phase_transform:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/phase_transform.py'
+        script = os.path.join('scripts','phase_transform.py')
     output:
-        data = os.path.join(OUTPUT_DIR, 'phase_transform',
+        data = os.path.join('{dir}', 'phase_transform',
                             '{rule_name}.'+NEO_FORMAT)
     shell:
         """
@@ -306,11 +393,11 @@ rule phase_transform:
 
 rule zscore:
     input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
+        is_clear = os.path.join('{dir}', 'clear.done'),
         data = input_file,
-        script = 'scripts/z_score.py'
+        script = os.path.join('scripts','z_score.py')
     output:
-        data = os.path.join(OUTPUT_DIR, 'zscore',
+        data = os.path.join('{dir}', 'zscore',
                             '{rule_name}.'+NEO_FORMAT)
     shell:
         """
@@ -318,71 +405,3 @@ rule zscore:
         python {input.script} --data "{input.data}" \
                               --output "{output.data}"
         """
-
-rule deconvolution:
-    input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
-        data = input_file,
-        script = 'scripts/deconvolution.py',
-    params:
-        kernel = KERNEL,
-        parameter1 = PARAMETER1,
-        parameter2 = PARAMETER2
-    output:
-        data = os.path.join(OUTPUT_DIR, 'deconvolution',
-                            '{rule_name}.'+NEO_FORMAT)
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --kernel {params.kernel} \
-                              --parameter1 {params.parameter1} \
-                              --parameter2 {params.parameter2}
-        """
-
-rule KDE_characterization:
-    input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
-        data = input_file,
-        script = 'scripts/KDE_characterization.py',
-    params:
-        bandwidth = BANDWIDTH,
-        quantile = QUANTILE
-    output:
-        data = os.path.join(OUTPUT_DIR, 'KDE_characterization',
-                            '{rule_name}.'+NEO_FORMAT)
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --bandwidth {params.bandwidth} \
-                              --quantile {params.quantile}
-
-        """
-
-rule downsampling:
-    input:
-        clear = os.path.join(OUTPUT_DIR, 'clear.done'),
-        data = input_file,
-        script = 'scripts/downsampling.py',
-    params:
-        new_resolution = NEW_RESOLUTION,
-        mean = MEAN
-    output:
-        data = os.path.join(OUTPUT_DIR, 'downsampling',
-                            '{rule_name}.'+NEO_FORMAT),
-        img = report(os.path.join(OUTPUT_DIR, 'downsampling',
-                                    '{rule_name}.'+PLOT_FORMAT))
-	
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{output.img}" \
-                              --new_resolution {params.new_resolution}\
-                              --mean {params.mean}
-        """
-
