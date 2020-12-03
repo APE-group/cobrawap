@@ -13,17 +13,17 @@ from utils import load_neo, write_neo, none_or_str, save_plot, none_or_float, \
 def lognormal(t,mu,s):
     t_step = t[-1]/t.size
     log = 1/(t/t_step*np.sqrt(2*np.pi)*s)*np.exp(-(np.log(t/t_step)-mu)**2/(2*s**2))
-    return log / (np.sum(log)*t_step)
+    return log / (np.sum(log)*t_step) #normalized to the integral
 
 def comb_exp(t,tr,td):
     t_step = t[-1]/t.size
     func = (1-np.exp(-t/tr))*(np.exp(-t/td))
-    return func / (np.sum(func)*t_step)
+    return func / (np.sum(func)*t_step) #normalized to the integral
 
 def alpha(t,tau,n):
     t_step = t[-1]/t.size
     func = (t/tau)**n * np.exp(-t/tau)
-    return func / (np.sum(func)*t_step)
+    return func / (np.sum(func)*t_step) #normalized to the integral
 
 def kernel_selection(kernel, params, time):
     if kernel == 'lognormal':
@@ -31,13 +31,14 @@ def kernel_selection(kernel, params, time):
     
     elif kernel == 'combination_exp':
         ker = comb_exp(time, params[0], params[1])
-    
+
     elif kernel == 'alpha':
         ker = alpha(time, params[0], params[1])
-    
-    else:
-        print("Kernel not valid!/n")
-        
+
+    else: #ToDo: a proper interruption?
+        print("Kernel not valid!/n Default kernel: lognormal\n")
+        ker = lognormal(time, params[0], params[1])
+
     return ker
 
 if __name__ == '__main__':
@@ -59,27 +60,37 @@ if __name__ == '__main__':
     # loads and converts the neo block
     block = load_neo(args.data)
     block = AnalogSignal2ImageSequence(block)
-    
+
     # converts the imagesequence class in a 3D Numpy array
     imgseq = block.segments[0].imagesequences[-1]
     imgseq_array = imgseq.as_array()
     dim_t, dim_x, dim_y = imgseq_array.shape
-    
+
     #time axis
     t_step = block.segments[0].analogsignals[0].sampling_period.magnitude.tolist()
     t_end = block.segments[0].analogsignals[0].shape[0] * t_step
     time = np.arange(t_step,t_end+t_step,t_step)
-    
+
     # get the chosen kernel
     params=[args.parameter1, args.parameter2]
     if params[0] and params[1]:
         ker = kernel_selection(args.kernel, params, time)
-    else:
+    else: #ToDo: automatic parameters choice
         print("Functionality in development, please enter parameters manually.\n")
-        
+        ker = kernel_selection('lognormal', [2.2, 0.91], time) #default kernel
+
+    # ToDo: initial+final ramp, which will change dim_t
+
     # decovolution script
-    activity = deconvolve(imgseq_array[:,50,50], ker[:50]) #single pixel
-    
+    twoseconds = int(round(2/t_step)) # index corresponding to 2s
+    newdim_t = dim_t-twoseconds+1 # n-m+1
+    activities = np.zeros((newdim_t,dim_x,dim_y))
+    for i in range(dim_x):
+        for j in range(dim_y):
+            activities[:,i,j] = deconvolve(imgseq_array[:,i,j], ker[:twoseconds])[0]
+
+    #ToDo: add plot
+
     """
     Old method, it doesn't work properly (the ouput block doesn't work as input for the other pipeline modules)
     
@@ -95,12 +106,12 @@ if __name__ == '__main__':
     """
     # New method, creating a new block
     # create an ImageSequence with the deconvoluted matrix
-    imgseq_deconv = neo.ImageSequence(imgseq_array, units = block.segments[0].analogsignals[0].units, 
+    imgseq_deconv = neo.ImageSequence(activities, units = block.segments[0].analogsignals[0].units, 
                       sampling_rate = block.segments[0].analogsignals[0].sampling_rate, 
                       spatial_scale = block.segments[0].imagesequences[0].spatial_scale, 
                       name = block.segments[0].analogsignals[0].name, 
                       description = block.segments[0].analogsignals[0].description)
-    
+
     # create a new Block & Segment and append the ImageSequence
     segm_deconv = neo.Segment()
     segm_deconv.imagesequences.append(imgseq_deconv)
@@ -109,7 +120,7 @@ if __name__ == '__main__':
     block_deconv.name = block.name
     block_deconv.description = block.description
     block_deconv.annotations = block.annotations
-    
+
     # converting into analogsignal
     block_deconv = ImageSequence2AnalogSignal(block_deconv)
 
