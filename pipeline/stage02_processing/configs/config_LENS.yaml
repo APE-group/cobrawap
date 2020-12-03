@@ -30,8 +30,7 @@ PLOT_FORMAT: 'png'
 # 'background_substraction', 'frequency_filter', 'normalization', 'detrending',
 # 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore'
 # 'deconvolution', 'KDE_characterization'
-#BLOCK_ORDER: ['roi_selection', 'background_substraction', 'spatial_downsampling', 'normalization', 'frequency_filter']
-BLOCK_ORDER: ['roi_selection', 'background_substraction',  'normalization', 'frequency_filter']
+BLOCK_ORDER: ['roi_selection', 'background_substraction', 'spatial_downsampling', 'normalization', 'frequency_filter']
 
 # BLOCK - background_substraction
 #################################
