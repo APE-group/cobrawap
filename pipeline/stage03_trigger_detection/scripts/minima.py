@@ -138,7 +138,7 @@ if __name__ == '__main__':
                      help="number of neighbouring points to compare")
     CLI.add_argument("--num_interpolation_points", nargs='?', type=int, default=5,
                      help="number of neighbouring points to interpolate")
-    CLI.add_argument("--use_quadtratic_interpolation", nargs='?', type=bool, default=False,
+    CLI.add_argument("--use_quadtratic_interpolation", nargs='?', type=strtobool, default=False,
                      help="wether use interpolation or not")
 
     args = CLI.parse_args()
