@@ -231,12 +231,14 @@ rule minima:
 	    use_quadtratic_interpolation = USE_QUADRATIC_INTERPOLATION,
 	    num_interpolation_points = NUM_INTERPOLATION_POINTS
     output:
-        data = os.path.join('{dir}', 'minima', 'transitions.'+NEO_FORMAT)
+        data = os.path.join('{dir}', 'minima', 'transitions.'+NEO_FORMAT),
+        ampl_file = os.path.join('{dir}', 'MinimaArr', 'MinimaArr.mat')
     shell:
         """
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
+                              --ampl_file "{output.ampl_file}" \
                               --order {params.order} \
                               --use_quadtratic_interpolation {params.use_quadtratic_interpolation} \
                               --num_interpolation_points {params.num_interpolation_points}
