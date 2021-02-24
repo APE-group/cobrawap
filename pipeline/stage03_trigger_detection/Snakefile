@@ -1,7 +1,7 @@
 # Stage 03 Trigger Detection
 import os
 
-#configfile: os.path.join('configs', 'config_template.yaml')
+configfile: os.path.join('configs', 'config_template.yaml')
 report: "report.rst"
 
 import sys
