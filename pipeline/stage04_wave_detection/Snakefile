@@ -46,6 +46,11 @@ CONVERGENCE_LIMIT = config["CONVERGENCE_LIMIT"]
 GAUSSIAN_SIGMA = config["GAUSSIAN_SIGMA"]
 DERIVATIVE_FILTER = config["DERIVATIVE_FILTER"]
 
+MAX_ABS_TIMELAG = config["MAX_ABS_TIMELAG"]
+ACCEPTABLE_REJECTION_RATE = config["ACCEPTABLE_REJECTION_RATE"]
+MIN_CH_NUM = config["MIN_CH_NUM"]
+
+
 localrules: all, check_input
 
 #### UTILITY BLOCKS ####
@@ -132,6 +137,33 @@ rule trigger_clustering:
                                    --output "{output.img}" \
                                    --time_slice {params.plot_time_slice}
         """
+
+
+rule WaveHunt_Cropped:
+    input:
+        data = STAGE_INPUT,
+        script = os.path.join('scripts', 'WaveHunt_Cropped.py'),
+    params:
+        Max_Abs_Timelag = MAX_ABS_TIMELAG,
+        Acceptable_rejection_rate = ACCEPTABLE_REJECTION_RATE,
+        min_ch_num = MIN_CH_NUM,
+        array = os.path.join('{dir}', 'WaveHunt_Cropped', 'Waves_Recap.mat'),
+
+    output:
+        data = os.path.join('{dir}', 'WaveHunt_Cropped',
+                            '{rule_name}.'+NEO_FORMAT),
+    shell:
+        """
+        
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --wave_dict_path "{params.array}" \
+                              --min_ch_num {params.min_ch_num} \
+                              --Max_Abs_Timelag {params.Max_Abs_Timelag} \
+                              --Acceptable_rejection_rate {params.Acceptable_rejection_rate} \
+        """
+
 
 #### ADDITIONAL PROPERTIES ####
 
