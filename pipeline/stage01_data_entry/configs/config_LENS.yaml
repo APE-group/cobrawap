@@ -26,6 +26,9 @@ DATA_SETS:
 
 CURATION_SCRIPT: 'curate_LENS_data.py'
 
+DIM_X: 100
+DIM_Y: 100
+
 # pixel size
 SPATIAL_SCALE: 0.05  # mm
 
