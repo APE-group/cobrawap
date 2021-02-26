@@ -68,6 +68,7 @@ rule all:
                               --output_img "{output.img}"
         """
 
+print(STAGE_INPUT)
 rule check_input:
     priority: 10
     input:
@@ -97,6 +98,27 @@ rule velocity_planar:
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
+                              --output_img "{output.img}"
+        """
+
+rule velocity_point:
+    input:
+        data = input,
+        script = os.path.join('scripts', 'velocity_point.py')
+    output:
+        data = os.path.join('{dir}', 'velocity_point', 'velocity_point.csv'),
+        data2 = os.path.join('{dir}', 'velocity_point', 'point_df.csv'),
+        img = report(os.path.join('{dir}', 'velocity_point',
+                                  'velocity_point.'+PLOT_FORMAT))
+    params:
+        output_path = os.path.join('{dir}', 'velocity_point')
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --output2 "{output.data2}" \
+                              --output_path "{params.output_path}" \
                               --output_img "{output.img}"
         """
 
