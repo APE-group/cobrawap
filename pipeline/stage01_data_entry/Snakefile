@@ -34,6 +34,9 @@ SPATIAL_SCALE = config['SPATIAL_SCALE']
 SAMPLING_RATE = config["SAMPLING_RATE"]
 T_START = config["T_START"]
 T_STOP = config["T_STOP"]
+DIM_X = config["DIM_X"]
+DIM_Y = config["DIM_Y"]
+
 ORIENTATION_TOP = get_param(config, "ORIENTATION_TOP")
 ORIENTATION_RIGHT = get_param(config, "ORIENTATION_RIGHT")
 ANNOTATIONS = ordereddict_to_dict(config["ANNOTATIONS"])
@@ -114,6 +117,8 @@ rule enter_data:
         sampling_rate = SAMPLING_RATE,
         t_start = T_START,
         t_stop = T_STOP,
+        dim_x = DIM_Y,
+        dim_y = DIM_X,
         orientation_top = ORIENTATION_TOP,
         orientation_right = ORIENTATION_RIGHT,
         annotations = ANNOTATIONS,
@@ -132,6 +137,8 @@ rule enter_data:
                               --spatial_scale {params.spatial_scale} \
                               --t_start {params.t_start} \
                               --t_stop {params.t_stop} \
+                              --dim_y {params.dim_x} \
+                              --dim_x {params.dim_y} \
                               --orientation_top {params.orientation_top} \
                               --orientation_right {params.orientation_right} \
                               --annotations {params.annotations} \
