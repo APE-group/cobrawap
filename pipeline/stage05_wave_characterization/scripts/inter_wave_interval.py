@@ -27,7 +27,7 @@ if __name__ == '__main__':
     evts = block.filter(name='Wavefronts', objects="Event")[0]
     num_nonnan_channels = np.sum(np.isfinite(asig[0]).astype(int))
 
-    wave_ids = np.sort(np.unique(evts.labels).astype(int))
+    wave_ids = np.sort(float(np.unique(evts.labels)).astype(int))
     if wave_ids[0] == -1:
         wave_ids = np.delete(wave_ids, 0)
 
