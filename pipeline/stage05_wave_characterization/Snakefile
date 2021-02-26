@@ -68,7 +68,6 @@ rule all:
                               --output_img "{output.img}"
         """
 
-print(STAGE_INPUT)
 rule check_input:
     priority: 10
     input:
