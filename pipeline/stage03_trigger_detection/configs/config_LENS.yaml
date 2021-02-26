@@ -20,7 +20,7 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # Plotting parameters
 PLOT_TSTART: 0  # in s
 PLOT_TSTOP: 10  # in s
-PLOT_CHANNELS: [4040, 5050, 6060]   # int or None. default 'None' -> randomly selected
+PLOT_CHANNELS: [1010, 550, 660]   # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
 # DETECTION BLOCK

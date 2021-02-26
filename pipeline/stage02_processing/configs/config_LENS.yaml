@@ -29,14 +29,14 @@ PLOT_FORMAT: 'png'
 # The available blocks are:
 # 'background_subtraction', 'frequency_filter', 'normalization', 'detrending',
 # 'roi_selection', 'logMUA_estimation', 'phase_transform', 'zscore'
-# 'deconvolution', 'KDE_characterization'
-BLOCK_ORDER: ['roi_selection', 'background_subtraction', 'normalization', 'frequency_filter']
+# 'deconvolution', 'KDE_characterization', 'spatial_downsampling'
+BLOCK_ORDER: ['roi_selection', 'background_subtraction', 'normalization', 'frequency_filter', 'spatial_downsampling']
 
 # BLOCK - background_subtraction
 #################################
 # No parameters needed
 
-# BLOCK - spatial_smoothig
+# BLOCK - spatial_downsampling
 #################################
 MACRO_PIXEL_DIM: 2
 
