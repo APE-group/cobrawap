@@ -18,12 +18,16 @@ def spatial_smoothing(images, macro_pixel_dim):
     images_reduced = measure.block_reduce(images, (1, macro_pixel_dim, macro_pixel_dim), np.nanmean, cval = np.nanmedian(images))
 
     dim_t, dim_x, dim_y = images_reduced.shape
+    new_annotations = images.annotations.copy()
+    
+    new_annotations['array_annotations'] = {'x_coords': [i % dim_x for i in range(dim_x*dim_y)], 'y_coords': [i // dim_y for i in range(dim_x*dim_y)]}
+
     imgseq_reduced = neo.ImageSequence(images_reduced,
                                    units=images.units,
                                    spatial_scale=images.spatial_scale * macro_pixel_dim,
                                    sampling_rate=images.sampling_rate,
                                    file_origin=images.file_origin,
-                                   **imgseq.annotations)
+                                   annotations=new_annotations)
 
     imgseq_reduced.name = images.name + " "
     imgseq_reduced.annotations.update(macro_pixel_dim=macro_pixel_dim)
