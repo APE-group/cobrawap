@@ -26,7 +26,7 @@ PLOT_FORMAT: 'png'
 # DETECTIION BLOCK
 ##################
 # Available Blocks: 'trigger_clustering'
-DETECTION_BLOCK: 'trigger_clustering'
+DETECTION_BLOCK: 'WaveHunt_Cropped'
 
 # ADDITIONAL PROPERTIES
 #######################

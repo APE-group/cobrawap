@@ -4,7 +4,7 @@
 STAGE_NAME: 'stage04_wave_detection'
 
 # The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
-PROFILE: 'LENS'
+PROFILE: 'LENS_ISO'
 
 # Name of the output file
 STAGE_OUTPUT: "waves.nix"
@@ -20,11 +20,12 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # Plotting parameters
 PLOT_TSTART: 0  # in s
 PLOT_TSTOP: 10  # in s
-PLOT_CHANNELS: [1675, 2181, 1889]  # int or None. default 'None' -> randomly selected
+PLOT_CHANNELS: [4040, 5050, 6060]  # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
+# DETECTIION BLOCK
 ##################
-# Available Blocks: 'trigger_clustering', 'WaveHunt_Time'
+# Available Blocks: 'trigger_clustering', 'WaveHunt_Cropped'
 DETECTION_BLOCK: 'WaveHunt_Cropped'
 
 # ADDITIONAL PROPERTIES
@@ -62,23 +63,9 @@ DERIVATIVE_FILTER: 'Simple'
 # Critical Point Clustering
 ###########################
 
-# VIDEO SETTINGS
-################
-QUALITY: 5 # 0(good) - 31(bad)
-SCALE_X: 720
-SCALE_Y: 720
-FPS: 10
-BITRATE: 20M
-# displayed sampling rate, the data will be stretched or compressed to.
-# If None, the inherent sampling rate is used.
-FRAME_RATE: None
-# 'gray', 'viridis' (sequential), 'coolwarm' (diverging), 'twilight' (cyclic)
-COLORMAP: 'twilight'
-PLOT_EVENT: 'Wavefronts' # name of neo event to plot, default is None
-MARKER_COLOR: 'r'
-
-#WaveHunt_Time
+# WaveHunt_Cropped
 ###########################
-MAX_ABS_TIMELAG: 10. #0.8 # Maximum reasonable time lag between electrodes (pixels)...
+MAX_ABS_TIMELAG: 10. #ms # Maximum reasonable time lag between channels (electrods, pixels...) as part of the same wave event.
 ACCEPTABLE_REJECTION_RATE: 0.1;
-MIN_CH_NUM: 300
+MIN_CH_NUM: 300 # minimum number of channels involved in a wave event.
+# set at (about) 25% total number of channels
