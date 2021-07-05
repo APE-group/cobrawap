@@ -17,7 +17,7 @@ PLOT_FORMAT: 'png'
 
 # Measures to compute
 # 'label_planar', 'velocity_planar', 'direction_planar'
-MEASURES: ['velocity_point']
+MEASURES: ['velocity_planar', 'direction_planar', 'velocity_point']
 
 # Label Planar
 ##############
