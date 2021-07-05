@@ -71,13 +71,13 @@ def plot_planarity(waves_event, vector_field, times, wave_id, skip_step=1, ax=No
                   # units='width', scale=max(frame.shape)/(10*skip_step),
                   # width=0.15/max(frame.shape),
                   color=palette[i], alpha=0.8,
-                  label='{:.3f} s'.format(times[frame_t].rescale('s').magnitude))
+                  label='{:.3f} s'.format(asig.times[frame_t].rescale('s').magnitude))
 
     dim_t, dim_x, dim_y = vector_field.as_array().shape
     ax.axis('image')
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_ylabel(f'pixel size {vector_field.spatial_scale}')
+    ax.set_ylabel(f'pixel size {vector_field.spatial_scale} {vector_field.spatial_scale.dimensionality}')
     start_t = np.min(waves_event.times[idx]).rescale('s').magnitude
     stop_t = np.max(waves_event.times[idx]).rescale('s').magnitude
     ax.set_xlabel('{:.3f} - {:.3f} s'.format(start_t, stop_t))
@@ -102,9 +102,22 @@ if __name__ == '__main__':
     block = AnalogSignal2ImageSequence(block)
     asig = block.segments[0].analogsignals[0]
 
-    wavefront_evt = block.filter(name='Wavefronts', objects="Event")[0]
+    wavefront_evt = [evt for evt in block.segments[0].events
+                     if evt.name == "Wavefronts"]
+    if wavefront_evt:
+        wavefront_evt = wavefront_evt[0]
+    else:
+        raise ValueError("Input does not contain an event with name " \
+                       + "'Wavefronts'!")
 
-    optical_flow = block.filter(name='Optical Flow', objects="ImageSequence")[0]
+    optical_flow = [imgseq for imgseq in block.segments[0].imagesequences
+                    if imgseq.name == "Optical Flow"]
+    print('hey', [imgseq.name for imgseq in block.segments[0].imagesequences])
+    if optical_flow:
+        optical_flow = optical_flow[0]
+    else:
+        raise ValueError("Input does not contain an event with name " \
+                       + "'Optical Flow'!")
 
     planar_labels = label_planar(waves_event=wavefront_evt,
                                  vector_field=optical_flow,

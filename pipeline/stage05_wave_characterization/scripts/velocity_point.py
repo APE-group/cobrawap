@@ -10,7 +10,7 @@ from utils import load_neo, none_or_str, save_plot
 import math 
 
 
-def calc_point_velocities(evts, output_path):
+def calc_point_velocities(evts):
 
     #nCh = len(np.unique(ChLabel))
     #RecordingSet = list(range(1,nCh))
@@ -29,7 +29,7 @@ def calc_point_velocities(evts, output_path):
         
     #===========================WAVE VELOCITY===========================
     #print '         waves velocity computing...'
-    
+    print('spatial scale', evts.annotations['spatial_scale'])
     NumWave = len(Wave)
     spatial_scale = evts.annotations['spatial_scale']
     v_unit = (spatial_scale.units/evts.times.units).dimensionality.string
@@ -47,6 +47,7 @@ def calc_point_velocities(evts, output_path):
     point = []
     point_dir_mean = []
 
+    
     for w in range(0,NumWave):
         print('w', w)
 
@@ -55,9 +56,7 @@ def calc_point_velocities(evts, output_path):
         #creo la griglia
         for k in range(0,len(Wave[w]['times'])):
             x = int(Wave[w]['x_coords'][k])
-            print('x', x)
             y = int(Wave[w]['y_coords'][k])
-            print('y', y)
             #grid[x, y] = np.around(Wave[w]['times'][k], decimals = 6)
             grid[x, y] = Wave[w]['times'][k]
         
@@ -98,8 +97,16 @@ def calc_point_velocities(evts, output_path):
             mean_velocity = np.mean(velocity)
             point_dir_mean = np.mean(angle)
             meanVel_angle = np.arctan2(np.mean(point_vel_x),np.mean(point_vel_y))
-            
-            np.savetxt(output_path + 'VelWave_' + str(w) + '.txt', [point_vel_x, point_vel_y])
+            df_temp = pd.DataFrame(np.array([point_vel_x, point_vel_y]).T,
+                  columns=['x_dir'+str(w), 'y_dir'+str(w)])
+            #df['velocity_unit'] = [v_unit]*len(wave_ids)
+            #df.index.name = 'wave_id'
+            if w == 0:
+                df_velocities_components = df_temp
+            else:
+                df_velocities_components = pd.concat([df_velocities_components,df_temp], ignore_index=True, axis=1)
+
+            #np.savetxt('/Users/chiaradeluca/Desktop/PhD/Wavescalephant_new/Output/LENS/stage05_wave_characterization/VelWave_' + str(w) + '.txt', [point_vel_x, point_vel_y])
             #qui aggiustiamo le unità di misura
             mean_vel.append([mean_velocity, np.std(velocity)/len(velocity), point_dir_mean, meanVel_angle])
         else:
@@ -118,12 +125,12 @@ def calc_point_velocities(evts, output_path):
     df['velocity_unit'] = [v_unit]*len(wave_ids)
     df.index.name = 'wave_id'
 
-
     df_point = pd.DataFrame(point,
                       columns=['point_vel', 'point_direction'])
     df_point['velocity_unit'] = [v_unit]*len(point)
 
-    return df, df_point
+
+    return df, df_point, df_velocities_components
     
 
 if __name__ == '__main__':
@@ -133,22 +140,23 @@ if __name__ == '__main__':
                      help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                      help="path of output file")
-    CLI.add_argument("--output2", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_path", nargs='?', type=str, required=True,
-                     help="path of output file")
     CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
                      help="path of output image file")
+    CLI.add_argument("--output_data_comp", nargs='?', type=str, required=True,
+                     help="path of output file")
+    CLI.add_argument("--output_data_point", nargs='?', type=str, required=True,
+                     help="path of output file")
     args = CLI.parse_args()
-    print('HEYYYY', args.output_path)
     block = load_neo(args.data)
 
     evts = [ev for ev in block.segments[0].events if ev.name == 'Wavefronts'][0]
 
-    velocities_df, point_df = calc_point_velocities(evts, args.output_path)
+    velocities_df, point_df, df_velocities_components = calc_point_velocities(evts)
 
     if args.output_img is not None:
         save_plot(args.output_img)
 
-    point_df.to_csv(args.output2)
+    point_df.to_csv(args.output_data_point)
+    df_velocities_components.to_csv(args.output_data_comp)
+
     velocities_df.to_csv(args.output)

@@ -4,7 +4,6 @@ import quantities as pq
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import os
-import warnings
 import argparse
 import scipy
 import pandas as pd
@@ -27,7 +26,8 @@ def trigger_interpolation(evts):
 
     # loop over waves
     for i, wave_i in enumerate(wave_ids):
-        if not int(wave_i) == -1:
+        print('wave id', wave_i)
+        if not np.int32(np.float64(wave_i)) == -1:
             # Fit wave displacement
             idx = np.where(evts.labels == wave_i)[0]
             dx, dx_err = calc_displacement(evts.times[idx].magnitude,
@@ -38,8 +38,12 @@ def trigger_interpolation(evts):
                                      * spatial_scale.magnitude)
             directions[i] = np.array([dx + 1j*dy, dx_err + 1j*dy_err])
 
-    return directions
-
+    # transfrom to DataFrame
+    df = pd.DataFrame(directions,
+                      columns=['direction', 'direction_std'],
+                      index=wave_ids)
+    df.index.name = 'wave_id'
+    return df
 
 def times2ids(time_array, times_selection):
     return np.array([np.argmax(time_array>=t) for t in times_selection])
@@ -48,28 +52,24 @@ def calc_flow_direction(evts, asig):
     wave_ids = np.unique(evts.labels)
     directions = np.zeros((len(wave_ids), 2), dtype=np.complex_)
     signals = asig.as_array()
-
     # loop over waves
     for i, wave_i in enumerate(wave_ids):
         if not int(wave_i) == -1:
-            idx = np.where(evts.labels == str(wave_i))[0]
+            idx = np.where(evts.labels == wave_i)[0]
             t_idx = times2ids(asig.times, evts.times[idx])
-            x_coords = evts.array_annotations['x_coords'][idx]
-            y_coords = evts.array_annotations['y_coords'][idx]
-            channels = np.empty(len(idx), dtype=int)
-            for c, (x,y) in enumerate(zip(x_coords, y_coords)):
-                channels[c] = np.where((asig.array_annotations['x_coords'] == x) \
-                                     & (asig.array_annotations['y_coords'] == y))[0]
-            # channels = evts.array_annotations['channels'][idx]
+            channels = evts.array_annotations['channels'][idx]
             # ToDo: Normalize vectors?
-            if np.isnan(signals[t_idx, channels]).any():
-                warnings.warn("Signals at trigger points contain nans!")
-            x_avg = np.nanmean(np.real(signals[t_idx, channels]))
-            x_std = np.nanstd(np.real(signals[t_idx, channels]))
-            y_avg = np.nanmean(np.imag(signals[t_idx, channels]))
-            y_std = np.nanstd(np.imag(signals[t_idx, channels]))
+            x_avg = np.mean(np.real(signals[t_idx, channels]))
+            x_std = np.std(np.real(signals[t_idx, channels]))
+            y_avg = np.mean(np.imag(signals[t_idx, channels]))
+            y_std = np.std(np.imag(signals[t_idx, channels]))
             directions[i] = np.array([x_avg + 1j*y_avg, x_std + 1j*y_std])
-    return directions
+
+    df = pd.DataFrame(directions,
+                      columns=['direction', 'direction_std'],
+                      index=wave_ids)
+    df.index.name = 'wave_id'
+    return df
 
 def plot_directions(dataframe, orientation_top=None, orientation_right=None):
     wave_ids = dataframe.index
@@ -135,30 +135,31 @@ if __name__ == '__main__':
     CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
                      help="path of output image file")
     CLI.add_argument("--method", nargs='?', type=str, default='trigger_interpolation',
-                     help="'tigger_interpolation' or 'optical_flow'")
+                     help="'tigger_interolation' or 'optical_flow'")
     args = CLI.parse_args()
 
     block = load_neo(args.data)
 
-    evts = block.filter(name='Wavefronts', objects="Event")[0]
+    print([ev.name for ev in block.segments[0].events])
+
+    evts = [ev for ev in block.segments[0].events if ev.name == 'Wavefronts'][0]
 
     if args.method == 'trigger_interpolation':
-        directions = trigger_interpolation(evts)
+        directions_df = trigger_interpolation(evts)
     elif args.method == 'optical_flow':
-        asig = block.filter(name='Optical Flow', objects="AnalogSignal")[0]
-        directions = calc_flow_direction(evts, asig)
+        # block = AnalogSignal2ImageSequence(block)
+        asig = [im for im in block.segments[0].analogsignals if im.name == 'Optical Flow'][0]
+        directions_df = calc_flow_direction(evts, asig)
     else:
         raise NameError(f'Method name {args.method} is not recognized!')
-
-    df = pd.DataFrame(directions,
-                      columns=['direction', 'direction_std'],
-                      index=np.unique(evts.labels))
-    df.index.name = 'wave_id'
 
     if args.output_img is not None:
         orientation_top = evts.annotations['orientation_top']
         orientation_right = evts.annotations['orientation_right']
-        plot_directions(df, orientation_top, orientation_right)
+        plot_directions(directions_df, orientation_top, orientation_right)
         save_plot(args.output_img)
+        plt.figure()
+        directions = directions_df.direction
 
-    df.to_csv(args.output)
+        
+    directions_df.to_csv(args.output)
