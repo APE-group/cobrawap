@@ -1,9 +1,10 @@
 
+# MAX ABST TIMELAG
 def Optimal_MAX_ABS_TIMELAG(evts, MAX_ABS_TIMELAG):
 
     import numpy as np
     import quantities as pq
-    from utils import load_neo, write_neo, remove_annotations
+    #from utils import load_neo, write_neo, remove_annotations
     import neo
     StartingValue = MAX_ABS_TIMELAG
     UpTrans = evts.times.magnitude
@@ -20,21 +21,41 @@ def Optimal_MAX_ABS_TIMELAG(evts, MAX_ABS_TIMELAG):
     
         WaveUnique_flag = 1
         WnW = np.int32(DeltaTL<=MAX_ABS_TIMELAG);
-        ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
-        ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
+        #print(WnW)
+        #ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
+        #print('begin', ndxBegin_list)
+        #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
+        #print('end', ndxEnd_list)
+        if len(np.where(np.diff(WnW)==1)[0]):
+            if np.where(np.diff(WnW)==1)[0][0] != 0:
+                ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
+            else:
+                ndxBegin_list = np.where(np.diff(WnW)==1)[0] + 1
+
+            #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
+            ndxEnd_list = ndxBegin_list[1:len(ndxBegin_list)]
+            ndxEnd_list = np.append(ndxEnd_list, len(UpTrans))
+
+            #if len(ndxBegin_list) != len(ndxEnd_list):
+            #    ndxBegin_list = np.append(ndxBegin_list, len(UpTrans)-1)
+
+        else:
+            ndxBegin_list = [0]
+            ndxEnd_list = [len(UpTrans)]
         
+        #print('begin', ndxBegin_list)
+        #print('end', ndxEnd_list)
+ 
         Wave = [dict() for i in range(len(ndxBegin_list))]
-        #Wave = [dict() for i in range(len(ndxEnd_list))]
         del_idx = []
 
         for w in range(0, len(ndxBegin_list)):
-        #for w in range(0, len(ndxEnd_list)):
-
-            ndx = list(range(ndxBegin_list[w], ndxEnd_list[w]+1))
-            #print('ndx', ndx)
+            try:
+                ndx = list(range(ndxBegin_list[w], ndxEnd_list[w]))
+            except IndexError:
+                ndx = list(range(ndxBegin_list[w], len(DeltaTL)))
             
             if ndx:
-                #print('ops')
                 Wave[w] = {'ndx': ndx,
                            'ch': ChLabel[ndx],
                            'time': UpTrans[ndx],
@@ -42,23 +63,19 @@ def Optimal_MAX_ABS_TIMELAG(evts, MAX_ABS_TIMELAG):
                            'WaveSize': len(ndx),
                            'WaveTime': np.mean(UpTrans[ndx])};
 
-                if len(ndx) != len(np.unique(ChLabel[ndx])) and MAX_ABS_TIMELAG > StartingValue*0.0000001:
+                if len(ndx) != len(np.unique(ChLabel[ndx])) and MAX_ABS_TIMELAG > StartingValue*0.0001:
                     WaveUnique_flag = 0
                     break
             else:
                 del_idx.append(w)
                 
-        print('del', del_idx)
-        print('pre', len(Wave))
         for elem in del_idx:
             Wave.pop(elem)
-        print('post', len(Wave))
         
         MAX_ABS_TIMELAG = MAX_ABS_TIMELAG*0.75; # rescale the parameter
-        print('max abs timelag', MAX_ABS_TIMELAG)
-    
-    #for w in range(0, len(Wave)):
-     #   print(Wave[w]['WaveUnique'])
+        #plt.figure()
+        #for elem in range(0, 2): #len(Waves_Inter)):
+        #    plt.plot(Wave[elem]['time'], Wave[elem]['ch'], '.', markersize = 5.)
     WaveUnique=list(map(lambda x : x['WaveUnique'], Wave))
 
     return Wave
@@ -67,7 +84,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
 
     import numpy as np
     import quantities as pq
-    from utils import load_neo, write_neo, remove_annotations
+    #from utils import load_neo, write_neo, remove_annotations
     import neo
 
     WaveUnique=list(map(lambda x : x['WaveUnique'], Wave))
@@ -79,7 +96,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
     
     ####################################################
     # ExpectedTrans i.e. estimate of the Number of Waves
-    # ExpectedTrans used to estimate/optimize IWI    
+    # ExpectedTrans used to estimate/optimize IWI
     TransPerCh_Idx, TransPerCh_Num = np.unique(ChLabel, return_counts=True)
     ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)]);
     print('Expected Trans', ExpectedTrans)
@@ -92,16 +109,25 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
     OneMoreLoop = 1;
     
     while OneMoreLoop:
-
         WnW = np.int32(IWI<=MAX_IWI);
-        ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
-        ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(WaveTime)-1)
-        if len(ndxBegin_list) != len(ndxEnd_list):
-            ndxBegin_list = np.append(ndxBegin_list, len(WaveTime)-1)
-        print('ndxBegin', len(ndxBegin_list))
-        print('ndxEnd', len(ndxEnd_list))
         
-        
+        if len(np.where(np.diff(WnW)==1)[0]):
+
+            if np.where(np.diff(WnW)==1)[0][0] != 0:
+                ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
+            else:
+                ndxBegin_list = np.where(np.diff(WnW)==1)[0] + 1
+
+            #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(WaveTime)-1)
+            ndxEnd_list = ndxBegin_list[1:len(ndxBegin_list)]
+            ndxEnd_list = np.append(ndxEnd_list, len(WaveTime))
+
+            
+            if len(ndxBegin_list) != len(ndxEnd_list):
+                ndxBegin_list = np.append(ndxBegin_list, len(WaveTime)-1)
+        else:
+            ndxBegin_list = [0]
+            ndxEnd_list = [len(WaveTime)]
         FullWave = []
 
         num_iter = -1
@@ -109,7 +135,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
         for w in range(0, len(ndxEnd_list)):
 
             num_iter = num_iter +1
-            ndx = list(range(ndxBegin_list[w],ndxEnd_list[w]+1))
+            ndx = list(range(ndxBegin_list[w],ndxEnd_list[w]))
             Full_ndx = []
             for elem in ndx:
                 Full_ndx.extend(Wave[elem]['ndx'])
@@ -125,13 +151,8 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
                            });
 
             # save as single waves isolated transitions.
-
-            #print('end', ndxEnd_list[w])
-            
-            print('wave time', len(WaveTime))
-            print('ndx end', ndxEnd_list[w])
-            if ndxEnd_list[w]+1 != len(WaveTime):
-                for j in range(ndxEnd_list[w]+1, ndxBegin_list[w+1]):
+            if ndxEnd_list[w] != len(WaveTime):
+                for j in range(ndxEnd_list[w], ndxBegin_list[w+1]):
                     ndx = [j]
                     Full_ndx = []
                     for elem in ndx:
@@ -147,7 +168,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
                                    'WaveUniqueSize': len(np.unique(ChLabel[Full_ndx]))
                                    });
 
-            
+
         FullWaveUnique = list(map(lambda x : x['WaveUnique'], FullWave))
         BadWavesNum = len(FullWaveUnique) - len(np.where(FullWaveUnique)[0]);
         OneMoreLoop = 0;
@@ -164,8 +185,9 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
                         
         if len(ndxBegin_list) == 1:
             OneMoreLoop = 0
-
+        print('IWI', MAX_IWI)
     return(FullWave)
+
 
 
 

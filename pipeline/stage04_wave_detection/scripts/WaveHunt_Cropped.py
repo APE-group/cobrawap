@@ -29,8 +29,6 @@ if __name__ == '__main__':
                         help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                         help="path of output file")
-    CLI.add_argument("--wave_dict_path", nargs='?', type=str, required=True,
-                        help="path of dict file")
     CLI.add_argument("--Max_Abs_Timelag", nargs='?', type=float, default=0.8,
                         help="Maximum reasonable time lag between electrodes (pixels)")
     CLI.add_argument("--Acceptable_rejection_rate", nargs='?', type=float, default=0.1,
@@ -88,9 +86,6 @@ if __name__ == '__main__':
         Label.extend(np.ones([len(Wave[i]['ndx'])])*i)
         Pixels.extend(Wave[i]['ch'])
 
-    Dict_to_save = {'Label': Label, 'Times': Times, 'Channels': Pixels}
-    io.savemat(args.wave_dict_path, Dict_to_save)
-    
     Label = [str(i) for i in Label]
     Times = Times*(Wave[0]['times'].units)
     waves = neo.Event(times=Times.rescale(pq.s),
