@@ -1,10 +1,10 @@
-# Config file for Stage 4 - Wave Detection
+# Config file for Stage 4 - Wavefront Detection
 
 # Name of stage, must be identical with folder name
-STAGE_NAME: 'stage04_wave_detection'
+STAGE_NAME: 'stage04_wavefront_detection'
 
 # The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
-PROFILE: 'LENS'
+PROFILE: 'MF_LENS'
 
 # Name of the output file
 STAGE_OUTPUT: "waves.nix"
@@ -25,12 +25,12 @@ PLOT_FORMAT: 'png'
 
 ##################
 # Available Blocks: 'trigger_clustering', 'WaveHunt_Time'
-DETECTION_BLOCK: 'WaveHunt_Cropped'
+DETECTION_BLOCK: 'WaveHunt_Time'
 
 # ADDITIONAL PROPERTIES
 #######################
 # Available Blocks: 'optical_flow', 'critical_points'
-ADDITIONAL_PROPERTIES: ['optical_flow'] #, 'critical_points']
+#ADDITIONAL_PROPERTIES: ['optical_flow', 'critical_points']
 
 # Wavefront Clustering
 ######################
@@ -44,7 +44,6 @@ TIME_SPACE_RATIO: 8  # i.e. distance between 2 frames corresponds to X pixel
 
 # Optical Flow (Horn-Schunck algorithm)
 ##############
-USE_PHASES: True
 # weight of the smoothness constraint over the brightness constancy constraint
 ALPHA: 1.5
 # maximum number of iterations optimizing the vector field
@@ -56,29 +55,14 @@ CONVERGENCE_LIMIT: 0.0001
 # [t_std, x_std, y_std]. (0,0,0) for no filter
 GAUSSIAN_SIGMA: [0,5,5]
 # Kernel filter to use to calucualte the spatial derivatives.
-# "Simple", "Simple2x2", "Prewitt", "Sobel", or "Sobel2"
+# "Simple", "Prewitt", "Sobel", or "Roberts"
 DERIVATIVE_FILTER: 'Simple'
 
 # Critical Point Clustering
 ###########################
 
-# VIDEO SETTINGS
-################
-QUALITY: 5 # 0(good) - 31(bad)
-SCALE_X: 720
-SCALE_Y: 720
-FPS: 10
-BITRATE: 20M
-# displayed sampling rate, the data will be stretched or compressed to.
-# If None, the inherent sampling rate is used.
-FRAME_RATE: None
-# 'gray', 'viridis' (sequential), 'coolwarm' (diverging), 'twilight' (cyclic)
-COLORMAP: 'twilight'
-PLOT_EVENT: 'Wavefronts' # name of neo event to plot, default is None
-MARKER_COLOR: 'r'
-
 #WaveHunt_Time
 ###########################
-MAX_ABS_TIMELAG: 10. #0.8 # Maximum reasonable time lag between electrodes (pixels)...
+MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
 ACCEPTABLE_REJECTION_RATE: 0.1;
 MIN_CH_NUM: 300
