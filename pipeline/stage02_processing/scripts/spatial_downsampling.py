@@ -10,24 +10,22 @@ import quantities as pq
 from skimage import data, io, filters, measure
 from utils import determine_spatial_scale, load_neo, write_neo, save_plot, \
                   none_or_str, AnalogSignal2ImageSequence, ImageSequence2AnalogSignal
-
+import scipy
 
 def spatial_smoothing(images, macro_pixel_dim):
 
     # Now we need to reduce the noise from the images by performing a spatial smoothing
-    images_reduced = measure.block_reduce(images, (1, macro_pixel_dim, macro_pixel_dim), np.nanmean, cval = np.nanmedian(images))
-
-    dim_t, dim_x, dim_y = images_reduced.shape
-    new_annotations = images.annotations.copy()
+    #images_reduced = measure.block_reduce(images, (1, macro_pixel_dim, macro_pixel_dim), np.nanmean, cval = np.nanmedian(images))
+    images_reduced = scipy.signal.decimate(images, 2, n=2, ftype='fir', axis=1, zero_phase=True)
+    images_reduced = scipy.signal.decimate(images_reduced, 2, n=2, ftype='fir', axis=2, zero_phase=True)
     
-    new_annotations['array_annotations'] = {'x_coords': [i % dim_x for i in range(dim_x*dim_y)], 'y_coords': [i // dim_y for i in range(dim_x*dim_y)]}
-
+    dim_t, dim_x, dim_y = images_reduced.shape
     imgseq_reduced = neo.ImageSequence(images_reduced,
                                    units=images.units,
                                    spatial_scale=images.spatial_scale * macro_pixel_dim,
                                    sampling_rate=images.sampling_rate,
                                    file_origin=images.file_origin,
-                                   annotations=new_annotations)
+                                   **imgseq.annotations)
 
     imgseq_reduced.name = images.name + " "
     imgseq_reduced.annotations.update(macro_pixel_dim=macro_pixel_dim)
