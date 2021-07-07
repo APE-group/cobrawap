@@ -42,7 +42,7 @@ SIGMA_FACTOR = config["SIGMA_FACTOR"]
 TRANSITION_PHASE = config["TRANSITION_PHASE"]
 MINIMA_ORDER = config["MINIMA_ORDER"]
 NUM_INTERPOLATION_POINTS = config["NUM_INTERPOLATION_POINTS"]
-USE_QUADRATIC_INTERPOLATION = config["USE_QUADRATIC_INTERPOLATION"]
+DT = config["DT"]
 
 MIN_UP_DURATION = config["MIN_UP_DURATION"]
 MIN_DOWN_DURATION = config["MIN_DOWN_DURATION"]
@@ -94,7 +94,6 @@ rule all:
         """
 
 rule check_input:
-    priority: 10
     input:
         data = STAGE_INPUT,
         script = os.path.join('scripts', 'check_input.py')
@@ -219,28 +218,26 @@ rule hilbert_phase:
                               --transition_phase {params.transition_phase} \
                               --plot_channels {params.plot_channels} \
                               --plot_tstart {params.plot_tstart} \
-                              --plot_tstop {params.plot_tstop}
+                              --plot_tstart {params.plot_tstart}
         """
-
+        
 rule minima:
     input:
         data = STAGE_INPUT,
         script = os.path.join('scripts', 'minima.py')
     params:
         order = MINIMA_ORDER,
-	    use_quadtratic_interpolation = USE_QUADRATIC_INTERPOLATION,
+	    dt = DT,
 	    num_interpolation_points = NUM_INTERPOLATION_POINTS
     output:
-        data = os.path.join('{dir}', 'minima', 'transitions.'+NEO_FORMAT),
-        ampl_file = os.path.join('{dir}', 'MinimaArr', 'MinimaArr.mat')
+        data = os.path.join('{dir}', 'minima', 'transitions.'+NEO_FORMAT)
     shell:
         """
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
-                              --ampl_file "{output.ampl_file}" \
                               --order {params.order} \
-                              --use_quadtratic_interpolation {params.use_quadtratic_interpolation} \
+                              --dt {params.dt} \
                               --num_interpolation_points {params.num_interpolation_points}
 
         """
