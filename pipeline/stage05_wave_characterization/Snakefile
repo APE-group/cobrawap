@@ -23,7 +23,7 @@ OUTPUT_DIR = os.path.join(output_path, PROFILE, STAGE_NAME)
 if 'STAGE_INPUT' in config and config['STAGE_INPUT'] is not None:
     STAGE_INPUT = config["STAGE_INPUT"]
 else:
-    STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage04_wave_detection',
+    STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage04_wavefront_detection',
                                'waves.nix')
 
 PLOT_TSTART = config["PLOT_TSTART"]
@@ -34,7 +34,6 @@ PLOT_FORMAT = config["PLOT_FORMAT"]
 MEASURES = config["MEASURES"]
 ALIGNMENT_THRESHOLD = config["ALIGNMENT_THRESHOLD"]
 DIRECTION_METHOD = config["DIRECTION_METHOD"]
-TIME_STAMP_POINT = config["TIME_STAMP_POINT"]
 
 #### Housekeeping ####
 
@@ -70,7 +69,6 @@ rule all:
         """
 
 rule check_input:
-    priority: 10
     input:
         data = STAGE_INPUT,
         script = os.path.join('scripts', 'check_input.py')
@@ -84,6 +82,27 @@ rule check_input:
         """
 
 #### CHARACTERIZATION BLOCKS ####
+rule velocity_point:
+    input:
+        data = input,
+        script = os.path.join('scripts', 'velocity_point.py')
+    output:
+        data = os.path.join('{dir}', 'velocity_point', 'velocity_point.csv'),
+        img = report(os.path.join('{dir}', 'velocity_planar',
+                                  'velocity_point.'+PLOT_FORMAT)),
+        data_comp = os.path.join('{dir}', 'velocity_point', 'df_velocities_components.csv'),
+        data_point = os.path.join('{dir}', 'velocity_point', 'Points_Df.csv')
+
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --output_img "{output.img}" \
+                              --output_data_comp "{output.data_comp}" \
+                              --output_data_point "{output.data_point}" 
+
+        """
 
 rule velocity_planar:
     input:
@@ -98,27 +117,6 @@ rule velocity_planar:
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
-                              --output_img "{output.img}"
-        """
-
-rule velocity_point:
-    input:
-        data = input,
-        script = os.path.join('scripts', 'velocity_point.py')
-    output:
-        data = os.path.join('{dir}', 'velocity_point', 'velocity_point.csv'),
-        data2 = os.path.join('{dir}', 'velocity_point', 'point_df.csv'),
-        img = report(os.path.join('{dir}', 'velocity_point',
-                                  'velocity_point.'+PLOT_FORMAT))
-    params:
-        output_path = os.path.join('{dir}', 'velocity_point')
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output2 "{output.data2}" \
-                              --output_path "{params.output_path}" \
                               --output_img "{output.img}"
         """
 
@@ -139,24 +137,6 @@ rule velocity_gradient:
                               --output_img "{output.img}"
         """
 
-
-rule velocity_flow:
-    input:
-        data = input,
-        script = os.path.join('scripts', 'velocity_flow.py')
-    output:
-        data = os.path.join('{dir}', 'velocity_flow', 'velocity_flow.csv'),
-        # img = report(os.path.join('{dir}', 'velocity_flow',
-                                  # 'velocity_flow.'+PLOT_FORMAT))
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-        """
-        #                       --output_img "{output.img}"
-        # """
-
 rule direction_planar:
     input:
         data = input,
@@ -176,18 +156,10 @@ rule direction_planar:
                               --method {params.direction_method}
         """
 
-rule inter_wave_interval:
-    input:
-        data = input,
-        script = os.path.join('scripts', 'inter_wave_interval.py')
-    output:
-        data = os.path.join('{dir}', 'inter_wave_interval', 'inter_wave_interval.csv')
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}"
-        """
+# rule gradient_direction:
+    # slice signal for each wave
+
+# rule inter_wave_distance:
 
 rule label_planar:
     input:
@@ -204,22 +176,4 @@ rule label_planar:
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
                               --alignment_threshold {params.alignment_threshold}
-        """
-
-rule time_stamp:
-    input:
-        data = input,
-        script = os.path.join('scripts', 'time_stamp.py')
-    params:
-        time_point = TIME_STAMP_POINT
-    output:
-        data = os.path.join('{dir}', 'time_stamp', 'time_stamp.csv'),
-        img = os.path.join('{dir}', 'time_stamp', 'time_stamp.'+PLOT_FORMAT),
-    shell:
-        """
-        {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{output.img}" \
-                              --time_point {params.time_point}
         """
