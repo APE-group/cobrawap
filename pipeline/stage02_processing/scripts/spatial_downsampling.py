@@ -20,7 +20,11 @@ def spatial_smoothing(images, macro_pixel_dim):
     images_reduced = scipy.signal.decimate(images_reduced, 2, n=2, ftype='fir', axis=2, zero_phase=True)
     
     dim_t, dim_x, dim_y = images_reduced.shape
+<<<<<<< HEAD
     print('uh', imgseq.annotations)
+=======
+    print('uhm', imgseq.annotations)
+>>>>>>> 2f0b71066fbfc43f2203193a8909b277c62a6952
     imgseq_reduced = neo.ImageSequence(images_reduced,
                                    units=images.units,
                                    spatial_scale=images.spatial_scale * macro_pixel_dim,
