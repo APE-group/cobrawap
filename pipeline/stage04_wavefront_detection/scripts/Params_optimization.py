@@ -26,6 +26,7 @@ def Optimal_MAX_ABS_TIMELAG(evts, MAX_ABS_TIMELAG):
         #print('begin', ndxBegin_list)
         #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
         #print('end', ndxEnd_list)
+        print('heeeey', len(np.where(np.diff(WnW)==1)[0]))
         if len(np.where(np.diff(WnW)==1)[0]):
             if np.where(np.diff(WnW)==1)[0][0] != 0:
                 ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
@@ -120,7 +121,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
 
             #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(WaveTime)-1)
             ndxEnd_list = ndxBegin_list[1:len(ndxBegin_list)]
-            ndxEnd_list = np.append(ndxEnd_list, len(WaveTime))
+            ndxEnd_list = np.append(ndxEnd_list, len(WaveTime)-1)
 
             
             if len(ndxBegin_list) != len(ndxEnd_list):
@@ -151,7 +152,7 @@ def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
                            });
 
             # save as single waves isolated transitions.
-            if ndxEnd_list[w] != len(WaveTime):
+            if len(ndxBegin_list) < w:
                 for j in range(ndxEnd_list[w], ndxBegin_list[w+1]):
                     ndx = [j]
                     Full_ndx = []

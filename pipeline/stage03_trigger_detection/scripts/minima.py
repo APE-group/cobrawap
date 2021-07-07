@@ -9,6 +9,7 @@ import scipy.io as sio
 def detect_minima(asig, order, interpolation_points,  DT):
     
     signal = asig.as_array()
+    print(signal)
     sampling_time = asig.times[1] - asig.times[0]
     signal_times = np.linspace(asig.t_start.magnitude, asig.t_stop.magnitude, np.int32((asig.t_stop.magnitude-asig.t_start.magnitude)/sampling_time))
     DT = DT * pq.s

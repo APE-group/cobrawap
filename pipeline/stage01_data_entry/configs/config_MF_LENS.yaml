@@ -21,7 +21,7 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # To set as key-value pairs
 # Name_of_dataset: /path/to/data/files/
 DATA_SETS:
-    MF_Simulation_mouse2_t1: '/Users/chiaradeluca/Desktop/wavescalephant-APE/Dataset/MF_Simulation_Convoluted/DAMP_PERIOD_GridSearch_5/NuE_SIM_lognormal_t2_t3_1_1_DeltaAmp_Period_2.mat'
+    MF_Simulation_mouse2_t1: '/mnt/beegfs/Dataset/MF_Simulation_Convoluted/DAMP_Period_PROVA/NuE_SIM_lognormal_t2_t3_1_1_DeltaAmp_Period_3.mat'
 
 CURATION_SCRIPT: 'curate_MF_data.py'
 
@@ -29,9 +29,6 @@ CURATION_SCRIPT: 'curate_MF_data.py'
 SPATIAL_SCALE: 0.1  # mm
 
 SAMPLING_RATE: 25  # Hz
-
-DIM_X: 50 #pixel
-DIM_Y: 50 #pixel
 
 # time slice in s
 # if None, the entire recording is used
@@ -45,7 +42,7 @@ ORIENTATION_RIGHT: 'lateral'
 
 # Metadata
 ANNOTATIONS:
-    experimental_lab: 'Cristiano’s code'
+    experimental_lab: ‘Cristiano’s code’
 
 ARRAY_ANNOTATIONS: 'None'
 

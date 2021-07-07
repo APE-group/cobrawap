@@ -52,13 +52,15 @@ if __name__ == '__main__':
                      help="list of channels to plot")
     args = CLI.parse_args()
 
+    
     asig = load_neo(args.data, 'analogsignal', lazy=True)
+    print('OPS', np.shape(asig))
+    #channels = parse_plot_channels(args.channels, args.data)
+    #asig = time_slice(asig, t_start=args.t_start, t_stop=args.t_stop,
+    #                  lazy=True, channel_indexes=channels)
 
-    channels = parse_plot_channels(args.channels, args.data)
-
-    asig = time_slice(asig, t_start=args.t_start, t_stop=args.t_stop,
-                      lazy=True, channel_indexes=channels)
-
-    fig = plot_traces(asig, channels)
-
+    #fig = plot_traces(asig, channels)
+    fig, ax = plt.subplots()
+    #ax.imshow(np.reshape(asig[0], [50,50]))
+    ax.plot([1,2,3])
     save_plot(args.output)

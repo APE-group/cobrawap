@@ -26,7 +26,7 @@ PLOT_FORMAT: 'png'
 # DETECTION BLOCK
 #################
 # Available Blocks: 'threshold', 'hilbert_phase', 'minima'
-DETECTION_BLOCK: 'minima'
+DETECTION_BLOCK: minima
 
 # TRIGGER FILTER
 #################
@@ -67,7 +67,7 @@ MINIMA_ORDER: 1
 # If minima position should be interpolated via parabolic fit
 DT: 6.
 # Number of points to be used in the parabolic interpolation
-NUM_INTERPOLATION_POINTS: 4
+NUM_INTERPOLATION_POINTS: 5
 
 # BLOCK - Remove Short States
 #############################

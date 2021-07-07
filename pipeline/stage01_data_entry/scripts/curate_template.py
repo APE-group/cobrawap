@@ -4,10 +4,9 @@ ToDo: write docstring
 
 import argparse
 import quantities as pq
-import neo
-from utils import parse_string2dict, ImageSequence2AnalogSignal
-from utils import none_or_float, none_or_int, none_or_str, load_neo, write_neo
-from utils import flip_image, rotate_image, time_slice
+from utils import parse_string2dict, ImageSequence2AnalogSignal,
+from utils import none_or_float, none_or_int, load_neo, write_neo, time_slice
+from utils import flip_image, rotate_image
 
 
 if __name__ == '__main__':
@@ -37,7 +36,7 @@ if __name__ == '__main__':
                      default=None, help="channel-wise metadata")
     CLI.add_argument("--kwargs", nargs='+', type=none_or_str, default=None,
                      help="additional optional arguments")
-    args, unknown = CLI.parse_known_args()
+    args = CLI.parse_args()
 
     # Load data with Neo IO or custom loading routine
     block = load_neo(args.data)
@@ -57,8 +56,8 @@ if __name__ == '__main__':
     # Add metadata from ANNOTIATION dict
     asig.annotations.update(parse_string2dict(args.annotations))
     asig.annotations.update(spatial_scale=args.spatial_scale*pq.mm)
-    asig.annotations.update(orientation_top=args.orientation_top)
-    asig.annotations.update(orientation_right=args.orientation_right)
+    asog.annotations.update(orientation_top=args.orientation_top)
+    asog.annotations.update(orientation_right=args.orientation_right)
 
     # Add metadata from ARRAY_ANNOTIATION dict
     asig.array_annotations.update(parse_string2dict(args.array_annotations))

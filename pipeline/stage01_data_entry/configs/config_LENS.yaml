@@ -21,13 +21,9 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # To set as key-value pairs
 # Name_of_dataset: /path/to/data/files/
 DATA_SETS:
-    LENS_170110_mouse2_t1: '/Users/chiaradeluca/Desktop/wavescalephant-APE/Dataset/Ketamine/ketamine_25Hz/170110/mouse2/deep/t1'
-    # LENS_GCMaP6f_KetamineII_t2: '/home/rgutzen/Sciebo/Slow_Wave_Analysis_Pipeline/Data/LENS/hbp-d000032_m-SWA-WF-wide-regions_pub/m-SWA-WF-wide-regions/GCMaP6f_Ketamine_II/t2'
+    LENS_170111_mouse3_t1: '/mnt/beegfs/Dataset/Ketamine/ketamine_25Hz/170110/mouse2/deep/t1'
 
 CURATION_SCRIPT: 'curate_LENS_data.py'
-
-DIM_X: 100
-DIM_Y: 100
 
 # pixel size
 SPATIAL_SCALE: 0.05  # mm
@@ -55,5 +51,5 @@ KWARGS: 'None'
 # Plot settings
 PLOT_TSTART: 0  # in s
 PLOT_TSTOP: 10  # in s
-PLOT_CHANNELS: [4040, 5050, 6060]  # int, list of ints, or 'None' (default) -> picks channel by random
+PLOT_CHANNELS: [140, 150, 160]  # int, list of ints, or 'None' (default) -> picks channel by random
 PLOT_FORMAT: 'png'

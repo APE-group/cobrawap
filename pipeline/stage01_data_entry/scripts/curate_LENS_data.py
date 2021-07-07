@@ -38,7 +38,7 @@ if __name__ == '__main__':
                      help="upward orientation of the recorded cortical region")
     CLI.add_argument("--orientation_right", nargs='?', type=str, required=True,
                      help="right-facing orientation of the recorded cortical region")
-    args, unknown = CLI.parse_known_args()
+    args = CLI.parse_args()
 
     # Load optical data
     io = neo.io.tiffio.TiffIO(directory_path=args.data,
@@ -48,6 +48,7 @@ if __name__ == '__main__':
     # loading the data flips the images vertically!
 
     block = io.read_block()
+
     # change data orientation to be top=ventral, right=lateral
     imgseq = block.segments[0].imagesequences[0]
     imgseq = flip_image(imgseq, axis=-2)

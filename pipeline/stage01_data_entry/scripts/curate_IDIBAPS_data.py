@@ -67,7 +67,7 @@ if __name__ == '__main__':
                      default=None, help="channel-wise metadata")
     CLI.add_argument("--kwargs", nargs='+', type=none_or_str, default=None,
                      help="additional optional arguments")
-    args, unknown = CLI.parse_known_args()
+    args = CLI.parse_args()
 
     try:
         block = load_neo(args.data, try_signal_grouping=True)
@@ -108,7 +108,6 @@ if __name__ == '__main__':
     asig.annotations.update(spatial_scale=args.spatial_scale*pq.mm)
     asig.annotations.update(orientation_top=args.orientation_top)
     asig.annotations.update(orientation_right=args.orientation_right)
-    asig.file_origin = args.data
 
     if asig.description is None:
         asig.description = ''
@@ -135,6 +134,8 @@ if __name__ == '__main__':
     block.segments[0].name = 'Segment 1'
     block.segments[0].description = 'Loaded with neo.Spike2IO (neo version {})'\
                                     .format(neo.__version__)
+
+
 
     # block.channel_indexes.append(chidx)
     # block.segments[0].analogsignals[0].channel_index = chidx
