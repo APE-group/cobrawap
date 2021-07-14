@@ -36,8 +36,15 @@ def calc_planar_velocities(evts):
         vy, vy_err, dy = linregress(evts.times[idx].magnitude,
                                    evts.array_annotations['y_coords'][idx]
                                    * spatial_scale.magnitude)
+<<<<<<< HEAD
         velocities[i] = np.array([np.sqrt(vx**2 + vy**2),
                                   np.sqrt(vx_err**2 + vy_err**2)])
+=======
+        v = np.sqrt(vx**2 + vy**2)
+        v_err = 1/v * np.sqrt((vx*vx_err)**2 + (vy+vy_err)**2)
+        velocities[i] = np.array([v, v_err])
+
+>>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575
         # Plot fit
         row = int(i/ncols)
         if ncols == 1:

@@ -1,6 +1,11 @@
 import argparse
 from scipy.ndimage.filters import convolve as conv
 from scipy.ndimage import gaussian_filter
+<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
+=======
+from scipy.signal import hilbert
+import time
+>>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
 import neo
 import numpy as np
 from copy import copy
@@ -89,17 +94,67 @@ def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
     return vx + vy*1j
 
 
+<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
 def compute_derivatives(frame, next_frame, kernelX, kernelY, kernelT):
     fx = conv(frame, kernelX) + conv(next_frame, kernelX)
     fy = conv(frame, kernelY) + conv(next_frame, kernelY)
     ft = conv(frame, kernelT) + conv(next_frame, -kernelT)
+=======
+norm_angle = lambda p: -np.mod(p + np.pi, 2*np.pi) + np.pi
+
+def phase_conv2D(frame, kernel, kernel_center):
+    dx, dy = kernel.shape
+    dimx, dimy = frame.shape
+    dframe = np.zeros_like(frame)
+    # inverse kernel to mimic behavior or regular convolution algorithm
+    k = kernel[::-1, ::-1]
+    ci = dx - 1 - kernel_center[0]
+    cj = dy - 1 - kernel_center[1]
+    # loop over kernel window for each frame site
+    for i,j in zip(*np.where(np.isfinite(frame))):
+        phase = frame[i,j]
+        dphase = np.zeros((dx,dy), dtype=float)
+        for di,dj in itertools.product(range(dx), range(dy)):
+            # kernelsite != 0, framesite within borders and != nan
+            if k[di,dj] and i+di-ci < dimx and j+dj-cj < dimy \
+            and np.isfinite(frame[i+di-ci,j+dj-cj]):
+                sign = -1*np.sign(k[di,dj])
+                # pos = clockwise from phase to frame[..]
+                dphase[di,dj] = sign*norm_angle(phase-frame[i+di-ci,j+dj-cj])
+        if dphase.any():
+            dframe[i,j] = np.average(dphase, weights=abs(k)) / np.pi
+    return dframe
+
+
+def compute_derivatives(frame, next_frame, kernelX, kernelY, kernelT,
+                        are_phases=False, kernel_center=None):
+    if are_phases:
+        fx = phase_conv2D(frame, kernelX, kernel_center) \
+           + phase_conv2D(next_frame, kernelX, kernel_center)
+        fy = phase_conv2D(frame, kernelY, kernel_center) \
+           + phase_conv2D(next_frame, kernelY, kernel_center)
+        ft = norm_angle(frame - next_frame)
+    else:
+        fx = conv(frame, kernelX) + conv(next_frame, kernelX)
+        fy = conv(frame, kernelY) + conv(next_frame, kernelY)
+        # ft = conv(frame, kernelT) + conv(next_frame, -kernelT)
+        ft = frame - next_frame
+>>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
     return fx, fy, ft
 
 
 def horn_schunck(frames, alpha, max_Niter, convergence_limit,
+<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
                  kernelHS, kernelT, kernelX, kernelY):
     nan_channels = np.where(np.bitwise_not(np.isfinite(frames[0])))
     frames[:,nan_channels[0],nan_channels[1]] = np.nanmedian(frames)
+=======
+                 kernelHS, kernelT, kernelX, kernelY,
+                 are_phases=False, kernel_center=None):
+
+    nan_channels = np.where(np.bitwise_not(np.isfinite(frames[0])))
+    frames = interpolate_empty_sites(frames, are_phases)
+>>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
 
     vector_frames = np.zeros(frames.shape, dtype=complex)
 
@@ -119,6 +174,36 @@ def horn_schunck(frames, alpha, max_Niter, convergence_limit,
 
     frames[:,nan_channels[0],nan_channels[1]] = np.nan
     return vector_frames
+
+
+def interpolate_empty_sites(frames, are_phases=False):
+    if np.isfinite(frames).all():
+        return frames
+    dim_x, dim_y = frames[0].shape
+    grid = np.meshgrid([-1,0,1],[-1,0,1])
+
+    for i, frame in enumerate(frames):
+        new_frame = copy(frame)
+        while not np.isfinite(new_frame).all():
+            x, y = np.where(np.bitwise_not(np.isfinite(new_frame)))
+            # loop over nan-sites
+            for xi, yi in zip(x,y):
+                neighbours = []
+                # collect neighbours of each site
+                for dx, dy in zip(grid[0].flatten(), grid[1].flatten()):
+                    xn = xi+dx
+                    yn = yi+dy
+                    if (0 <= xn) & (xn < dim_x) & (0 <= yn) & (yn < dim_y):
+                        neighbours.append(frames[i, xn, yn])
+                # average over neihbour values
+                if np.isfinite(neighbours).any():
+                    if are_phases:
+                        vectors = np.exp(1j*np.array(neighbours))
+                        new_frame[xi,yi] = np.angle(np.nansum(vectors))
+                    else:
+                        new_frame[xi,yi] = np.nansum(neighbours)
+            frames[i] = new_frame
+    return frames
 
 
 def smooth_frames(frames, sigma):

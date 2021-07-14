@@ -189,7 +189,7 @@ def time_slice(neo_obj, t_start=None, t_stop=None,
 
 
 def none_or_X(value, type):
-    if value is None:
+    if value is None or not bool(value) or value == 'None':
         return None
     try:
         return type(value)
@@ -287,7 +287,7 @@ def AnalogSignal2ImageSequence(block):
                 print('AnalogSignal {} in Segment {} has no spatial Information '\
                       .format(asig_count, seg_count)\
                     + ' as array_annotations "x_coords" "y_coords", skip.')
-                break
+                continue
 
             coords = np.array([(x,y) for x,y in zip(asig.array_annotations['x_coords'],
                                                     asig.array_annotations['y_coords'])],
