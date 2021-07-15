@@ -20,7 +20,7 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # Plotting parameters
 PLOT_TSTART: 0  # in s
 PLOT_TSTOP: 10  # in s
-PLOT_CHANNELS: [2060, 1520]   # int or None. default 'None' -> randomly selected
+PLOT_CHANNELS: [1060, 1120]   # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
 # DETECTION BLOCK
@@ -31,7 +31,7 @@ DETECTION_BLOCK: 'minima'
 # TRIGGER FILTER
 #################
 # Available Blocks: 'remove_short_states'
-TRIGGER_FILTER: []
+TRIGGER_FILTER: [remove_short_states]
 
 # BLOCK - Threshold
 ###################
@@ -65,17 +65,28 @@ TRANSITION_PHASE: -1.570796
 # Number of neighbouring points to each side which should be compared to define a local minimum.
 MINIMA_ORDER: 1
 # If minima position should be interpolated via parabolic fit
-DT: 6.
+
+################
+# Number of neighbouring points to each side which should be compared to define a local minimum.
+MINIMA_ORDER: 3
+# If minima position should be interpolated via parabolic fit
+USE_QUADRATIC_INTERPOLATION: False
 # Number of points to be used in the parabolic interpolation
 NUM_INTERPOLATION_POINTS: 4
+# minimum distance between two peacks (s)
+MIN_PEAK_DISTANCE: 0.2
+# amplitude fraction to set the threshold detecting local maxima
+THRESHOLD_FRACTION: 0.5
+
+
 
 # BLOCK - Remove Short States
 #############################
 # minimum duration of UP and DOWN states (in s)
 # If there are no DOWN transitions, UP transitions are removed closer than
 # the sum of UP and DOWN durations.
-MIN_UP_DURATION: 0.005
-MIN_DOWN_DURATION: 0.005
+MIN_UP_DURATION: 0.08
+MIN_DOWN_DURATION: 0.08
 # If true, short down states are removed first, merging the neighbouring up states.
 # Only then the remaining short up states are removed.
 # Applies only when down transitions are detected.
