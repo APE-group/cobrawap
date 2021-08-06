@@ -4,7 +4,7 @@
 STAGE_NAME: 'stage01_data_entry'
 
 # The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
-PROFILE: 'dataset_key'
+PROFILE: 'ISOFLURANE'
 
 # Name of stage output file.
 STAGE_OUTPUT: 'data.nix'
@@ -21,27 +21,29 @@ USE_LINK_AS_STAGE_OUTPUT: True
 # To set as key-value pairs
 # Name_of_dataset: /path/to/data/files/
 DATA_SETS:
-    Data_name: '/path/to/data/'
-    
+    LENS_210311_int_30ms_sep: '/mnt/beegfs/Dataset/LENS-INFN/210311_int_30ms_rawfiles_sep/t2.mat'
+
 EMODYNAMICS_CORRECTION: True # true if applicable
 
 # name of the refletance acquisition path
-DATA_SETS_REFLECTANCE: '/path/to/reflectance_data/'
+DATA_SETS_REFLECTANCE: '/mnt/beegfs/Dataset/LENS-INFN/210311_int_30ms_rawfiles_sep/t1.mat'
+
 
 # Name of script in scripts/ folder, handling the loadig and curation
-CURATION_SCRIPT: 'curate_dataset_key.py'
+CURATION_SCRIPT: 'curate_ISOFLURANE.py'
 
+#To Do: Check Spatial Scale  
 # Distance between electrodes (or pixel size)
 SPATIAL_SCALE: 0.05  # mm
 
 # Rate of acquisition of data points
 # Can be 'None' if information is provided in the data file
-SAMPLING_RATE: 25  # Hz
+SAMPLING_RATE: 40  # Hz
 
 # Time slice in s
 # if None, the entire recording is used
 T_START: None
-T_STOP: None
+T_STOP: 10 #None
 
 # Orientation of the recorded cortical region
 # recommend top: ventral
@@ -60,9 +62,8 @@ ANNOTATIONS:
 #
 # # Metadata - channel-wise information (e.g. coordinates, SNR, ...), can be 'None'
 # # Here, the entries must be lists of the same length as the number of channels
-ARRAY_ANNOTATIONS:
-    x_coords: [0, 0, 1, 1]
-    y_coords: [0, 1, 0, 1]
+ARRAY_ANNOTATIONS: 'None'
+    
 
 # Script parameters
 # Here, additional parameters can be passed to the script,

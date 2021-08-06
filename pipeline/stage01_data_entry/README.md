@@ -40,6 +40,9 @@ _desired, for a correct interpretation of the results_
     * *index*, an array with ids of 0 to N
     * *coordinates*, an array of tuples of length N -->
 
+### Adding emodynamics correction
+If an emodynamics correction is applicable, the user should set True the parameter EMODYNAMICS_CORRECTION and define the absolute path to reflectance data in DATA_SETS_REFLECTANCE
+
 ## Adding Datasets into the SWA pipeline
 There are two options to insert data into the pipeline.
 

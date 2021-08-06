@@ -30,6 +30,9 @@ PLOT_CHANNELS = config["PLOT_CHANNELS"]
 PLOT_FORMAT = config["PLOT_FORMAT"]
 
 DATA_SETS = config["DATA_SETS"]
+EMODYNAMICS_CORRECTION = config["EMODYNAMICS_CORRECTION"]
+DATA_SETS_REFLECTANCE = config["DATA_SETS_REFLECTANCE"]
+
 CURATION_SCRIPT = config["CURATION_SCRIPT"]
 SPATIAL_SCALE = config['SPATIAL_SCALE']
 SAMPLING_RATE = config["SAMPLING_RATE"]
@@ -124,7 +127,9 @@ rule enter_data:
         orientation_right = ORIENTATION_RIGHT,
         annotations = ANNOTATIONS,
         array_annotations = ARRAY_ANNOTATIONS,
-        kwargs = KWARGS
+        kwargs = KWARGS,
+        emodynamics_correction = EMODYNAMICS_CORRECTION,
+        path_to_reflectance_data = DATA_SETS_REFLECTANCE
     output:
         data = os.path.join('{dir}', '{data_name}', '{data_name}.'+NEO_FORMAT)
     shell:
@@ -141,5 +146,7 @@ rule enter_data:
                               --orientation_right {params.orientation_right} \
                               --annotations {params.annotations} \
                               --array_annotations {params.array_annotations} \
-                              --kwargs {params.kwargs}
+                              --kwargs {params.kwargs} \
+                              --emodynamics_correction {params.emodynamics_correction} \
+                              --path_to_reflectance_data {params.path_to_reflectance_data}
         """
