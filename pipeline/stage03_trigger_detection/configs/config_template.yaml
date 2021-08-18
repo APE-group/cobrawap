@@ -67,10 +67,13 @@ MINIMA_ORDER: 3
 USE_QUADRATIC_INTERPOLATION: False
 # Number of points to be used in the parabolic interpolation
 NUM_INTERPOLATION_POINTS: 4
-# minimum distance between two peacks (s)
-MIN_PEAK_DISTANCE: 0.2
+# minimum distance between two maxima peacks (s)
+MIN_PEAK_DISTANCE_MAXIMA: 0.280
+# minimum distance between two minima (s) 
+MIN_PEAK_DISTANCE_MINIMA: 0.160
 # amplitude fraction to set the threshold detecting local maxima
-THRESHOLD_FRACTION: 0.
+MINIMA_THRESHOLD_FRACTION: 0.
+MAXIMA_THRESHOLD_FRACTION: 0.5
 
 # BLOCK - Remove Short States
 #############################
