@@ -59,7 +59,7 @@ def detect_minima(asig, interpolation_points, interpolation, minima_threshold_fr
 
         min_pos = -params[1,:] / (2*params[0,:]) + start_arr
         min_pos = np.where(min_pos > 0, min_pos, 0)
-        minimum_times = min_pos/sampling_rate
+        minimum_times = min_pos/sampling_rate * pq.s
     else:
         minimum_times = asig.times[min_time_idx]
     
