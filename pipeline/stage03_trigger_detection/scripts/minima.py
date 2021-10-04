@@ -146,3 +146,4 @@ if __name__ == '__main__':
    
     block.segments[0].events.append(transition_event)
     write_neo(args.output, block)
+
