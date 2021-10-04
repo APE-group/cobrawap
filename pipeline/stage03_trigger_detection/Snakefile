@@ -45,8 +45,7 @@ TRANSITION_PHASE = config["TRANSITION_PHASE"]
 USE_QUADRATIC_INTERPOLATION = config["USE_QUADRATIC_INTERPOLATION"]
 NUM_INTERPOLATION_POINTS = config["NUM_INTERPOLATION_POINTS"]
 MIN_PEAK_DISTANCE_MAXIMA = config["MIN_PEAK_DISTANCE_MAXIMA"]
-MIN_PEAK_DISTANCE_MINIMA = config["MIN_PEAK_DISTANCE_MINIMA"]
-MINIMA_THRESHOLD_FRACTION = config["MINIMA_THRESHOLD_FRACTION"]
+MINIMA_PERSISTENCE = config["MINIMA_PERSISTENCE"]
 MAXIMA_THRESHOLD_FRACTION = config["MAXIMA_THRESHOLD_FRACTION"]
 MIN_UP_DURATION = config["MIN_UP_DURATION"]
 MIN_DOWN_DURATION = config["MIN_DOWN_DURATION"]
@@ -231,8 +230,7 @@ rule minima:
         script = os.path.join('scripts', 'minima.py')
     params:
         min_peak_distance_maxima = MIN_PEAK_DISTANCE_MAXIMA,
-        min_peak_distance_minima = MIN_PEAK_DISTANCE_MINIMA,
-        minima_threshold_fraction = MINIMA_THRESHOLD_FRACTION,
+        minima_persistence = MINIMA_PERSISTENCE,
         maxima_threshold_fraction = MAXIMA_THRESHOLD_FRACTION,
         num_interpolation_points = NUM_INTERPOLATION_POINTS,
         use_quadtratic_interpolation = USE_QUADRATIC_INTERPOLATION,
@@ -243,9 +241,8 @@ rule minima:
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
-                              --min_peak_distance_minima {params.min_peak_distance_minima} \
+                              --minima_persistence {params.minima_persistence} \
                               --min_peak_distance_maxima {params.min_peak_distance_maxima} \
-                              --minima_threshold_fraction {params.minima_threshold_fraction} \
                               --maxima_threshold_fraction {params.maxima_threshold_fraction} \
                               --use_quadtratic_interpolation {params.use_quadtratic_interpolation} \
                               --num_interpolation_points {params.num_interpolation_points}
