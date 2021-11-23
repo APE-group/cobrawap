@@ -186,5 +186,4 @@ if __name__ == '__main__':
                         .format(args.highpass_freq, args.lowpass_freq,
                                 os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
-
     write_neo(args.output, block)
