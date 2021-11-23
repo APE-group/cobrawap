@@ -1,6 +1,5 @@
 """
 ToDo: write docstring
-
 """
 
 import argparse
