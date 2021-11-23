@@ -9,7 +9,6 @@ utils_path = os.path.join('..', 'scripts')
 sys.path.append(utils_path)
 sys.path.append(os.path.join(os.getcwd(), '..'))
 
-
 from settings import output_path, configs_dir
 from utils import ordereddict_to_dict, get_param
 
@@ -35,11 +34,12 @@ SPATIAL_SCALE = config['SPATIAL_SCALE']
 SAMPLING_RATE = config["SAMPLING_RATE"]
 T_START = config["T_START"]
 T_STOP = config["T_STOP"]
-ORIENTATION_TOP = config["ORIENTATION_TOP"]
-ORIENTATION_RIGHT = config["ORIENTATION_RIGHT"]
+ORIENTATION_TOP = get_param(config, "ORIENTATION_TOP")
+ORIENTATION_RIGHT = get_param(config, "ORIENTATION_RIGHT")
 ANNOTATIONS = ordereddict_to_dict(config["ANNOTATIONS"])
 ARRAY_ANNOTATIONS = ordereddict_to_dict(config["ARRAY_ANNOTATIONS"])
 KWARGS = ordereddict_to_dict(config["KWARGS"])
+TRIAL = get_param(config, "TRIAL")
 
 wildcard_constraints:
     data_name = '\w+'
@@ -48,8 +48,6 @@ localrules: all, check_input
 
 def input_file(wildcards):
     return DATA_SETS[wildcards.data_name]
-
-print(OUTPUT_DIR)
 
 rule all:
     input:
@@ -61,7 +59,7 @@ rule all:
                       data_name = DATA_SETS.keys()),
         check = expand(os.path.join(OUTPUT_DIR, '{data_name}.check'),
                        data_name = DATA_SETS.keys()),
-        configfile = os.path.join('configs', f'config_{PROFILE}.yaml')
+        # configfile = os.path.join('configs', f'config_{PROFILE}.yaml')
     params:
         command = 'ln -s' if USE_LINK_AS_STAGE_OUTPUT else 'cp'
     output:
@@ -72,6 +70,7 @@ rule all:
         """
 
 rule check_input:
+    priority: 10
     input:
         data = os.path.join('{dir}', '{data_name}', '{data_name}.'+NEO_FORMAT),
         script = os.path.join('scripts', 'check_input.py')
@@ -124,7 +123,8 @@ rule enter_data:
         orientation_right = ORIENTATION_RIGHT,
         annotations = ANNOTATIONS,
         array_annotations = ARRAY_ANNOTATIONS,
-        kwargs = KWARGS
+        kwargs = KWARGS,
+        trial = TRIAL
     output:
         data = os.path.join('{dir}', '{data_name}', '{data_name}.'+NEO_FORMAT)
     shell:
@@ -141,5 +141,6 @@ rule enter_data:
                               --orientation_right {params.orientation_right} \
                               --annotations {params.annotations} \
                               --array_annotations {params.array_annotations} \
-                              --kwargs {params.kwargs}
+                              --kwargs {params.kwargs} \
+                              --trial {params.trial}
         """

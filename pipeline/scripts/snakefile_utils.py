@@ -4,6 +4,7 @@ import warnings
 from copy import copy
 from snakemake.logging import logger
 
+
 def safe_open_w(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     return open(path, 'w')
