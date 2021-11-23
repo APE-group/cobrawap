@@ -53,6 +53,7 @@ if __name__ == '__main__':
     args = CLI.parse_args()
 
     asig = load_neo(args.data, 'analogsignal', lazy=True)
+
     channels = parse_plot_channels(args.channels, args.data)
 
     asig = time_slice(asig, t_start=args.t_start, t_stop=args.t_stop,

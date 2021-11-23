@@ -58,9 +58,7 @@ if __name__ == '__main__':
     proc_asig = time_slice(proc_asig, t_start=args.t_start, t_stop=args.t_stop,
                            lazy=False, channel_indexes=args.channels)
 
-    print('channels', args.channels)
     for channel in args.channels:
-        print('channel', channel)
         plot_traces(orig_asig, proc_asig, channel)
         output_path = os.path.join(args.img_dir,
                                    args.img_name.replace('_channel0', f'_channel{channel}'))
