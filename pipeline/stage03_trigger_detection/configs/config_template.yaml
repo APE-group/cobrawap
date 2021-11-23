@@ -35,7 +35,7 @@ TRIGGER_FILTER: ['remove_short_states']
 
 # BLOCK - Threshold
 ###################
-# Thresholding method: 'fixed', 'fitted', 'moment'
+# Thresholding method: 'fixed', 'fitted'
 THRESHOLD_METHOD: 'fixed'
 
 # Fitting Parameters
@@ -51,10 +51,6 @@ SIGMA_FACTOR: 2
 # Fixed Parameters
 FIXED_THRESHOLD: 0
 
-# Moment Parameters
-MOMENT_ORDER: 2
-MOMENT_FACTOR: 3
-
 # BLOCK - Hilbert_phase
 #######################
 # Phase at which to define the upward transition [-pi, 0]
@@ -66,12 +62,12 @@ TRANSITION_PHASE: -1.570796
 USE_QUADRATIC_INTERPOLATION: False
 # Number of points to be used in the parabolic interpolation
 NUM_INTERPOLATION_POINTS: 4
-# minimum distance between two maxima peacks (s)
-MIN_PEAK_DISTANCE_MAXIMA: 0.280
-# minimum time the signal must be increasing after a minima candidate (s)
-MINIMA_PERSISTENCE: 0.160
+# minimum distance between two peaks (s)
+MIN_PEAK_DISTANCE: 0.2
+# amplitude fraction to set the threshold detecting local minima
+MINIMA_THRESHOLD_FRACTION: 1.
 # amplitude fraction to set the threshold detecting local maxima
-MAXIMA_THRESHOLD_FRACTION: 0.5
+MAXIMA_THRESHOLD_FRACTION: .0
 
 # BLOCK - Remove Short States
 #############################
