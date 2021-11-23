@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-    
+
     phase = np.angle(hilbert(asig).as_array())
 
     asig = asig.duplicate_with_new_data(phase)

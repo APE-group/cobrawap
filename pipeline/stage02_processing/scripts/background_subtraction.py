@@ -1,5 +1,5 @@
 """
-Subtract the background of a given dataset by substracting the mean of each channel.
+Subtract the background of a given dataset by subtracting the mean of each channel.
 """
 import numpy as np
 import matplotlib.pyplot as plt

@@ -38,7 +38,7 @@ if __name__ == '__main__':
     asig.annotate(highpass_freq=args.highpass_freq*pq.Hz,
                   lowpass_freq=args.lowpass_freq*pq.Hz,
                   filter_order=args.order)
-    
+
     asig.name += ""
     asig.description += "Frequency filtered with [{}, {}]Hz order {} "\
                         .format(args.highpass_freq,
