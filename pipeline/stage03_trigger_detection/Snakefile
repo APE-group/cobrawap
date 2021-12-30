@@ -153,7 +153,7 @@ rule threshold:
                               --thresholds "{input.thresholds}"
         """
 
-rule calc_tresholds_fixed:
+rule calc_thresholds_fixed:
 # sub-rule of threshold
     input:
         data = STAGE_INPUT,
@@ -170,7 +170,7 @@ rule calc_tresholds_fixed:
                               --threshold {params.threshold}
         """
 
-rule calc_tresholds_fitted:
+rule calc_thresholds_fitted:
 # sub-rule of threshold
     input:
         data = STAGE_INPUT,
@@ -261,7 +261,7 @@ rule minima:
                               --maxima_threshold_fraction {params.maxima_threshold_fraction} \
                               --maxima_threshold_window {params.maxima_threshold_window} \
                               --use_quadtratic_interpolation {params.use_quadtratic_interpolation} \
-                              --num_interpolation_points {params.num_interpolation_points} 
+                              --num_interpolation_points {params.num_interpolation_points}
         """
 
 #### FILTER BLOCKS (choose any) ####
