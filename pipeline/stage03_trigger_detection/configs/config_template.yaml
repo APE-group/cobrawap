@@ -62,12 +62,18 @@ TRANSITION_PHASE: -1.570796
 
 # BLOCK - Minima
 ################
-# Number of neighbouring points to each side which should be compared to define a local minimum.
-MINIMA_ORDER: 3
 # If minima position should be interpolated via parabolic fit
 USE_QUADRATIC_INTERPOLATION: False
 # Number of points to be used in the parabolic interpolation
-NUM_INTERPOLATION_POINTS: 5
+NUM_INTERPOLATION_POINTS: 4
+# minimum distance between two maxima peacks (s)
+MIN_PEAK_DISTANCE: 0.280
+# minimum time the signal must be increasing after a minima candidate (s)
+MINIMA_PERSISTENCE: 0.160
+# amplitude fraction to set the threshold detecting local maxima
+MAXIMA_THRESHOLD_FRACTION: 0.4
+# time window to use to set the threshold detecting local maxima (s)
+MAXIMA_THRESHOLD_WINDOW: 4
 
 # BLOCK - Remove Short States
 #############################
