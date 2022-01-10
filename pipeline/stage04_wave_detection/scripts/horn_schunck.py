@@ -1,54 +1,16 @@
 import argparse
-from scipy.ndimage.filters import convolve as conv
+import itertools
 from scipy.ndimage import gaussian_filter
-<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
-=======
 from scipy.signal import hilbert
-import time
->>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
 import neo
 import numpy as np
 from copy import copy
 import matplotlib.pyplot as plt
-from utils import load_neo, write_neo, none_or_str, save_plot, \
-                  ImageSequence2AnalogSignal, AnalogSignal2ImageSequence
-
-# ToDo: enable phase velocity fields
-# xydiff = np.mod(x - y + np.pi, 2*np.pi) - np.pi
-
-def get_derviation_kernels(name='Simple'):
-    if name=='Simple' or name is None:
-        kernelX = np.array([[-1, 1],
-                            [-1, 1]], dtype=np.float) * .25
-        kernelY = np.array([[-1, -1],
-                            [ 1,  1]], dtype=np.float) * .25
-    elif name=='Prewitt':
-        kernelX = np.array([[-1, 0, 1],
-                            [-1, 0, 1],
-                            [-1, 0, 1]], dtype=np.float) * 1/6
-        kernelY = np.array([[-1, -1, -1],
-                            [ 0,  0,  0],
-                            [ 1,  1,  1]], dtype=np.float) * 1/6
-    elif name=='Sobel':
-        kernelX = np.array([[-1, 0, 1],
-                            [-2, 0, 2],
-                            [-1, 0, 1]], dtype=np.float) * 1/8
-        kernelY = np.array([[-1, -2, -1],
-                            [ 0,  0,  0],
-                            [ 1,  2,  1]], dtype=np.float) * 1/8
-    elif name=='Roberts':
-        kernelX = np.array([[ 0, 1],
-                            [-1, 0]], dtype=np.float) * 0.5
-        kernelY = np.array([[-1, 0],
-                            [ 0, 1]], dtype=np.float) * 0.5
-    else:
-        print('Deriviative name {name} is not implemented, '\
-            + 'using simple filter instead. \n Available filters: "Simple", '\
-            + '"Prewitt", "Sobel", "Roberts".')
-        return get_derviation_kernels()
-
-    return kernelX, kernelY
-
+from distutils.util import strtobool
+from utils.io import load_neo, write_neo, save_plot
+from utils.parse import none_or_str
+from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imagesequences
+from utils.convolve import phase_conv2d, get_kernel, conv, norm_angle
 
 def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
                       kernelHS, kernelT, kernelX, kernelY):
@@ -70,12 +32,13 @@ def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
     vx = np.zeros_like(frame)
     vy = np.zeros_like(frame)
 
-    # Estimate derivatives
+    # estimate derivatives
     [fx, fy, ft] = compute_derivatives(frame, next_frame,
                                        kernelX=kernelX,
                                        kernelY=kernelY,
-                                       kernelT=kernelT)
-    # Iteration to reduce error
+                                       kernelT=kernelT,
+                                       are_phases=are_phases)
+    # iteration to reduce error
     for i in range(max_Niter):
         # Compute local averages of the flow vectors (smoothness constraint)
         vx_avg = conv(vx, kernelHS)
@@ -94,67 +57,28 @@ def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
     return vx + vy*1j
 
 
-<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
-def compute_derivatives(frame, next_frame, kernelX, kernelY, kernelT):
-    fx = conv(frame, kernelX) + conv(next_frame, kernelX)
-    fy = conv(frame, kernelY) + conv(next_frame, kernelY)
-    ft = conv(frame, kernelT) + conv(next_frame, -kernelT)
-=======
-norm_angle = lambda p: -np.mod(p + np.pi, 2*np.pi) + np.pi
-
-def phase_conv2D(frame, kernel, kernel_center):
-    dx, dy = kernel.shape
-    dimx, dimy = frame.shape
-    dframe = np.zeros_like(frame)
-    # inverse kernel to mimic behavior or regular convolution algorithm
-    k = kernel[::-1, ::-1]
-    ci = dx - 1 - kernel_center[0]
-    cj = dy - 1 - kernel_center[1]
-    # loop over kernel window for each frame site
-    for i,j in zip(*np.where(np.isfinite(frame))):
-        phase = frame[i,j]
-        dphase = np.zeros((dx,dy), dtype=float)
-        for di,dj in itertools.product(range(dx), range(dy)):
-            # kernelsite != 0, framesite within borders and != nan
-            if k[di,dj] and i+di-ci < dimx and j+dj-cj < dimy \
-            and np.isfinite(frame[i+di-ci,j+dj-cj]):
-                sign = -1*np.sign(k[di,dj])
-                # pos = clockwise from phase to frame[..]
-                dphase[di,dj] = sign*norm_angle(phase-frame[i+di-ci,j+dj-cj])
-        if dphase.any():
-            dframe[i,j] = np.average(dphase, weights=abs(k)) / np.pi
-    return dframe
-
-
-def compute_derivatives(frame, next_frame, kernelX, kernelY, kernelT,
-                        are_phases=False, kernel_center=None):
+def compute_derivatives(frame, next_frame, kernelX, kernelY,
+                        kernelT, are_phases=False):
     if are_phases:
-        fx = phase_conv2D(frame, kernelX, kernel_center) \
-           + phase_conv2D(next_frame, kernelX, kernel_center)
-        fy = phase_conv2D(frame, kernelY, kernel_center) \
-           + phase_conv2D(next_frame, kernelY, kernel_center)
+        fx = phase_conv2d(frame, kernelX) \
+           + phase_conv2d(next_frame, kernelX)
+        fy = phase_conv2d(frame, kernelY) \
+           + phase_conv2d(next_frame, kernelY)
         ft = norm_angle(frame - next_frame)
     else:
         fx = conv(frame, kernelX) + conv(next_frame, kernelX)
         fy = conv(frame, kernelY) + conv(next_frame, kernelY)
         # ft = conv(frame, kernelT) + conv(next_frame, -kernelT)
         ft = frame - next_frame
->>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
     return fx, fy, ft
 
 
 def horn_schunck(frames, alpha, max_Niter, convergence_limit,
-<<<<<<< HEAD:pipeline/stage04_wavefront_detection/scripts/horn_schunck.py
-                 kernelHS, kernelT, kernelX, kernelY):
-    nan_channels = np.where(np.bitwise_not(np.isfinite(frames[0])))
-    frames[:,nan_channels[0],nan_channels[1]] = np.nanmedian(frames)
-=======
                  kernelHS, kernelT, kernelX, kernelY,
-                 are_phases=False, kernel_center=None):
+                 are_phases=False):
 
     nan_channels = np.where(np.bitwise_not(np.isfinite(frames[0])))
     frames = interpolate_empty_sites(frames, are_phases)
->>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575:pipeline/stage04_wave_detection/scripts/horn_schunck.py
 
     vector_frames = np.zeros(frames.shape, dtype=complex)
 
@@ -169,7 +93,8 @@ def horn_schunck(frames, alpha, max_Niter, convergence_limit,
                                              kernelHS=kernelHS,
                                              kernelT=kernelT,
                                              kernelX=kernelX,
-                                             kernelY=kernelY)
+                                             kernelY=kernelY,
+                                             are_phases=are_phases)
         vector_frames[i][nan_channels] = np.nan + np.nan*1j
 
     frames[:,nan_channels[0],nan_channels[1]] = np.nan
@@ -274,13 +199,13 @@ if __name__ == '__main__':
                      help='absolute change at which consider optimization converged')
     CLI.add_argument("--gaussian_sigma", nargs='+', type=float, default=[0,3,3],
                      help='sigma of gaussian filter in each dimension')
-    CLI.add_argument("--derivative_filter", nargs='?', type=str, default='Simple',
+    CLI.add_argument("--derivative_filter", nargs='?', type=none_or_str, default=None,
                      help='Filter kernel to use for calculating spatial derivatives')
 
     args = CLI.parse_args()
     block = load_neo(args.data)
 
-    block = AnalogSignal2ImageSequence(block)
+    block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     asig = block.segments[0].analogsignals[-1]
 
@@ -289,18 +214,20 @@ if __name__ == '__main__':
 
     kernelHS = np.array([[1, 2, 1],
                          [2, 0, 2],
-                         [1, 2, 1]], dtype=np.float) * 1/12
-    kernelT = np.ones((2, 2), dtype=np.float) * .25
-    kernelX, kernelY = get_derviation_kernels(args.derivative_filter)
+                         [1, 2, 1]], dtype=float) * 1/12
+    kernel = get_kernel(args.derivative_filter)
+    kernelT = np.ones_like(kernel.x, dtype=float)
+    kernelT /= np.sum(kernelT)
 
     vector_frames = horn_schunck(frames=frames,
                                  alpha=args.alpha,
                                  max_Niter=args.max_Niter,
                                  convergence_limit=args.convergence_limit,
-                                 kernelX=kernelX,
-                                 kernelY=kernelY,
+                                 kernelX=kernel.x,
+                                 kernelY=kernel.y,
                                  kernelT=kernelT,
-                                 kernelHS=kernelHS)
+                                 kernelHS=kernelHS,
+                                 are_phases=args.use_phases)
 
     if np.sum(args.gaussian_sigma):
         vector_frames = smooth_frames(vector_frames, sigma=args.gaussian_sigma)
@@ -324,5 +251,5 @@ if __name__ == '__main__':
         save_plot(args.output_img)
 
     block.segments[0].imagesequences = [vec_imgseq]
-    block = ImageSequence2AnalogSignal(block)
+    block = imagesequences_to_analogsignals(block)
     write_neo(args.output, block)

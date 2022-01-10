@@ -5,7 +5,8 @@ import numpy as np
 import neo
 import argparse
 import quantities as pq
-from utils import load_neo, write_neo
+from distutils.util import strtobool
+from utils.io import load_neo, write_neo
 
 
 def remove_short_states(evt, min_duration, start_label='UP', stop_label='DOWN'):

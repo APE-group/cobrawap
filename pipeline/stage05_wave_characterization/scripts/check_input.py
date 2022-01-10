@@ -4,7 +4,8 @@
 import numpy as np
 import argparse
 import quantities as pq
-from utils import load_neo, none_or_int
+import warnings
+from utils.io import load_neo
 
 
 if __name__ == '__main__':
@@ -20,14 +21,24 @@ if __name__ == '__main__':
         print("More than one Segment found; all except the first one " \
             + "will be ignored.")
 
-    evts = [ev for ev in block.segments[0].events if ev.name== 'Wavefronts']
+    evts = block.filter(name='Wavefronts', objects="Event")
     if not len(evts):
         raise ValueError("No 'Wavefronts' events found!")
     evt = evts[0]
 
-    ids = np.unique(evt.labels)
-    print(f'{len(ids)} wavefronts found.')
+    evt = evts[0]
+    evt = evt[evt.labels != '-1']
+    num_waves = len(np.unique(evt.labels))
+    
+    if num_waves:
+        print(f'{num_waves} wavefronts found.')
+    else:
+        raise ValueError("There are no waves detected!")
 
     evt.array_annotations['x_coords']
     evt.array_annotations['y_coords']
     evt.annotations['spatial_scale']
+
+    optical_flow = block.filter(name='Optical Flow', objects="AnalogSignal")
+    if not len(evts):
+        warnings.warn('No Optical-Flow signal available!')
