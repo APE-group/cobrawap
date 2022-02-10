@@ -23,10 +23,16 @@ PLOT_TSTOP: 10  # in s
 PLOT_CHANNELS: 'None'  # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
-# DETECTION BLOCK
-#################
-# Available Blocks: 'WaveHunt_Clustering', 'WaveHunt_Time'
-DETECTION_BLOCK: WaveHunt_Clustering
+
+# DETECTIION BLOCK
+##################
+# Available Blocks: WaveHunt_Clustering'trigger_clustering'
+DETECTION_BLOCK: 'trigger_clustering'
+
+# ADDITIONAL PROPERTIES
+#######################
+# Available Blocks: 'optical_flow', 'critical_points', 'wave_mode_clustering'
+ADDITIONAL_PROPERTIES: ['optical_flow']
 
 # Wavefront Clustering
 ######################
@@ -63,6 +69,40 @@ DETECT_CRITICAL_POINTS: False
 
 #WaveHunt_Time
 ###########################
-MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
-ACCEPTABLE_REJECTION_RATE: 0.1;
-MIN_CH_NUM: 300
+#MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
+#ACCEPTABLE_REJECTION_RATE: 0.1;
+#MIN_CH_NUM: 300
+
+
+# Wave Mode Clustering
+######################
+# fraction of channels that need to be involved in a wave to be included
+MIN_TRIGGER_FRACTION: 0.5
+# number of similar waves to use to extrapolate missing trigger from
+NUM_WAVE_NEIGHBOURS: 5
+# percentage of wave similarity to keep for the clustering
+WAVE_OUTLIER_QUANTILE: 0.95
+# number of pca dims to project the trigger patterns onto before clustering
+# None -> no dimensionality reduction
+PCA_DIMS: 10
+# number of clusters for the kmeans algorithm
+NUM_KMEANS_CLUSTER: 4
+# grid spacing for the interpolation [0,1]
+INTERPOLATION_STEP_SIZE: 0.2
+# smoothing factor (0: no smoothing)
+INTERPOLATION_SMOOTHING: 0
+
+# VIDEO SETTINGS
+################
+QUALITY: 5 # 0(good) - 31(bad)
+SCALE_X: 720
+SCALE_Y: 720
+FPS: 10
+BITRATE: 20M
+# displayed sampling rate, the data will be stretched or compressed to.
+# If None, the inherent sampling rate is used.
+FRAME_RATE: None
+# 'gray', 'viridis' (sequential), 'coolwarm' (diverging), 'twilight' (cyclic)
+COLORMAP: 'twilight'
+PLOT_EVENT: 'wavefronts' # name of neo event to plot, default is None
+MARKER_COLOR: 'r'

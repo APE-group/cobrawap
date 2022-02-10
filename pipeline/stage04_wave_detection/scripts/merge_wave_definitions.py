@@ -15,19 +15,32 @@ if __name__ == '__main__':
                      help="path of output file")
 
     args = CLI.parse_args()
-    trigger_block = load_neo(args.trigger_data)
-    node_block = load_neo(args.node_data)
+    waves_block = load_neo(args.waves)
+    asig_names = [asig.name for asig in waves_block.segments[0].analogsignals]
+    event_names = [event.name for event in waves_block.segments[0].events]
 
-    block = AnalogSignal2ImageSequence(node_block)
+    if args.properties is None:
+        args.properties = []
 
-    wavefront_evt = [evt for evt in trigger_block.segments[0].events
-                     if evt.name == "Wavefronts"]
-    if wavefront_evt:
-        wavefront_evt = wavefront_evt[0]
-    else:
-        raise ValueError("Input does not contain an event with name " \
-                       + "'Wavefronts'!")
+    for property in args.properties:
+        block = load_neo(property)
 
-    block.segments[0].events.append(wavefront_evt)
+        for asig in block.segments[0].analogsignals:
+            if asig.name not in asig_names:
+                waves_block.segments[0].analogsignals.append(asig)
 
-    write_neo(args.output, block)
+        for event in block.segments[0].events:
+            if event.name in event_names:
+                waves_evt = waves_block.filter(name=event.name, objects="Event")[0]
+                for key, value in event.annotations.items():
+                    if key not in waves_evt.annotations:
+                        waves_evt.annotations[key] = value
+                for key, value in event.array_annotations.items():
+                    if key not in waves_evt.array_annotations:
+                        waves_evt.array_annotations[key] = value
+            else:
+                waves_block.segments[0].events.append(event)
+
+        del block
+
+    write_neo(args.output, waves_block)

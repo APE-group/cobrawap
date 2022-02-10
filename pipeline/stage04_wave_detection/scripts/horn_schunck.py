@@ -238,7 +238,7 @@ if __name__ == '__main__':
                                    # t_start=imgseq.t_start,
                                    spatial_scale=imgseq.spatial_scale,
                                    sampling_rate=imgseq.sampling_rate,
-                                   name='Optical Flow',
+                                   name='optical_flow',
                                    description='Horn-Schunck estimation of optical flow',
                                    file_origin=imgseq.file_origin,
                                    **imgseq.annotations)

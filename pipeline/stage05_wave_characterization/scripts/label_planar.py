@@ -6,8 +6,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import copy
 import seaborn as sns
-from utils.io import load_neo
+from utils.io import load_neo, save_plot
 from utils.neo import analogsignals_to_imagesequences
+from utils.parse import none_or_str
 
 
 def label_planar(waves_event, vector_field, times, threshold):
@@ -30,11 +31,8 @@ def label_planar(waves_event, vector_field, times, threshold):
 
     is_planar = planarity > threshold
 
-    df =  pd.DataFrame(data=np.stack((planarity, is_planar), axis=1),
-                       index=labels,
-                       columns=['planarity', 'is_planar'])
-    df['is_planar'] = df['is_planar'].astype(bool)
-    df.index.name = 'wave_id'
+    df = pd.DataFrame(planarity, columns=['planarity'])
+    df['is_planar'] = is_planar
     return df
 
 
@@ -78,11 +76,7 @@ def plot_planarity(waves_event, vector_field, times, wave_id, skip_step=1, ax=No
     ax.axis('image')
     ax.set_xticks([])
     ax.set_yticks([])
-<<<<<<< HEAD
-    ax.set_ylabel(f'pixel size {vector_field.spatial_scale} {vector_field.spatial_scale.dimensionality}')
-=======
     ax.set_ylabel(f'pixel size {vector_field.spatial_scale:.2f}')
->>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575
     start_t = np.min(waves_event.times[idx]).rescale('s').magnitude
     stop_t = np.max(waves_event.times[idx]).rescale('s').magnitude
     ax.set_xlabel('{:.3f} - {:.3f} s'.format(start_t, stop_t))
@@ -98,36 +92,30 @@ if __name__ == '__main__':
                      help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                      help="path of output file")
+    CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                     help="path of output image file")
     CLI.add_argument("--alignment_threshold", nargs='?', type=float, default=.85,
                      help="threshold for alignment of velocity vectors at transitions")
+    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                     help="name of neo.Event to analyze (must contain waves)")
+    args, unknown = CLI.parse_known_args()
 
-    args = CLI.parse_args()
     block = load_neo(args.data)
 
     block = analogsignals_to_imagesequences(block)
     asig = block.segments[0].analogsignals[0]
 
-    wavefront_evt = [evt for evt in block.segments[0].events
-                     if evt.name == "Wavefronts"]
-    if wavefront_evt:
-        wavefront_evt = wavefront_evt[0]
-    else:
-        raise ValueError("Input does not contain an event with name " \
-                       + "'Wavefronts'!")
+    wavefront_evt = block.filter(name=args.event_name, objects="Event")[0]
+    wavefront_evt = wavefront_evt[wavefront_evt.labels.astype('str') != '-1']
 
-    optical_flow = [imgseq for imgseq in block.segments[0].imagesequences
-                    if imgseq.name == "Optical Flow"]
-    print('hey', [imgseq.name for imgseq in block.segments[0].imagesequences])
-    if optical_flow:
-        optical_flow = optical_flow[0]
-    else:
-        raise ValueError("Input does not contain an event with name " \
-                       + "'Optical Flow'!")
+    optical_flow = block.filter(name='optical_flow', objects="ImageSequence")[0]
 
     planar_labels = label_planar(waves_event=wavefront_evt,
                                  vector_field=optical_flow,
                                  times=asig.times,
                                  threshold=args.alignment_threshold)
+    planar_labels[f'{args.event_name}_id'] = np.unique(wavefront_evt.labels)
+    planar_labels.to_csv(args.output)
 
     dim_t, dim_x, dim_y = optical_flow.shape
     skip_step = int(min([dim_x, dim_y]) / 50) + 1
@@ -140,7 +128,8 @@ if __name__ == '__main__':
                        skip_step=skip_step,
                        wave_id=i,
                        ax=ax)
-        plt.savefig(os.path.join(os.path.dirname(args.output), f'wave_{wave_id}.png'))
+        save_plot(os.path.join(os.path.dirname(args.output),
+                               f'wave_{wave_id}.png'))
+        if not i:
+            save_plot(args.output_img)
         plt.close()
-
-    planar_labels.to_csv(args.output)

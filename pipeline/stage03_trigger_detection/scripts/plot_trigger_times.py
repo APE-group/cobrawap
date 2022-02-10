@@ -80,8 +80,8 @@ if __name__ == '__main__':
     asig = time_slice(asig, args.t_start, args.t_stop)
 
     # get transition events
-    event = [evt for evt in block.segments[0].events if evt.name=='Transitions'][0]
-    event = event.time_slice(args.t_start*pq.s, args.t_stop*pq.s)
+    event = block.filter(name='transitions', objects="Event")[0]
+    event = event.time_slice(args.t_start, args.t_stop)
 
     for channel in args.channels:
         plot_trigger_times(asig=asig,

@@ -75,8 +75,8 @@ def calc_flow_direction(evts, asig):
 
 def plot_directions(dataframe, orientation_top=None, orientation_right=None):
     wave_ids = dataframe.index
-    directions = dataframe.direction
-    directions_std = dataframe.direction_std
+    directions = dataframe.direction_x + 1j*dataframe.direction_y
+    directions_std = dataframe.direction_x_std + 1j*dataframe.direction_y_std
 
     ncols = int(np.round(np.sqrt(len(wave_ids)+1)))
     nrows = int(np.ceil((len(wave_ids)+1)/ncols))
@@ -140,24 +140,42 @@ if __name__ == '__main__':
                      help="path of output file")
     CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
                      help="path of output image file")
-    CLI.add_argument("--method", nargs='?', type=str, default='trigger_interpolation',
-                     help="'tigger_interolation' or 'optical_flow'")
-    args = CLI.parse_args()
+    CLI.add_argument("--method", "--DIRECTION_METHOD", nargs='?', type=str, default='trigger_interpolation',
+                     help="'tigger_interpolation' or 'optical_flow'")
+    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                     help="name of neo.Event to analyze (must contain waves)")
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
 
-    print([ev.name for ev in block.segments[0].events])
+    if args.method == 'optical_flow':
+        if args.event_name == 'wavemodes':
+            warnings.warn('The planar direction of wavemodes can not be '
+                          'calculated with the optical_flow method. '
+                          'Using trigger_interpolation instead.')
+            args.method = 'trigger_interpolation'
+        elif not len(block.filter(name='optical_flow', objects="AnalogSignal")):
+            warnings.warn('No optical_flow signal could be found for the '
+                          'calculation of planar directions. '
+                          'Using trigger_interpolation instead.')
+            args.method = 'trigger_interpolation'
 
-    evts = [ev for ev in block.segments[0].events if ev.name == 'Wavefronts'][0]
+    evts = block.filter(name=args.event_name, objects="Event")[0]
+    evts = evts[evts.labels.astype('str') != '-1']
 
     if args.method == 'trigger_interpolation':
         directions_df = trigger_interpolation(evts)
     elif args.method == 'optical_flow':
-        # block = AnalogSignal2ImageSequence(block)
-        asig = [im for im in block.segments[0].analogsignals if im.name == 'Optical Flow'][0]
-        directions_df = calc_flow_direction(evts, asig)
+        asig = block.filter(name='optical_flow', objects="AnalogSignal")[0]
+        directions = calc_flow_direction(evts, asig)
     else:
         raise NameError(f'Method name {args.method} is not recognized!')
+
+    df = pd.DataFrame(np.unique(evts.labels), columns=[f'{args.event_name}_id'])
+    df['direction_x'] = np.real(directions[:,0])
+    df['direction_y'] = np.imag(directions[:,0])
+    df['direction_x_std'] = np.real(directions[:,1])
+    df['direction_y_std'] = np.imag(directions[:,1])
 
     if args.output_img is not None:
         orientation_top = evts.annotations['orientation_top']

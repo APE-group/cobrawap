@@ -15,14 +15,14 @@ PLOT_TSTOP: 10  # in s
 PLOT_CHANNELS: 'None'  # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
+# Wave event name
+# 'wavefronts', 'wavemodes'
+EVENT_NAME: 'wavefronts'
+
 # Measures to compute
-<<<<<<< HEAD
-# 'label_planar', 'velocity_planar', 'direction_planar'
-MEASURES: ['label_planar', 'velocity_planar', 'direction_planar']
-=======
-# 'label_planar', 'velocity_planar', 'direction_planar', 'inter_wave_interval', 'time_stamp', 'duration', 'number_of_triggers'
-MEASURES: ['inter_wave_interval', 'label_planar', 'velocity_planar', 'direction_planar']
->>>>>>> 1b82ec0e43e45e9e4b9a01ffcef7fb650cf0d575
+# 'label_planar', 'velocity_planar', 'direction_planar', 'inter_wave_interval',
+# 'time_stamp', 'duration', 'number_of_triggers', 'annotations'
+MEASURES: ['annotations', 'inter_wave_interval', 'label_planar', 'velocity_planar', 'direction_planar']
 
 # Label Planar
 ##############
@@ -32,3 +32,14 @@ ALIGNMENT_THRESHOLD: 0.9
 ##################
 # tigger_interolation, optical_flow
 DIRECTION_METHOD: 'optical_flow'
+
+# Time Stamp
+############
+# start, middle, end
+TIME_STAMP_POINT: 'start'
+
+# Annotations
+#############
+# Use include_keys, if they are empty apply ignore_keys
+INCLUDE_KEYS: []
+IGNORE_KEYS: []
