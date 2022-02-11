@@ -44,7 +44,7 @@ ORIENTATION_TOP: 'ventral'
 # recommended right: 'lateral' for right hemisphere, 'medial' for left hemisphere
 ORIENTATION_RIGHT: 'lateral'
 
-TRIAL: None
+TRIAL: 3 #None
 
 # Metadata - general information (non-specific to individual channels)
 # This must include an entry 'grid_size' with an int tuple
