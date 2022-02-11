@@ -46,6 +46,7 @@ TIME_SPACE_RATIO: 1
 
 # Optical Flow (Horn-Schunck algorithm)
 ##############
+USE_PHASES: True
 # weight of the smoothness constraint over the brightness constancy constraint
 ALPHA: 0.1
 # maximum number of iterations optimizing the vector field

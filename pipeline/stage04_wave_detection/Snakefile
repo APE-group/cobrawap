@@ -30,11 +30,14 @@ PLOT_TSTOP = config["PLOT_TSTOP"]
 PLOT_CHANNELS = parse_plot_channels(config["PLOT_CHANNELS"], STAGE_INPUT)
 PLOT_FORMAT = config["PLOT_FORMAT"]
 
-if config["DETECTION_BLOCK"] == "WaveHunt_Clustering":
-    BLOCK_ORDER = ["clustering", "optical_flow", "critical_points", "critical_points_clustering", "merge_wave_definitions"]
+DETECTION_BLOCK = config['DETECTION_BLOCK']
+ADDITIONAL_PROPERTIES = config['ADDITIONAL_PROPERTIES']
 
-elif config["DETECTION_BLOCK"] == "WaveHunt_Time":
-    BLOCK_ORDER = ["WaveHunt_Cropped"]
+#if config["DETECTION_BLOCK"] == "WaveHunt_Clustering":
+#    BLOCK_ORDER = ["clustering", "optical_flow", "critical_points", "critical_points_clustering", "merge_wave_definitions"]
+
+#elif config["DETECTION_BLOCK"] == "WaveHunt_Time":
+#    BLOCK_ORDER = ["WaveHunt_Cropped"]
 
 
 METRIC = config["METRIC"]
@@ -42,6 +45,7 @@ TIME_SPACE_RATIO = config["TIME_SPACE_RATIO"]
 NEIGHBOUR_DISTANCE = config["NEIGHBOUR_DISTANCE"]
 MIN_SAMPLES_PER_WAVE = config["MIN_SAMPLES_PER_WAVE"]
 
+USE_PHASES = config["USE_PHASES"]
 ALPHA = config["ALPHA"]
 MAX_NITER = config["MAX_NITER"]
 CONVERGENCE_LIMIT = config["CONVERGENCE_LIMIT"]
@@ -49,6 +53,13 @@ GAUSSIAN_SIGMA = config["GAUSSIAN_SIGMA"]
 DERIVATIVE_FILTER = config["DERIVATIVE_FILTER"]
 DETECT_CRITICAL_POINTS = config["DETECT_CRITICAL_POINTS"]
 
+MIN_TRIGGER_FRACTION = config['MIN_TRIGGER_FRACTION']
+NUM_WAVE_NEIGHBOURS = config['NUM_WAVE_NEIGHBOURS']
+WAVE_OUTLIER_QUANTILE = config['WAVE_OUTLIER_QUANTILE']
+PCA_DIMS = config['PCA_DIMS']
+NUM_KMEANS_CLUSTER = config['NUM_KMEANS_CLUSTER']
+INTERPOLATION_STEP_SIZE = config['INTERPOLATION_STEP_SIZE']
+INTERPOLATION_SMOOTHING = config['INTERPOLATION_SMOOTHING']
 
 MAX_ABS_TIMELAG = config["MAX_ABS_TIMELAG"]
 ACCEPTABLE_REJECTION_RATE = config["ACCEPTABLE_REJECTION_RATE"]
@@ -59,34 +70,35 @@ MIN_CH_NUM = config["MIN_CH_NUM"]
 
 #### Housekeeping ####
 
-wildcard_constraints:
-    rule_name = '\w+'
-
-MIN_TRIGGER_FRACTION = config['MIN_TRIGGER_FRACTION']
-NUM_WAVE_NEIGHBOURS = config['NUM_WAVE_NEIGHBOURS']
-WAVE_OUTLIER_QUANTILE = config['WAVE_OUTLIER_QUANTILE']
-PCA_DIMS = config['PCA_DIMS']
-NUM_KMEANS_CLUSTER = config['NUM_KMEANS_CLUSTER']
-INTERPOLATION_STEP_SIZE = config['INTERPOLATION_STEP_SIZE']
-INTERPOLATION_SMOOTHING = config['INTERPOLATION_SMOOTHING']
-
+#wildcard_constraints:
+#    rule_name = '\w+'
+#
+#MIN_TRIGGER_FRACTION = config['MIN_TRIGGER_FRACTION']
+#NUM_WAVE_NEIGHBOURS = config['NUM_WAVE_NEIGHBOURS']
+#WAVE_OUTLIER_QUANTILE = config['WAVE_OUTLIER_QUANTILE']
+#PCA_DIMS = config['PCA_DIMS']
+#NUM_KMEANS_CLUSTER = config['NUM_KMEANS_CLUSTER']
+#INTERPOLATION_STEP_SIZE = config['INTERPOLATION_STEP_SIZE']
+#INTERPOLATION_SMOOTHING = config['INTERPOLATION_SMOOTHING']
+#
 localrules: all, check_input
 
-def input_file(wildcards):
-    if hasattr(wildcards, 'rule_name'):
-        idx = locate(BLOCK_ORDER, wildcards.rule_name)
-        if idx:
-            return os.path.join(OUTPUT_DIR, BLOCK_ORDER[idx-1],
-                                BLOCK_ORDER[idx-1]+'.'+NEO_FORMAT)
-    elif len(BLOCK_ORDER):
-        return os.path.join(OUTPUT_DIR, BLOCK_ORDER[-1],
-                            BLOCK_ORDER[-1]+'.'+NEO_FORMAT)
-    return os.path.join(STAGE_INPUT)
+#def input_file(wildcards):
+#    if hasattr(wildcards, 'rule_name'):
+#        idx = locate(BLOCK_ORDER, wildcards.rule_name)
+#        if idx:
+#            return os.path.join(OUTPUT_DIR, BLOCK_ORDER[idx-1],
+#                                BLOCK_ORDER[idx-1]+'.'+NEO_FORMAT)
+#    elif len(BLOCK_ORDER):
+#        return os.path.join(OUTPUT_DIR, BLOCK_ORDER[-1],
+#                            BLOCK_ORDER[-1]+'.'+NEO_FORMAT)
+#    return os.path.join(STAGE_INPUT)
 
 rule all:
     input:
         check = os.path.join(OUTPUT_DIR, 'input.check'),
-        data = input_file,
+        #data = input_file,
+        data = os.path.join(OUTPUT_DIR, 'merge_wave_definitions', STAGE_OUTPUT),
         #configfile = os.path.join('configs', f'config_{PROFILE}.yaml')
     params:
         command = 'ln -s' if USE_LINK_AS_STAGE_OUTPUT else 'cp'
@@ -99,6 +111,7 @@ rule all:
         """
 
 rule check_input:
+    priority: 10
     input:
         data = STAGE_INPUT,
         script = os.path.join('scripts', 'check_input.py')
@@ -111,7 +124,57 @@ rule check_input:
         touch "{output}"
         """
 
-#### Wave Definitions ####
+def additional_properties(wildcards):
+    return [os.path.join(wildcards.dir, prop, f'{prop}.{NEO_FORMAT}')
+            for prop in ADDITIONAL_PROPERTIES]
+
+rule merge_wave_definitions:
+    input:
+        waves = os.path.join('{dir}', DETECTION_BLOCK, STAGE_OUTPUT),
+        additional_properties = additional_properties,
+        script = os.path.join('scripts', 'merge_wave_definitions.py')
+    params:
+        properties = ','.join([os.path.join('{dir}', prop, f'{prop}.{NEO_FORMAT}')
+                for prop in ADDITIONAL_PROPERTIES])
+    output:
+        data = os.path.join('{dir}', 'merge_wave_definitions', STAGE_OUTPUT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --waves "{input.waves}" \
+                              --output "{output.data}"
+        """
+
+#### DETECTION BLOCK ####
+
+rule trigger_clustering:
+    input:
+        data = STAGE_INPUT,
+        script = os.path.join('scripts', 'trigger_clustering.py'),
+        plot_script = os.path.join('scripts', 'plot_clustering.py')
+    params:
+        metric = METRIC,
+        time_space_ratio = TIME_SPACE_RATIO,
+        neighbour_distance = NEIGHBOUR_DISTANCE,
+        min_samples = MIN_SAMPLES_PER_WAVE,
+        plot_time_slice = 10
+    output:
+        data = os.path.join('{dir}', 'trigger_clustering', STAGE_OUTPUT),
+        img = report(os.path.join('{dir}', 'trigger_clustering',
+                                  f'wave_cluster.{PLOT_FORMAT}'))
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --metric {params.metric} \
+                              --time_space_ratio {params.time_space_ratio} \
+                              --neighbour_distance {params.neighbour_distance} \
+                              --min_samples {params.min_samples}
+        python {input.plot_script} --data "{output.data}" \
+                                   --output "{output.img}" \
+                                   --time_slice {params.plot_time_slice}
+        """
 
 
 rule WaveHunt_Cropped:
@@ -135,6 +198,8 @@ rule WaveHunt_Cropped:
                               --Max_Abs_Timelag {params.Max_Abs_Timelag} \
                               --Acceptable_rejection_rate {params.Acceptable_rejection_rate} \
         """
+
+#### ADDITIONAL PROPERTIES ####
 
 rule critical_points:
     input:

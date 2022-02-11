@@ -7,15 +7,16 @@ from utils.io import load_neo, write_neo
 if __name__ == '__main__':
     CLI = argparse.ArgumentParser(description=__doc__,
                    formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--trigger_data", nargs='?', type=str, required=True,
+    CLI.add_argument("--waves", nargs='?', type=str, required=True,
                      help="path to input data in neo format")
-    CLI.add_argument("--node_data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
+    CLI.add_argument("--properties", nargs='?', type=lambda v: v.split(','), default=None,
+                     help="paths to input data in neo format", required = False)
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                      help="path of output file")
 
     args = CLI.parse_args()
     waves_block = load_neo(args.waves)
+
     asig_names = [asig.name for asig in waves_block.segments[0].analogsignals]
     event_names = [event.name for event in waves_block.segments[0].events]
 
