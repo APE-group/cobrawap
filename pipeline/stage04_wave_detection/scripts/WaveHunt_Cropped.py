@@ -6,17 +6,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import io
 import math
-from utils import AnalogSignal2ImageSequence, load_neo, save_plot
-from utils import load_neo, write_neo, remove_annotations
-from utils import none_or_str, none_or_float
+#from utils import AnalogSignal2ImageSequence, load_neo, save_plot
+#from utils import load_neo, write_neo, remove_annotations
+#from utils import none_or_str, none_or_float
+from utils.io import load_neo, write_neo, save_plot
+from utils.neo import remove_annotations, analogsignals_to_imagesequences
+from utils.parse import none_or_str, none_or_float
+
 import neo
 
 from UpTrans_Detector import ReadPixelData
 from Params_optimization import Optimal_MAX_ABS_TIMELAG, Optima_MAX_IWI
-#from Optimal_MAX_ABS_TIMELAG import Optimal_MAX_ABS_TIMELAG
-#from MAX_IWI_Search import MAX_IWI_Search
-#from WaveHuntTimes_UnicityPrinciple import WaveHuntTimes_UnicityPrinciple, Neighbourhood_Search
-#from WaveHuntTimes_Globality import WaveHuntTimes_Globality
 from WaveCleaning import RemoveSmallWaves, CleanWave, Neighbourhood_Search
 # ======================================================================================#
 
@@ -38,14 +38,14 @@ if __name__ == '__main__':
   
     args = CLI.parse_args()
     block = load_neo(args.data)
-    block = AnalogSignal2ImageSequence(block)
+    block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     
     DIM_X, DIM_Y = np.shape(imgseq[0])
     spatial_scale = imgseq.spatial_scale
     
     asig = block.segments[0].analogsignals[-1]
-    evts = [ev for ev in block.segments[0].events if ev.name== 'Transitions']
+    evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
     if len(evts):
         evts = evts[0]
     else:
@@ -89,8 +89,8 @@ if __name__ == '__main__':
     Label = [str(i) for i in Label]
     Times = Times*(Wave[0]['times'].units)
     waves = neo.Event(times=Times.rescale(pq.s),
-                    labels=Label,
-                    name='Wavefronts',
+                    labels=[str(np.int32(np.float64(l))) for l in Label],
+                    name='wavefronts',
                     array_annotations={'channels':Pixels,
                                        'x_coords':[p % DIM_Y for p in Pixels],
                                        'y_coords':[np.floor(p/DIM_Y) for p in Pixels]},
@@ -100,12 +100,16 @@ if __name__ == '__main__':
                                +'its position ("x_coords", "y_coords").',
                     spatial_scale = UpTrans_Evt.annotations['spatial_scale'])
 
-    #remove_annotations(waves, del_keys=['nix_name', 'neo_name'])
+    remove_annotations(evts, del_keys=['nix_name', 'neo_name'])
     waves.annotations.update(evts.annotations)
-    remove_annotations(waves, del_keys=['nix_name', 'neo_name'])
-
+    
     block.segments[0].events.append(waves)
-    remove_annotations(waves, del_keys=['nix_name', 'neo_name'])
-
+    #remove_annotations(waves, del_keys=['nix_name', 'neo_name'])
+    print([ev.name for ev in block.segments[0].events])
     write_neo(args.output, block)
+    
+    
+    block = load_neo(args.output)
+    print('posy', [ev.name for ev in block.segments[0].events])
+
     

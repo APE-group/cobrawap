@@ -1,7 +1,7 @@
 def ReadPixelData(events, DIM_X, DIM_Y, spatial_scale):
 
     import numpy as np
-    from utils import remove_annotations
+    from utils.neo import remove_annotations
     import neo
     
     PixelLabel = events.array_annotations['y_coords'] * DIM_Y + events.array_annotations['x_coords']

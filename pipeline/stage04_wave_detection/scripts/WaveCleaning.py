@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import io
 import math
-from utils import AnalogSignal2ImageSequence, load_neo, save_plot
-from utils import load_neo, write_neo, remove_annotations
-from utils import none_or_str, none_or_float
+from utils.io import load_neo, write_neo, save_plot
+from utils.neo import remove_annotations, analogsignals_to_imagesequences
+from utils.parse import none_or_str, none_or_float
 import neo
 
 
