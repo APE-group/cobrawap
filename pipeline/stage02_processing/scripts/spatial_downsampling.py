@@ -16,9 +16,7 @@ from utils.neo import analogsignals_to_imagesequences, imagesequences_to_analogs
 def spatial_smoothing(images, macro_pixel_dim):
 
     # Now we need to reduce the noise from the images by performing a spatial smoothing
-    #images_reduced = measure.block_reduce(images, (1, macro_pixel_dim, macro_pixel_dim), np.nanmean, cval = np.nanmedian(images))
-    images_reduced = scipy.signal.decimate(images, macro_pixel_dim, n=2, ftype='fir', axis=1, zero_phase=True)
-    images_reduced = scipy.signal.decimate(images_reduced, macro_pixel_dim, n=2, ftype='fir', axis=2, zero_phase=True)
+    images_reduced = measure.block_reduce(images, (1, macro_pixel_dim, macro_pixel_dim), np.nanmean, cval = np.nanmedian(images))
     
     dim_t, dim_x, dim_y = images_reduced.shape
 
