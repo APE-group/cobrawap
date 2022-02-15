@@ -59,7 +59,7 @@ TRANSITION_PHASE: -1.570796
 # BLOCK - Minima
 ################
 # If minima position should be interpolated via parabolic fit
-USE_QUADRATIC_INTERPOLATION: False
+USE_QUADRATIC_INTERPOLATION: True
 # Number of points to be used in the parabolic interpolation
 NUM_INTERPOLATION_POINTS: 4
 # minimum distance between two maxima peacks (s)
