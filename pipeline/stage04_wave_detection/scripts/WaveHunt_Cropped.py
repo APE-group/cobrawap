@@ -62,7 +62,7 @@ if __name__ == '__main__':
     Waves_Inter = timelag_optimization(evts, args.Max_Abs_Timelag)
    
     # search for the best max_iwi parameter
-    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, nCh, args.Acceptable_rejection_rate)
+    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_num, args.Acceptable_rejection_rate)
 
     # Unicity principle refinement
     neighbors = Neighbourhood_Search(dim_x, dim_y)

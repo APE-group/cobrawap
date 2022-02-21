@@ -79,7 +79,7 @@ def timelag_optimization(evts, MAX_ABS_TIMELAG):
 
 
 
-def iwi_optimization(Wave, ExpectedTrans, nCh, ACCEPTABLE_REJECTION_RATE):
+def iwi_optimization(Wave, ExpectedTrans, min_ch_num, ACCEPTABLE_REJECTION_RATE):
 
     # compute inter wave interval (IWI)
     WaveTime=list(map(lambda x : np.mean(x['time']), Wave))
@@ -104,7 +104,7 @@ def iwi_optimization(Wave, ExpectedTrans, nCh, ACCEPTABLE_REJECTION_RATE):
         else: # otherwise
             # check the number of non-unique waves
             UniqueWaves = [] # wether a merged wave meets the unicity principle
-            size_flag = 0 # 1 when a candidate wave involves all channels
+            WaveSize = [] # involved channels
 
             for w_ndx in wave_ndx_list: # for each collected wave
                 temp_ch_labels = []
@@ -112,22 +112,23 @@ def iwi_optimization(Wave, ExpectedTrans, nCh, ACCEPTABLE_REJECTION_RATE):
                     temp_ch_labels.extend(Wave[w]['ch'])#merged channels
                 
                 duplicates = checkIfDuplicates(temp_ch_labels)
-                
-                if len(np.unique(temp_ch_labels)) == nCh: size_flag = 1 # check number of involved channels
+                WaveSize.append(len(np.unique(temp_ch_labels)))
 
                 if duplicates == True: # if the wave is not unique
                     UniqueWaves.append(False)
                 else:
                     UniqueWaves.append(True)
             UniqueWaves = np.array(UniqueWaves, dtype = bool)
+
             # if rejaction rate limit is not met
-            if len(np.where(~UniqueWaves)[0])/np.float64(len(UniqueWaves)) > ACCEPTABLE_REJECTION_RATE:
-                if len(np.where(~UniqueWaves)[0]): # if there is at least 1 non-unique wave
-                    MAX_IWI = MAX_IWI*0.75 # reduce max iwi
-                    OneMoreLoop = True
-                elif size_flag == 1: # if only unique waves are found
-                    MAX_IWI = MAX_IWI * 1.25
-                    OneMoreLoop = True
+            n_waves = len(UniqueWaves)
+
+            if n_waves <= ExpectedTrans and  len(np.where(~UniqueWaves)[0])/np.float64(n_waves) > ACCEPTABLE_REJECTION_RATE: # if there is at least 1 non-unique wave
+                MAX_IWI = MAX_IWI*0.75 # reduce max iwi
+                OneMoreLoop = True
+            elif n_waves > ExpectedTrans and len(np.where(WaveSize < min_ch_num)[0])/np.float64(n_waves) > ACCEPTABLE_REJECTION_RATE:
+                MAX_IWI = MAX_IWI * 1.25
+                OneMoreLoop = True
     
     # create new dictionary for candidates waves
     MergedWaves = [dict() for i in range(len(wave_ndx_list))]
