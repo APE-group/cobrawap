@@ -319,14 +319,14 @@ def CleanWave(UpTrans,ChLabel, neighbors,  FullWave):
     return(FullWave)
 
 
-def RemoveSmallWaves(Evts_UpTrans, MIN_CH_NUM, FullWave):
+def RemoveSmallWaves(Evts_UpTrans, MIN_CH_NUM, FullWave, dim_x, dim_y):
 
     UpTrans = Evts_UpTrans.times
     ChLabel = Evts_UpTrans.array_annotations['channels']
     
     nCh = len(np.unique(ChLabel))
-    DIM_X = Evts_UpTrans.annotations['Dim_x']
-    DIM_Y = Evts_UpTrans.annotations['Dim_y']
+    DIM_X = dim_x #Evts_UpTrans.annotations['Dim_x']
+    DIM_Y = dim_y #Evts_UpTrans.annotations['Dim_y']
     spatial_scale = Evts_UpTrans.annotations['spatial_scale']
     FullWaveUnique=list(map(lambda x : x['WaveUnique'], FullWave))
     FullWaveSize=list(map(lambda x : x['WaveSize'], FullWave))

@@ -1,196 +1,154 @@
 
-# MAX ABST TIMELAG
-def Optimal_MAX_ABS_TIMELAG(evts, MAX_ABS_TIMELAG):
+import numpy as np
+from itertools import groupby
+from operator import itemgetter
+import quantities as pq
 
-    import numpy as np
-    import quantities as pq
-    #from utils import load_neo, write_neo, remove_annotations
-    import neo
+def checkIfDuplicates(listOfElems):
+    ''' Check if given list contains any duplicates '''
+    setOfElems = set()
+    for elem in listOfElems:
+        if elem in setOfElems:
+            return True
+        else:
+            setOfElems.add(elem)
+    return False
+
+
+# MAX ABST TIMELAG
+def timelag_optimization(evts, MAX_ABS_TIMELAG):
+
     StartingValue = MAX_ABS_TIMELAG
     UpTrans = evts.times.magnitude
     ChLabel = evts.array_annotations['channels']
+    sorted_idx = np.argsort(UpTrans)
+    UpTrans = UpTrans[sorted_idx]
+    ChLabel = ChLabel[sorted_idx]
+    #tmp = np.unique([[u,c] for u,c in zip(UpTrans, ChLabel)], axis = 0)
+    #UpTrans = tmp.T[0]
+    #ChLabel = tmp.T[1]
+
     DeltaTL = np.diff(UpTrans);
+    
     ####################################################
     # Compute the time lags matrix looking for optimal MAX_ABS_TIMELAG...
     # (depends on the distance between electrodes in the array)
 
-    WaveUnique_flag = 0;
+    WaveUnique_flag = True;
     
-    while WaveUnique_flag == 0: #while there still is at least one non-unique wave...
-        #print('hum')
-    
-        WaveUnique_flag = 1
-        WnW = np.int32(DeltaTL<=MAX_ABS_TIMELAG);
-        #print(WnW)
-        #ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
-        #print('begin', ndxBegin_list)
-        #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
-        #print('end', ndxEnd_list)
-        print('heeeey', len(np.where(np.diff(WnW)==1)[0]))
-        if len(np.where(np.diff(WnW)==1)[0]):
-            if np.where(np.diff(WnW)==1)[0][0] != 0:
-                ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
-            else:
-                ndxBegin_list = np.where(np.diff(WnW)==1)[0] + 1
+    while WaveUnique_flag: #while there still is at least one non-unique wave...
+        WaveUnique_flag = False
+        # WnW is True if time distance between two consecutive transitions lies 
+        # within the MAX_ABS_TIMELAG parameter
+        WnW = DeltaTL<=MAX_ABS_TIMELAG;
+        # select indexes associated with consecutive true values as transition 
+        # associated to the same wave phoenomenon
+        ndx_list_true = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(WnW)[0]), lambda ix:ix[0]-ix[1])]
+        ndx_list_false = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(~WnW)[0]), lambda ix:ix[0]-ix[1])]
 
-            #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(UpTrans)-1)
-            ndxEnd_list = ndxBegin_list[1:len(ndxBegin_list)]
-            ndxEnd_list = np.append(ndxEnd_list, len(UpTrans))
-
-            #if len(ndxBegin_list) != len(ndxEnd_list):
-            #    ndxBegin_list = np.append(ndxBegin_list, len(UpTrans)-1)
-
+        #merge
+        if len(ndx_list_false):
+            ndx_list = []
+            for t, f in zip(ndx_list_true, ndx_list_false):
+                ndx_list.append(t+f)
         else:
-            ndxBegin_list = [0]
-            ndxEnd_list = [len(UpTrans)]
-        
-        #print('begin', ndxBegin_list)
-        #print('end', ndxEnd_list)
- 
-        Wave = [dict() for i in range(len(ndxBegin_list))]
-        del_idx = []
+            ndx_list = ndx_list_true
 
-        for w in range(0, len(ndxBegin_list)):
-            try:
-                ndx = list(range(ndxBegin_list[w], ndxEnd_list[w]))
-            except IndexError:
-                ndx = list(range(ndxBegin_list[w], len(DeltaTL)))
-            
-            if ndx:
-                Wave[w] = {'ndx': ndx,
-                           'ch': ChLabel[ndx],
-                           'time': UpTrans[ndx],
-                           'WaveUnique': len(ndx) == len(np.unique(ChLabel[ndx])),
-                           'WaveSize': len(ndx),
-                           'WaveTime': np.mean(UpTrans[ndx])};
-
-                if len(ndx) != len(np.unique(ChLabel[ndx])) and MAX_ABS_TIMELAG > StartingValue*0.0001:
-                    WaveUnique_flag = 0
-                    break
-            else:
-                del_idx.append(w)
-                
-        for elem in del_idx:
-            Wave.pop(elem)
+        for ndx in ndx_list:
+            #print(ndx)
+            duplicates = checkIfDuplicates(ChLabel[ndx])
+            if duplicates == True and MAX_ABS_TIMELAG > StartingValue*0.0001: # if the wave is not unique
+                WaveUnique_flag = True
+                MAX_ABS_TIMELAG = MAX_ABS_TIMELAG*0.75; # rescale the parameter
+                break
+    
+    print('maximum abs timelag: ', MAX_ABS_TIMELAG) 
         
-        MAX_ABS_TIMELAG = MAX_ABS_TIMELAG*0.75; # rescale the parameter
-        #plt.figure()
-        #for elem in range(0, 2): #len(Waves_Inter)):
-        #    plt.plot(Wave[elem]['time'], Wave[elem]['ch'], '.', markersize = 5.)
-    WaveUnique=list(map(lambda x : x['WaveUnique'], Wave))
+    Wave = [dict() for i in range(len(ndx_list))]
+    # fill the wave candidates dictionary
+    for w, ndx in enumerate(ndx_list):
+        Wave[w] = {'ndx': ndx,
+                   'ch': ChLabel[ndx],
+                   'time': UpTrans[ndx],
+                   'WaveUnique': len(ChLabel[ndx]) == len(np.unique(ChLabel[ndx])),
+                   'WaveSize': len(ndx),
+                   'WaveTime': np.mean(UpTrans[ndx]),
+                   'WaveUniqueSize': len(np.unique(ChLabel[ndx]))}
 
     return Wave
 
-def Optima_MAX_IWI(UpTrans, ChLabel, Wave, ACCEPTABLE_REJECTION_RATE):
-
-    import numpy as np
-    import quantities as pq
-    #from utils import load_neo, write_neo, remove_annotations
-    import neo
-
-    WaveUnique=list(map(lambda x : x['WaveUnique'], Wave))
-    WaveSize=list(map(lambda x : x['WaveSize'], Wave))
-    WaveTime=list(map(lambda x : x['WaveTime'], Wave))
-    
-    nCh = len(np.unique(ChLabel))
-    
-    
-    ####################################################
-    # ExpectedTrans i.e. estimate of the Number of Waves
-    # ExpectedTrans used to estimate/optimize IWI
-    TransPerCh_Idx, TransPerCh_Num = np.unique(ChLabel, return_counts=True)
-    ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)]);
-    print('Expected Trans', ExpectedTrans)
-    ## Wave Hunt -- step 1: Compute the Time Lags, Find Unique Waves --> WaveCollection1
-    IWI = np.diff(WaveTime);          # IWI = Inter-Wave-Interval...
 
 
+def iwi_optimization(Wave, ExpectedTrans, nCh, ACCEPTABLE_REJECTION_RATE):
+
+    # compute inter wave interval (IWI)
+    WaveTime=list(map(lambda x : np.mean(x['time']), Wave))
+    IWI = np.diff(WaveTime)
     ##Recollect small-waves in full waves (involving a wider area).
     MAX_IWI = np.max(IWI)*0.5
-    OneMoreLoop = 1;
+
+    OneMoreLoop = True;
     
-    while OneMoreLoop:
-        WnW = np.int32(IWI<=MAX_IWI);
+    while OneMoreLoop: #while there still is at least one non-unique wave...
         
-        if len(np.where(np.diff(WnW)==1)[0]):
+    
+        # WnW is True if time distance between two consecutive waves lies 
+        # within the MAX_IWI parameter
+        WnW = IWI<=MAX_IWI;
+        # select indexes associated with consecutive true values as transition 
+        # associated to the same wave phoenomenon
+        wave_ndx_list = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(WnW)[0]), lambda ix:ix[0]-ix[1])]
 
-            if np.where(np.diff(WnW)==1)[0][0] != 0:
-                ndxBegin_list = np.append(0, np.where(np.diff(WnW)==1)[0]+1)
-            else:
-                ndxBegin_list = np.where(np.diff(WnW)==1)[0] + 1
+        if len(wave_ndx_list) >= ExpectedTrans: OneMoreLoop = False # if more than expected waves are found, 
+                                                                    # exit the loop
+        else: # otherwise
+            # check the number of non-unique waves
+            UniqueWaves = [] # wether a merged wave meets the unicity principle
+            size_flag = 0 # 1 when a candidate wave involves all channels
 
-            #ndxEnd_list = np.append(np.where(np.diff(WnW)==-1)[0]+1, len(WaveTime)-1)
-            ndxEnd_list = ndxBegin_list[1:len(ndxBegin_list)]
-            ndxEnd_list = np.append(ndxEnd_list, len(WaveTime)-1)
+            for w_ndx in wave_ndx_list: # for each collected wave
+                temp_ch_labels = []
+                for w in w_ndx:
+                    temp_ch_labels.extend(Wave[w]['ch'])#merged channels
+                
+                duplicates = checkIfDuplicates(temp_ch_labels)
+                
+                if len(np.unique(temp_ch_labels)) == nCh: size_flag = 1 # check number of involved channels
 
-            
-            if len(ndxBegin_list) != len(ndxEnd_list):
-                ndxBegin_list = np.append(ndxBegin_list, len(WaveTime)-1)
-        else:
-            ndxBegin_list = [0]
-            ndxEnd_list = [len(WaveTime)]
-        FullWave = []
+                if duplicates == True: # if the wave is not unique
+                    UniqueWaves.append(False)
+                else:
+                    UniqueWaves.append(True)
+            UniqueWaves = np.array(UniqueWaves, dtype = bool)
+            # if rejaction rate limit is not met
+            if len(np.where(~UniqueWaves)[0])/np.float64(len(UniqueWaves)) > ACCEPTABLE_REJECTION_RATE:
+                if len(np.where(~UniqueWaves)[0]): # if there is at least 1 non-unique wave
+                    MAX_IWI = MAX_IWI*0.75 # reduce max iwi
+                    OneMoreLoop = True
+                elif size_flag == 1: # if only unique waves are found
+                    MAX_IWI = MAX_IWI * 1.25
+                    OneMoreLoop = True
+    
+    # create new dictionary for candidates waves
+    MergedWaves = [dict() for i in range(len(wave_ndx_list))]
+    # fill the wave candidates dictionary
+    for i, w_ndx in enumerate(wave_ndx_list):
+        temp_ch_labels = []
+        temp_ndx = []
+        temp_times = []
+        for w in w_ndx:
+            temp_ch_labels.extend(Wave[w]['ch'])#merged channels
+            temp_ndx.extend(Wave[w]['ndx'])#merged channels
+            temp_times.extend(Wave[w]['time'])#merged channels
+        MergedWaves[i] = {'ndx': np.array(temp_ndx),
+                   'ch': np.array(temp_ch_labels, dtype = np.int32),
+                   'times': np.array(temp_times)*pq.s,
+                   'WaveUnique': len(temp_ch_labels) == len(np.unique(temp_ch_labels)),
+                   'WaveSize': len(temp_ndx),
+                   'WaveTime': np.mean(temp_times),
+                   'WaveUniqueSize': len(np.unique(temp_ch_labels))}
 
-        num_iter = -1
-        #for w in range(0, len(ndxBegin_list)):
-        for w in range(0, len(ndxEnd_list)):
-
-            num_iter = num_iter +1
-            ndx = list(range(ndxBegin_list[w],ndxEnd_list[w]))
-            Full_ndx = []
-            for elem in ndx:
-                Full_ndx.extend(Wave[elem]['ndx'])
-            Full_ndx = np.int64(Full_ndx)
-            
-            FullWave.append({'ndx': Full_ndx,
-                           'times': UpTrans[Full_ndx],
-                           'ch': ChLabel[Full_ndx],
-                           'WaveUnique': len(Full_ndx) == len(np.unique(ChLabel[Full_ndx])),
-                           'WaveSize': len(Full_ndx),
-                           'WaveTime': np.mean(UpTrans[Full_ndx]),
-                           'WaveUniqueSize': len(np.unique(ChLabel[Full_ndx]))
-                           });
-
-            # save as single waves isolated transitions.
-            if len(ndxBegin_list) < w:
-                for j in range(ndxEnd_list[w], ndxBegin_list[w+1]):
-                    ndx = [j]
-                    Full_ndx = []
-                    for elem in ndx:
-                        Full_ndx.extend(Wave[elem]['ndx'])
-                    Full_ndx = np.int64(Full_ndx)
-                    
-                    FullWave.append({'ndx': Full_ndx,
-                                   'times': UpTrans[Full_ndx],
-                                   'ch': ChLabel[Full_ndx],
-                                   'WaveUnique': len(Full_ndx) == len(np.unique(ChLabel[Full_ndx])),
-                                   'WaveSize': len(Full_ndx),
-                                   'WaveTime': np.mean(UpTrans[Full_ndx]),
-                                   'WaveUniqueSize': len(np.unique(ChLabel[Full_ndx]))
-                                   });
-
-
-        FullWaveUnique = list(map(lambda x : x['WaveUnique'], FullWave))
-        BadWavesNum = len(FullWaveUnique) - len(np.where(FullWaveUnique)[0]);
-        OneMoreLoop = 0;
-
-        if len(FullWaveUnique) <= ExpectedTrans: # If not we have an artifactual amplification of small waves...
-            if float(BadWavesNum)/len(FullWaveUnique) > ACCEPTABLE_REJECTION_RATE:
-                if np.min(FullWaveUnique) == 0: # at lest a Wave non-unique
-                    MAX_IWI = MAX_IWI*0.75;
-                    OneMoreLoop = 1;
-                else: # only unique waves
-                    if np.max(WaveSize) < nCh: # at least one wave MUST BE GLOBAL (i.e. involving the full set of electrodes)
-                        MAX_IWI = MAX_IWI*1.25;
-                        OneMoreLoop = 1;
-                        
-        if len(ndxBegin_list) == 1:
-            OneMoreLoop = 0
-        print('IWI', MAX_IWI)
-    return(FullWave)
-
-
-
-
+    
+    return(MergedWaves)
 
 
