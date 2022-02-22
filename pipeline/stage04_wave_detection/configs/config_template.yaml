@@ -70,9 +70,9 @@ DETECT_CRITICAL_POINTS: False
 
 #WaveHunt_Time
 ###########################
-#MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
-#ACCEPTABLE_REJECTION_RATE: 0.1;
-#MIN_CH_NUM: 300
+MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
+ACCEPTABLE_REJECTION_RATE: 0.1;
+MIN_CH_FRACTION: 0.5 # percentage of minimum active channels to meet globality principle
 
 
 # Wave Mode Clustering

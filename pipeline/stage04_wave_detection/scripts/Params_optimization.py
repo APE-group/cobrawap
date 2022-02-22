@@ -79,9 +79,10 @@ def timelag_optimization(evts, MAX_ABS_TIMELAG):
 
 
 
-def iwi_optimization(Wave, ExpectedTrans, min_ch_num, ACCEPTABLE_REJECTION_RATE):
+def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, ACCEPTABLE_REJECTION_RATE):
 
     # compute inter wave interval (IWI)
+    min_ch_num = min_ch_fraction*(nCh + np.sqrt(nCh))
     WaveTime=list(map(lambda x : np.mean(x['time']), Wave))
     IWI = np.diff(WaveTime)
     ##Recollect small-waves in full waves (involving a wider area).

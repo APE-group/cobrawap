@@ -63,7 +63,7 @@ INTERPOLATION_SMOOTHING = config['INTERPOLATION_SMOOTHING']
 
 MAX_ABS_TIMELAG = config["MAX_ABS_TIMELAG"]
 ACCEPTABLE_REJECTION_RATE = config["ACCEPTABLE_REJECTION_RATE"]
-MIN_CH_NUM = config["MIN_CH_NUM"]
+MIN_CH_FRACTION = config["MIN_CH_FRACTION"]
 
 
 #localrules: all, check_input
@@ -184,7 +184,7 @@ rule WaveHunt_Cropped:
     params:
         Max_Abs_Timelag = MAX_ABS_TIMELAG,
         Acceptable_rejection_rate = ACCEPTABLE_REJECTION_RATE,
-        min_ch_num = MIN_CH_NUM,
+        min_ch_fraction = MIN_CH_FRACTION,
 
     output:
         data = os.path.join('{dir}', 'WaveHunt_Cropped',
@@ -194,7 +194,7 @@ rule WaveHunt_Cropped:
         {ADD_UTILS}
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
-                              --min_ch_num {params.min_ch_num} \
+                              --min_ch_fraction {params.min_ch_fraction} \
                               --Max_Abs_Timelag {params.Max_Abs_Timelag} \
                               --Acceptable_rejection_rate {params.Acceptable_rejection_rate} \
         """

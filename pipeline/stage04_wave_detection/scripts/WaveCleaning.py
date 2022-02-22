@@ -23,7 +23,6 @@ def Neighbourhood_Search(coords, spatial_scale):
         idx_y = np.where(np.abs(coords['y']-y) <= L*spatial_scale)[0]
         idx = np.intersect1d(idx_x, idx_y)
         neighbors.append(list(idx))
-        print(len(idx))
     return(neighbors)
 
 def ChannelCleaning(Wave, neighbors):
@@ -317,36 +316,30 @@ def CleanWave(UpTrans,ChLabel, neighbors,  FullWave):
     return(FullWave)
 
 
-def RemoveSmallWaves(Evts_UpTrans, MIN_CH_NUM, FullWave, dim_x, dim_y):
-
+def RemoveSmallWaves(Evts_UpTrans, min_ch_fraction, FullWave, dim_x, dim_y):
+    
     UpTrans = Evts_UpTrans.times
     ChLabel = Evts_UpTrans.array_annotations['channels']
     
     nCh = len(np.unique(ChLabel))
-    DIM_X = dim_x #Evts_UpTrans.annotations['Dim_x']
-    DIM_Y = dim_y #Evts_UpTrans.annotations['Dim_y']
+    min_ch_num = min_ch_fraction*(nCh + np.sqrt(nCh))
     spatial_scale = Evts_UpTrans.annotations['spatial_scale']
     FullWaveUnique=list(map(lambda x : x['WaveUnique'], FullWave))
     FullWaveSize=list(map(lambda x : x['WaveSize'], FullWave))
     FullWaveTime=list(map(lambda x : x['WaveTime'], FullWave))
 
 
-    ## Find Maxima and Minima in the histogram of FullWaveSize
- 
-
     # Remove small waves and those rejected...
-    temp = [FullWaveUnique[i]==1 and FullWaveSize[i] >= MIN_CH_NUM  for i in range(0, len(FullWaveUnique))]
+    temp = [FullWaveUnique[i]==1 and FullWaveSize[i] >= min_ch_num  for i in range(0, len(FullWaveUnique))]
     ndx = np.where(np.array(temp))[0];
     RejectedWaves = len(FullWaveUnique) - len(ndx); # rejected beacuse too small
                                                     # (i.e. involving too few channels)
     Wave = []
- 
     for idx in ndx:
         Wave.append(FullWave[idx]);
 
     return Wave
 
-    
 
 
 

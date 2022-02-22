@@ -30,7 +30,7 @@ if __name__ == '__main__':
                         help="Maximum reasonable time lag between electrodes (pixels)")
     CLI.add_argument("--Acceptable_rejection_rate", nargs='?', type=float, default=0.1,
                         help=" ")
-    CLI.add_argument("--min_ch_num", nargs='?', type=float, default=300,
+    CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=300,
                         help="minimum number of channels involved in a wave")
   
     # data loading
@@ -39,7 +39,6 @@ if __name__ == '__main__':
     block = load_neo(args.data)
 
     # get center of mass coordinates for each signal
-    print(block.segments[0].analogsignals[0].annotations)
     try:
         coords = {'x': block.segments[0].analogsignals[0].array_annotations['x_coord_cm'],
                   'y': block.segments[0].analogsignals[0].array_annotations['y_coord_cm'],
@@ -77,14 +76,14 @@ if __name__ == '__main__':
     Waves_Inter = timelag_optimization(evts, args.Max_Abs_Timelag)
    
     # search for the best max_iwi parameter
-    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_num, args.Acceptable_rejection_rate)
+    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.Acceptable_rejection_rate)
 
     # Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
 
     # Globality principle
-    Wave = RemoveSmallWaves(evts, args.min_ch_num, Waves_Inter, dim_x, dim_y)
-    print('num waves', len(Wave))
+    Wave = RemoveSmallWaves(evts, args.min_ch_fraction, Waves_Inter, dim_x, dim_y)
+    print('number of detected waves', len(Wave))
 
     Waves = []
     Times = []
