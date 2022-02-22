@@ -82,7 +82,7 @@ def detect_minima(asig, interpolation_points, interpolation, maxima_threshold_fr
         min_time_idx = np.append(min_time_idx, clean_mins)
         max_time_idx = np.append(max_time_idx, clean_max)
         channel_idx = np.append(channel_idx, np.ones(len(clean_mins), dtype='int32')*channel)
-        
+
     # compute local minima times.
     if interpolation:
         # parabolic fit on the right branch of local minima
@@ -109,9 +109,12 @@ def detect_minima(asig, interpolation_points, interpolation, maxima_threshold_fr
     else:
         minimum_times = asig.times[min_time_idx]
     
+    idx = np.where(minimum_times >= np.max(asig.times))[0]
+    minimum_times[idx] = np.max(asig.times)
     ###################################
     sort_idx = np.argsort(minimum_times)
     
+    # save detected minima as transition
     evt = neo.Event(times=minimum_times[sort_idx],
                     labels=['UP'] * len(minimum_times),
                     name='transitions',
@@ -170,7 +173,6 @@ def plot_minima(asig, event, channel, maxima_threshold_window, maxima_threshold_
     
     ax[0].plot(asig.times.rescale('s')[peaks], signal[peaks], 'x', color = 'red', label = 'detected maxima') 
     ax[0].plot(event.times[idx_ch], signal[np.int32(event.times[idx_ch]*sampling_rate)], 'x', color = 'green', label = 'selected minima')
-
     ax[0].set_title('Channel {}'.format(channel), fontsize = 7.)
     ax[0].set_xlabel('time [{}]'.format(asig.times.units.dimensionality.string), fontsize = 7.)
     ax[0].legend(fontsize = 7.)
@@ -179,7 +181,8 @@ def plot_minima(asig, event, channel, maxima_threshold_window, maxima_threshold_
     ax[1].set_ylabel('channel id', fontsize = 7.)
     ax[1].set_xlabel('time (s)', fontsize = 7.)
     plt.tight_layout()
-    
+
+
     return ax
 
 
