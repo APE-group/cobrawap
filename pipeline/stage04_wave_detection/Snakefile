@@ -195,8 +195,8 @@ rule WaveHunt_Cropped:
         python {input.script} --data "{input.data}" \
                               --output "{output.data}" \
                               --min_ch_fraction {params.min_ch_fraction} \
-                              --Max_Abs_Timelag {params.Max_Abs_Timelag} \
-                              --Acceptable_rejection_rate {params.Acceptable_rejection_rate} \
+                              --max_abs_timelag {params.Max_Abs_Timelag} \
+                              --acceptable_rejection_rate {params.Acceptable_rejection_rate} \
         """
 
 #### ADDITIONAL PROPERTIES ####

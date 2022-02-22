@@ -26,12 +26,12 @@ if __name__ == '__main__':
                         help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                         help="path of output file")
-    CLI.add_argument("--Max_Abs_Timelag", nargs='?', type=float, default=0.8,
+    CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8,
                         help="Maximum reasonable time lag between electrodes (pixels)")
-    CLI.add_argument("--Acceptable_rejection_rate", nargs='?', type=float, default=0.1,
-                        help=" ")
-    CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=300,
-                        help="minimum number of channels involved in a wave")
+    CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1,
+                        help="acceptable rejection rate when optimizing iwi parameter")
+    CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=0.5,
+                        help="minimum percentage of active channels involved in a wave")
   
     # data loading
 
@@ -73,10 +73,10 @@ if __name__ == '__main__':
     neighbors = Neighbourhood_Search(coords, evts.annotations['spatial_scale'])
     
     # search for the optimal abs timelag
-    Waves_Inter = timelag_optimization(evts, args.Max_Abs_Timelag)
+    Waves_Inter = timelag_optimization(evts, args.max_abs_timelag)
    
     # search for the best max_iwi parameter
-    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.Acceptable_rejection_rate)
+    Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.acceptable_rejection_rate)
 
     # Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)

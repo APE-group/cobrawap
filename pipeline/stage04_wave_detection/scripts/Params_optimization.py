@@ -16,9 +16,9 @@ def checkIfDuplicates(listOfElems):
 
 
 # MAX ABST TIMELAG
-def timelag_optimization(evts, MAX_ABS_TIMELAG):
+def timelag_optimization(evts, max_abs_timelag):
 
-    StartingValue = MAX_ABS_TIMELAG
+    StartingValue = max_abs_timelag
     UpTrans = evts.times.magnitude
     ChLabel = evts.array_annotations['channels']
     sorted_idx = np.argsort(UpTrans)
@@ -40,7 +40,7 @@ def timelag_optimization(evts, MAX_ABS_TIMELAG):
         WaveUnique_flag = False
         # WnW is True if time distance between two consecutive transitions lies 
         # within the MAX_ABS_TIMELAG parameter
-        WnW = DeltaTL<=MAX_ABS_TIMELAG;
+        WnW = DeltaTL<= max_abs_timelag;
         # select indexes associated with consecutive true values as transition 
         # associated to the same wave phoenomenon
         ndx_list_true = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(WnW)[0]), lambda ix:ix[0]-ix[1])]
@@ -57,12 +57,12 @@ def timelag_optimization(evts, MAX_ABS_TIMELAG):
         for ndx in ndx_list:
             #print(ndx)
             duplicates = checkIfDuplicates(ChLabel[ndx])
-            if duplicates == True and MAX_ABS_TIMELAG > StartingValue*0.0001: # if the wave is not unique
+            if duplicates == True and max_abs_timelag > StartingValue*0.0001: # if the wave is not unique
                 WaveUnique_flag = True
-                MAX_ABS_TIMELAG = MAX_ABS_TIMELAG*0.75; # rescale the parameter
+                max_abs_timelag *= 0.75; # rescale the parameter
                 break
     
-    print('maximum abs timelag: ', MAX_ABS_TIMELAG) 
+    print('maximum abs timelag: ', max_abs_timelag) 
         
     Wave = [dict() for i in range(len(ndx_list))]
     # fill the wave candidates dictionary
@@ -79,7 +79,7 @@ def timelag_optimization(evts, MAX_ABS_TIMELAG):
 
 
 
-def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, ACCEPTABLE_REJECTION_RATE):
+def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejection_rate):
 
     # compute inter wave interval (IWI)
     min_ch_num = min_ch_fraction*(nCh + np.sqrt(nCh))
@@ -124,10 +124,10 @@ def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, ACCEPTABLE_REJEC
             # if rejaction rate limit is not met
             n_waves = len(UniqueWaves)
 
-            if n_waves <= ExpectedTrans and  len(np.where(~UniqueWaves)[0])/np.float64(n_waves) > ACCEPTABLE_REJECTION_RATE: # if there is at least 1 non-unique wave
+            if n_waves <= ExpectedTrans and  len(np.where(~UniqueWaves)[0])/np.float64(n_waves) > acceptable_rejection_rate: # if there is at least 1 non-unique wave
                 MAX_IWI = MAX_IWI*0.75 # reduce max iwi
                 OneMoreLoop = True
-            elif n_waves > ExpectedTrans and len(np.where(WaveSize < min_ch_num)[0])/np.float64(n_waves) > ACCEPTABLE_REJECTION_RATE:
+            elif n_waves > ExpectedTrans and len(np.where(WaveSize < min_ch_num)[0])/np.float64(n_waves) > acceptable_rejection_rate:
                 MAX_IWI = MAX_IWI * 1.25
                 OneMoreLoop = True
     
