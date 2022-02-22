@@ -37,27 +37,42 @@ if __name__ == '__main__':
 
     args = CLI.parse_args()
     block = load_neo(args.data)
+
+    # get center of mass coordinates for each signal
+    print(block.segments[0].analogsignals[0].annotations)
+    try:
+        coords = {'x': block.segments[0].analogsignals[0].array_annotations['x_coord_cm'],
+                  'y': block.segments[0].analogsignals[0].array_annotations['y_coord_cm'],
+                  'radius': block.segments[0].analogsignals[0].array_annotations['pixel_coordinates_L']}
+    except KeyError:
+        spatial_scale = block.segments[0].analogsignals[0].annotations['spatial_scale']
+        coords = {'x': (block.segments[0].analogsignals[0].array_annotations['x_coords']+0.5)*spatial_scale,
+                  'y': (block.segments[0].analogsignals[0].array_annotations['y_coords']+0.5)*spatial_scale,
+                  'radius': np.ones([len(block.segments[0].analogsignals[0].array_annotations['x_coords'])])}
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     
     dim_x, dim_y = np.shape(imgseq[0])
     spatial_scale = imgseq.spatial_scale
     
-    asig = block.segments[0].analogsignals[-1]
+    asig = block.segments[0].analogsignals[0]
     evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
     if len(evts):
         evts = evts[0]
     else:
         raise InputError("The input file does not contain any 'Transitions' events!")
     
+
     # Preliminar measurements
     # ExpectedTrans i.e. estimate of the Number of Waves
     # ExpectedTrans used to estimate/optimize IWI
     TransPerCh_Idx, TransPerCh_Num = np.unique(evts.array_annotations['channels'], return_counts=True)
     ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)]);
-    print('Expected number of waves', ExpectedTrans)
+    print('Expected Transitions', ExpectedTrans)
     nCh = len(np.unique(evts.array_annotations['channels'])) # total number of channels
 
+    neighbors = Neighbourhood_Search(coords, evts.annotations['spatial_scale'])
+    
     # search for the optimal abs timelag
     Waves_Inter = timelag_optimization(evts, args.Max_Abs_Timelag)
    
@@ -65,7 +80,6 @@ if __name__ == '__main__':
     Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_num, args.Acceptable_rejection_rate)
 
     # Unicity principle refinement
-    neighbors = Neighbourhood_Search(dim_x, dim_y)
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
 
     # Globality principle

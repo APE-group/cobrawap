@@ -12,20 +12,18 @@ from utils.parse import none_or_str, none_or_float
 import neo
 
 
-def Neighbourhood_Search(h, w):
+def Neighbourhood_Search(coords, spatial_scale):
     
-    #LOCALITY criteria
-    neighbors = np.zeros([h*w, 4]);
-    elements = np.array(range(0, h*w), dtype = 'int32')
-    neighbors[:,0] = elements + 1 # right
-    neighbors[:,1] = elements - 1 # left
-    neighbors[:,2] = elements + w # down
-    neighbors[:,3] = elements - w # up
-    np.where(neighbors[:,0]>=w, neighbors[:,0], np.nan)
-    np.where(neighbors[:,1]<0, neighbors[:,1], np.nan)
-    np.where(neighbors[:,2]>h*w, neighbors[:,2], np.nan)
-    np.where(neighbors[:,3]<0, neighbors[:,3], np.nan)
-
+    ##LOCALITY criteria
+    # identify neighbpurds of each pixel as pixels whose barycenter lyes within a radius of
+    # pixel dimension
+    neighbors = []
+    for x, y, L in zip(coords['x'], coords['y'], coords['radius']): # for each channel
+        idx_x = np.where(np.abs(coords['x']-x) <= L*spatial_scale)[0]
+        idx_y = np.where(np.abs(coords['y']-y) <= L*spatial_scale)[0]
+        idx = np.intersect1d(idx_x, idx_y)
+        neighbors.append(list(idx))
+        print(len(idx))
     return(neighbors)
 
 def ChannelCleaning(Wave, neighbors):
