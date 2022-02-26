@@ -32,20 +32,30 @@ def sample_wave_pattern(pattern_func, dim_x, dim_y):
 
 def calc_spatial_derivative(evts, kernel_name, interpolate=False):
     labels = evts.labels.astype(int)
-    dim_x = int(max(evts.array_annotations['x_coords']))+1
-    dim_y = int(max(evts.array_annotations['y_coords']))+1
+    dim_x = int(max(evts.array_annotations['x_coords']+evts.array_annotations['size']))
+    dim_y = int(max(evts.array_annotations['y_coords']+evts.array_annotations['size']))
 
     spatial_derivative_df = pd.DataFrame()
 
     for wave_id in np.unique(labels):
         wave_trigger_evts = evts[labels == wave_id]
 
+
         x_coords = wave_trigger_evts.array_annotations['x_coords'].astype(int)
         y_coords = wave_trigger_evts.array_annotations['y_coords'].astype(int)
+        try:
+            sizes = wave_trigger_evts.array_annotations['size'].astype(int)
+        except ValueError:
+            sizes= np.ones(len(x_coords))
+            
         channels = wave_trigger_evts.array_annotations['channels'].astype(int)
 
         trigger_collection = np.empty([dim_x, dim_y]) * np.nan
-        trigger_collection[x_coords, y_coords] = wave_trigger_evts.times
+        
+        trigger_collection[np.floor(x_coords+sizes/2.).astype(int), 
+                           np.floor(y_coords+sizes/2.).astype(int)] = wave_trigger_evts.times
+
+
 
         if interpolate:
             pattern_func = interpolate_grid(trigger_collection)
@@ -55,6 +65,7 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False):
         kernel = get_kernel(kernel_name)
         d_vertical = -1 * nan_conv2d(trigger_collection, kernel.y)
         d_horizont = -1 * nan_conv2d(trigger_collection, kernel.x)
+
 
         dt_x = d_vertical[x_coords, y_coords]
         dt_y = d_horizont[x_coords, y_coords]

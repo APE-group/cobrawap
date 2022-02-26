@@ -37,24 +37,25 @@ if __name__ == '__main__':
 
     args = CLI.parse_args()
     block = load_neo(args.data)
-
+    asig = block.segments[0].analogsignals[0]
+    
     # get center of mass coordinates for each signal
     try:
-        coords = {'x': block.segments[0].analogsignals[0].array_annotations['x_coord_cm'],
-                  'y': block.segments[0].analogsignals[0].array_annotations['y_coord_cm'],
-                  'radius': block.segments[0].analogsignals[0].array_annotations['pixel_coordinates_L']}
+        coords = {'x': asig.array_annotations['x_coord_cm'],
+                  'y': asig.array_annotations['y_coord_cm'],
+                  'radius': asig.array_annotations['pixel_coordinates_L']}
     except KeyError:
-        spatial_scale = block.segments[0].analogsignals[0].annotations['spatial_scale']
-        coords = {'x': (block.segments[0].analogsignals[0].array_annotations['x_coords']+0.5)*spatial_scale,
-                  'y': (block.segments[0].analogsignals[0].array_annotations['y_coords']+0.5)*spatial_scale,
-                  'radius': np.ones([len(block.segments[0].analogsignals[0].array_annotations['x_coords'])])}
+        spatial_scale = asig.annotations['spatial_scale']
+        coords = {'x': (asig.array_annotations['x_coords']+0.5)*spatial_scale,
+                  'y': (asig.array_annotations['y_coords']+0.5)*spatial_scale,
+                  'radius': np.ones([len(asig.array_annotations['x_coords'])])}
+   
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     
     dim_x, dim_y = np.shape(imgseq[0])
     spatial_scale = imgseq.spatial_scale
     
-    asig = block.segments[0].analogsignals[0]
     evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
     if len(evts):
         evts = evts[0]
@@ -94,6 +95,7 @@ if __name__ == '__main__':
         Times.extend(Wave[i]['times'].magnitude)
         Label.extend(np.ones([len(Wave[i]['ndx'])])*i)
         Pixels.extend(Wave[i]['ch'])
+    
 
     Label = [str(i) for i in Label]
     Times = Times*(Wave[0]['times'].units)
@@ -101,8 +103,10 @@ if __name__ == '__main__':
                     labels=[str(np.int32(np.float64(l))) for l in Label],
                     name='wavefronts',
                     array_annotations={'channels':Pixels,
-                                       'x_coords':[p % dim_y for p in Pixels],
-                                       'y_coords':[np.floor(p/dim_y) for p in Pixels]},
+                                       'x_coords': asig.array_annotations['x_coords'][Pixels],
+                                       'y_coords': asig.array_annotations['y_coords'][Pixels],
+                                       'size': coords['radius'][Pixels]},
+
                     description='Transitions from down to up states. '\
                                +'Labels are ids of wavefronts. '
                                +'Annotated with the channel id ("channels") and '\
@@ -113,5 +117,4 @@ if __name__ == '__main__':
     waves.annotations.update(evts.annotations)
     
     block.segments[0].events.append(waves)
-    #remove_annotations(waves, del_keys=['nix_name', 'neo_name'])
     write_neo(args.output, block)
