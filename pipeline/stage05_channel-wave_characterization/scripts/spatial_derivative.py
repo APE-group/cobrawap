@@ -32,9 +32,13 @@ def sample_wave_pattern(pattern_func, dim_x, dim_y):
 
 def calc_spatial_derivative(evts, kernel_name, interpolate=False):
     labels = evts.labels.astype(int)
-    dim_x = int(max(evts.array_annotations['x_coords']+evts.array_annotations['size']))
-    dim_y = int(max(evts.array_annotations['y_coords']+evts.array_annotations['size']))
-
+    try:
+        dim_x = int(max(evts.array_annotations['x_coords']+evts.array_annotations['size']))
+        dim_y = int(max(evts.array_annotations['y_coords']+evts.array_annotations['size']))
+    except ValueError:
+        dim_x = int(max(evts.array_annotations['x_coords']))+1
+        dim_y = int(max(evts.array_annotations['y_coords']))+1
+    
     spatial_derivative_df = pd.DataFrame()
 
     for wave_id in np.unique(labels):
