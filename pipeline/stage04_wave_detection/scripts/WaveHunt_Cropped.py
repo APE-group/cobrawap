@@ -2,7 +2,7 @@
 import numpy as np
 import quantities as pq
 import argparse
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 #import pandas as pd
 #from scipy import io
 #import math
@@ -16,6 +16,26 @@ from Params_optimization import timelag_optimization, iwi_optimization
 from WaveCleaning import RemoveSmallWaves, CleanWave, Neighbourhood_Search
 
 # ======================================================================================#
+def PlotDetectedWaves(evts, waves):
+
+    fig, ax = plt.subplots(2, 1, sharex = True)
+    fig.set_size_inches(6,4, forward=True)
+    ax[0].tick_params(axis='both', which='major', labelsize=6)
+    ax[1].tick_params(axis='both', which='major', labelsize=6)
+
+    ax[0].plot(evts.times, evts.array_annotations['channels'], '.', markersize = 0.02, color = 'black')
+    ax[0].set_xlim([0, np.max(evts.times)])
+    ax[0].set_title('detected transitions', fontsize = 7.)
+    ax[0].set_ylabel('channel id', fontsize = 7.)
+
+    ax[1].scatter(waves.times, waves.array_annotations['channels'], s=0.02, c=np.int32(waves.labels), cmap = 'prism')
+    ax[1].set_xlim([0, np.max(evts.times)])
+    ax[1].set_title('detected transitions', fontsize = 7.)
+    ax[1].set_ylabel('channel id', fontsize = 7.)
+    ax[1].set_xlabel('time (s)', fontsize = 7.)
+    plt.tight_layout()
+    return ax
+
 
 # LOAD input data
 if __name__ == '__main__':
@@ -26,6 +46,8 @@ if __name__ == '__main__':
                         help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                         help="path of output file")
+    CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
+                     help="path of output image", default=None)
     CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8,
                         help="Maximum reasonable time lag between electrodes (pixels)")
     CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1,
@@ -116,5 +138,9 @@ if __name__ == '__main__':
     remove_annotations(evts, del_keys=['nix_name', 'neo_name'])
     waves.annotations.update(evts.annotations)
     
+    if args.output_img is not None:
+        PlotDetectedWaves(evts, waves)
+        save_plot(args.output_img)
+
     block.segments[0].events.append(waves)
     write_neo(args.output, block)
