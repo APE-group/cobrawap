@@ -53,6 +53,7 @@ logMUA_RATE = config["logMUA_RATE"]
 FFT_SLICE = config["FFT_SLICE"]
 TARGET_RATE = config["TARGET_RATE"]
 
+print('crop_to_selection_snakefile',CROP_TO_SELECTION)
 #### Housekeeping ####
 
 wildcard_constraints:
@@ -189,6 +190,23 @@ rule background_subtraction:
                               --output_img "{output.img}" \
                               --output_array "{output.array}"
         """
+rule hemodynamics_subtraction:
+    input:
+        is_clear = os.path.join('{dir}', 'clear.done'),
+        data = input_file,
+        script = os.path.join('scripts','hemodynamics_subtraction.py')
+    output:
+        data = os.path.join('{dir}', 'hemodynamics_subtraction',
+                            '{rule_name}.'+NEO_FORMAT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}"
+    """
+
+
+
 
 rule spatial_downsampling:
     input:
@@ -290,7 +308,7 @@ rule roi_selection:
         script = os.path.join('scripts','roi_selection.py')
     params:
         intensity_threshold = INTENSITY_THRESHOLD,
-        crop_to_selection = CROP_TO_SELECTION
+        crop_to_selection = CROP_TO_SELECTION,
     output:
         data = os.path.join('{dir}', 'roi_selection',
                             '{rule_name}.'+NEO_FORMAT),
