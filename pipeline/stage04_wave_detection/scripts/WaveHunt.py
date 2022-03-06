@@ -1,110 +1,104 @@
-#import os
 import numpy as np
 import quantities as pq
 import argparse
 import matplotlib.pyplot as plt
-#import pandas as pd
-#from scipy import io
-#import math
+
 from utils.io import load_neo, write_neo, save_plot
 from utils.neo import remove_annotations, analogsignals_to_imagesequences
 from utils.parse import none_or_str, none_or_float
 
 import neo
 
-from Params_optimization import timelag_optimization, iwi_optimization
-from WaveCleaning import RemoveSmallWaves, CleanWave, Neighbourhood_Search
+from WaveHuntUtils import timelag_optimization, iwi_optimization, 
+	RemoveSmallWaves, CleanWave, Neighbourhood_Search, PlotDetectedWaves
+# =======================================================================================#
 
-# ======================================================================================#
-def PlotDetectedWaves(evts, waves):
-
-    fig, ax = plt.subplots(2, 1, sharex = True)
-    fig.set_size_inches(6,4, forward=True)
-    ax[0].tick_params(axis='both', which='major', labelsize=6)
-    ax[1].tick_params(axis='both', which='major', labelsize=6)
-
-    ax[0].plot(evts.times, evts.array_annotations['channels'], '.', markersize = 0.02, color = 'black')
-    ax[0].set_xlim([0, np.max(evts.times)])
-    ax[0].set_title('detected transitions', fontsize = 7.)
-    ax[0].set_ylabel('channel id', fontsize = 7.)
-
-    ax[1].scatter(waves.times, waves.array_annotations['channels'], s=0.02, c=np.int32(waves.labels), cmap = 'prism')
-    ax[1].set_xlim([0, np.max(evts.times)])
-    ax[1].set_title('detected transitions', fontsize = 7.)
-    ax[1].set_ylabel('channel id', fontsize = 7.)
-    ax[1].set_xlabel('time (s)', fontsize = 7.)
-    plt.tight_layout()
-    return ax
-
-
-# LOAD input data
 if __name__ == '__main__':
     
+#--- Parse CLI (input parameters) -------------------------------------------------------- 
     CLI = argparse.ArgumentParser(description=__doc__,
                       formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    #--- Input & Output
     CLI.add_argument("--data", nargs='?', type=str, required=True,
                         help="path to input data in neo format")
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                         help="path of output file")
     CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
                      help="path of output image", default=None)
-    CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8,
-                        help="Maximum reasonable time lag between electrodes (pixels)")
-    CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1,
+
+    #--- Algorythm Parameters 
+    CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8, #units: [s]
+                        help="Max. reasonable timelag among channels (electrodes/pixels)")
+    CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1, #10%
                         help="acceptable rejection rate when optimizing iwi parameter")
+    # N.B. parameter should be anchored to physiology inputs and/or inputs from data 
     CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=0.5,
                         help="minimum percentage of active channels involved in a wave")
-  
-    # data loading
 
     args = CLI.parse_args()
+
+#--- Load Input Data 
+#    Collect Geometry Information from data ----------------------------------------------
+
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-    
-    # get center of mass coordinates for each signal
+
+    spatial_scale = asig.annotations['spatial_scale'] 
+    # spatial_scale = pixel size (for regularly-spaced channel arrays) 
+
+    #--- Get center of mass (cm) coordinates for each signal
     try:
+    # This is the case of "smart" sampling, channel size derived from HOS (Hierarchical Optimal Sampling)
         coords = {'x': asig.array_annotations['x_coord_cm'],
                   'y': asig.array_annotations['y_coord_cm'],
                   'radius': asig.array_annotations['pixel_coordinates_L']}
     except KeyError:
-        spatial_scale = asig.annotations['spatial_scale']
+    # This is the case of a regular grid/array with regular channel spacing
         coords = {'x': (asig.array_annotations['x_coords']+0.5)*spatial_scale,
                   'y': (asig.array_annotations['y_coords']+0.5)*spatial_scale,
                   'radius': np.ones([len(asig.array_annotations['x_coords'])])}
    
+    #---
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     
     dim_x, dim_y = np.shape(imgseq[0])
-    spatial_scale = imgseq.spatial_scale
-    
+
+    #--- Get Events    
     evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
     if len(evts):
         evts = evts[0]
     else:
         raise InputError("The input file does not contain any 'Transitions' events!")
-    
 
-    # Preliminar measurements
-    # ExpectedTrans i.e. estimate of the Number of Waves
-    # ExpectedTrans used to estimate/optimize IWI
+#--- WaveHunt Preliminary Measurements ---------------------------------------------------
+# ExpectedTrans = number of expected Waves in the WaveCollection --> used to estimate/optimize IWI
+# IWI = Inter Wave Interval = time distance between two consecutive candidate waves
+# nCh = total number of active channels, i.e. channels for which an upward transition has been reported at least once    
+
     TransPerCh_Idx, TransPerCh_Num = np.unique(evts.array_annotations['channels'], return_counts=True)
-    ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)]);
-    print('Expected Transitions', ExpectedTrans)
-    nCh = len(np.unique(evts.array_annotations['channels'])) # total number of channels
+    ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)])
+    print('Expected Transitions: ', ExpectedTrans)
+     
+    nCh = len(np.unique(evts.array_annotations['channels'])) # total number of active channels
+    print('Active Channels: ', nCh)
 
+# neighbors --> used when facing the "unicity" issue
     neighbors = Neighbourhood_Search(coords, evts.annotations['spatial_scale'])
-    
-    # search for the optimal abs timelag
+
+#--- WaveHunt Core Actions ---------------------------------------------------------------
+
+    # 1) search for the optimal abs timelag
     Waves_Inter = timelag_optimization(evts, args.max_abs_timelag)
    
-    # search for the best max_iwi parameter
+    # 2) search for the best max_iwi parameter
     Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.acceptable_rejection_rate)
 
-    # Unicity principle refinement
+    # 3) Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
 
-    # Globality principle
+    # 4) Globality principle
     Wave = RemoveSmallWaves(evts, args.min_ch_fraction, Waves_Inter, dim_x, dim_y)
     print('number of detected waves', len(Wave))
 
@@ -140,7 +134,3 @@ if __name__ == '__main__':
     
     if args.output_img is not None:
         PlotDetectedWaves(evts, waves)
-        save_plot(args.output_img)
-
-    block.segments[0].events.append(waves)
-    write_neo(args.output, block)
