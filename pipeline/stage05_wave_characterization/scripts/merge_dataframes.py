@@ -16,7 +16,7 @@ if __name__ == '__main__':
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)],
                 axis=1, inplace=True)
         if i:
-            full_df = full_df.merge(df, how='outer', on=None)
+            full_df = full_df.merge(df, how='outer', on='wavefronts_id')
         else:
             full_df = deepcopy(df)
         del df
