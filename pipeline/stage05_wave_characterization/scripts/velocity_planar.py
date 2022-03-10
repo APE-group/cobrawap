@@ -21,6 +21,16 @@ def linregress(times, locations):
 def calc_planar_velocities(evts):
     spatial_scale = evts.annotations['spatial_scale']
     v_unit = (spatial_scale.units/evts.times.units).dimensionality.string
+    # get center of mass coordinates for each signal
+    try:
+        coords = {'x': evts.array_annotations['x_coord_cm'],
+                  'y': evts.array_annotations['y_coord_cm'],
+                  'radius': evts.array_annotations['pixel_coordinates_L']}
+    except KeyError:
+        spatial_scale = evts.annotations['spatial_scale']
+        coords = {'x': (evts.array_annotations['x_coords']+0.5)*spatial_scale,
+                  'y': (evts.array_annotations['y_coords']+0.5)*spatial_scale,
+                  'radius': np.ones([len(evts.array_annotations['x_coords'])])}
 
     wave_ids = np.unique(evts.labels)
 
@@ -37,11 +47,9 @@ def calc_planar_velocities(evts):
         # Fit wave displacement
         idx = np.where(evts.labels == wave_i)[0]
         x_times, x_locations = center_points(evts.times[idx].magnitude,
-                                        evts.array_annotations['x_coords'][idx]
-                                        * spatial_scale.magnitude)
+                                        coords['x'][idx])
         y_times, y_locations = center_points(evts.times[idx].magnitude,
-                                        evts.array_annotations['y_coords'][idx]
-                                        * spatial_scale.magnitude)
+                                        coords['y'][idx])
         vx, vx_err, dx = linregress(x_times, x_locations)
         vy, vy_err, dy = linregress(y_times, y_locations)
         v = np.sqrt(vx**2 + vy**2)
