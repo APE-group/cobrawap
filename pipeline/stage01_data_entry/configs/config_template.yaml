@@ -24,11 +24,11 @@ USE_LINK_AS_STAGE_OUTPUT: True
 DATA_SETS:
     Data_name: '/path/to/data/'
 
-HEMODYNAMICS_CORRECTION: True # true if applicable
+HEMODYNAMICS_CORRECTION: True # True if reflectance data are available - either True or False is required
 
 DATA_SETS_REFLECTANCE:
     '/path/to/reflectance/data/'
-# Name of script in scripts/ folder, handling the loading and curation
+# Name of the script in scripts/ folder, handling the loading and curation
 
 CURATION_SCRIPT: 'curate_dataset_key.py'
 
