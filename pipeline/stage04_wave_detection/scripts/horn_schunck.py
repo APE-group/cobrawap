@@ -13,7 +13,8 @@ from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imageseq
 from utils.convolve import phase_conv2d, get_kernel, conv, norm_angle
 
 def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
-                      kernelHS, kernelT, kernelX, kernelY):
+                      kernelHS, kernelT, kernelX, kernelY,
+                      are_phases=False, kernel_center=None):
     """
     Parameters
     ----------
@@ -71,7 +72,6 @@ def compute_derivatives(frame, next_frame, kernelX, kernelY,
         # ft = conv(frame, kernelT) + conv(next_frame, -kernelT)
         ft = frame - next_frame
     return fx, fy, ft
-
 
 def horn_schunck(frames, alpha, max_Niter, convergence_limit,
                  kernelHS, kernelT, kernelX, kernelY,
@@ -161,12 +161,16 @@ def smooth_frames(frames, sigma):
     return frames
 
 
-def plot_opticalflow(frame, vec_frame, skip_step=None):
+def plot_opticalflow(frame, vec_frame, skip_step=None, are_phases=False):
     # Every <skip_step> point in each direction.
     fig, ax = plt.subplots()
     dim_x, dim_y = vec_frame.shape
+    if are_phases:
+        cmap = 'twilight'
+    else:
+        cmap = 'viridis'
     img = ax.imshow(frame, interpolation='nearest',
-                    cmap=plt.get_cmap('viridis'))
+                    cmap=plt.get_cmap(cmap), origin='lower')
     plt.colorbar(img, ax=ax)
     if skip_step is None:
         skip_step = int(min([dim_x, dim_y]) / 50) + 1
@@ -180,6 +184,22 @@ def plot_opticalflow(frame, vec_frame, skip_step=None):
     ax.set_xticks([])
     ax.set_yticks([])
     return ax
+
+def is_phase_signal(signal, use_phases):
+    vmin = np.nanmin(signal)
+    vmax = np.nanmax(signal)
+    in_range = np.isclose(np.array([vmin,   vmax]),
+                          np.array([-np.pi, np.pi]), atol=0.05)
+    if in_range.all():
+        print('The signal values seem to be phase values [-pi, pi]!')
+        print(f'The setting "use_phases" is {bool(use_phases)}.')
+        if use_phases:
+            print('Thus, the phase transformation is skipped.')
+        else:
+            print('Anyhow, the signal is treated as phase signal in the following. If this is not desired please review the preprocessing.')
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':
@@ -201,6 +221,8 @@ if __name__ == '__main__':
                      help='sigma of gaussian filter in each dimension')
     CLI.add_argument("--derivative_filter", nargs='?', type=none_or_str, default=None,
                      help='Filter kernel to use for calculating spatial derivatives')
+    CLI.add_argument("--use_phases", nargs='?', type=strtobool, default=False,
+                     help='whether to use signal phase instead of amplitude')
 
     args = CLI.parse_args()
     block = load_neo(args.data)
@@ -211,6 +233,12 @@ if __name__ == '__main__':
 
     frames = imgseq.as_array()
     # frames /= np.nanmax(np.abs(frames))
+
+    if is_phase_signal(frames, args.use_phases):
+        args.use_phases = True
+    elif args.use_phases:
+        analytic_frames = hilbert(frames, axis=0)
+        frames = np.angle(analytic_frames)
 
     kernelHS = np.array([[1, 2, 1],
                          [2, 0, 2],
@@ -235,21 +263,25 @@ if __name__ == '__main__':
     vec_imgseq = neo.ImageSequence(vector_frames,
                                    units='dimensionless',
                                    dtype=complex,
-                                   # t_start=imgseq.t_start,
+                                   t_start=imgseq.t_start,
                                    spatial_scale=imgseq.spatial_scale,
                                    sampling_rate=imgseq.sampling_rate,
                                    name='optical_flow',
                                    description='Horn-Schunck estimation of optical flow',
-                                   file_origin=imgseq.file_origin,
-                                   **imgseq.annotations)
+                                   file_origin=imgseq.file_origin)
+    vec_imgseq.annotations = imgseq.annotations
 
     if args.output_img is not None:
-        ax = plot_opticalflow(frames[0], vector_frames[0], skip_step=3)
-        ax.set_ylabel(f'pixel size: {imgseq.spatial_scale} '\
-                    + imgseq.spatial_scale.units.dimensionality.string)
-        ax.set_xlabel('{:.3f} s'.format(asig.times[0].rescale('s')))
+        ax = plot_opticalflow(frames[0], vector_frames[0],
+                              skip_step=3, are_phases=args.use_phases)
+        ax.set_ylabel(f'pixel size: {imgseq.spatial_scale} ')
+        ax.set_xlabel('{:.3f} s'.format(asig.times[0].rescale('s').magnitude))
         save_plot(args.output_img)
 
     block.segments[0].imagesequences = [vec_imgseq]
     block = imagesequences_to_analogsignals(block)
     write_neo(args.output, block)
+    
+    block = load_neo(args.output)
+    block = analogsignals_to_imagesequences(block)
+    optical_flow = block.filter(name='optical_flow', objects="ImageSequence")[0]

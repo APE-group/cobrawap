@@ -8,6 +8,7 @@ import argparse
 import scipy
 import pandas as pd
 import seaborn as sns
+import warnings
 from utils.io import load_neo, save_plot
 from utils.parse import none_or_str
 
@@ -21,9 +22,19 @@ def calc_displacement(times, locations):
 
 def trigger_interpolation(evts):
     spatial_scale = evts.annotations['spatial_scale']
+    # get center of mass coordinates for each signal
+    try:
+        coords = {'x': evts.array_annotations['x_coord_cm'],
+                  'y': evts.array_annotations['y_coord_cm'],
+                  'radius': evts.array_annotations['pixel_coordinates_L']}
+    except KeyError:
+        spatial_scale = evts.annotations['spatial_scale']
+        coords = {'x': (evts.array_annotations['x_coords']+0.5)*spatial_scale,
+                  'y': (evts.array_annotations['y_coords']+0.5)*spatial_scale,
+                  'radius': np.ones([len(evts.array_annotations['x_coords'])])}
 
     wave_ids = np.unique(evts.labels)
-
+    
     directions = np.zeros((len(wave_ids), 2), dtype=np.complex_)
 
     # loop over waves
@@ -32,12 +43,8 @@ def trigger_interpolation(evts):
         if not np.int32(np.float64(wave_i)) == -1:
             # Fit wave displacement
             idx = np.where(evts.labels == wave_i)[0]
-            dx, dx_err = calc_displacement(evts.times[idx].magnitude,
-                                       evts.array_annotations['x_coords'][idx]
-                                     * spatial_scale.magnitude)
-            dy, dy_err = calc_displacement(evts.times[idx].magnitude,
-                                       evts.array_annotations['y_coords'][idx]
-                                     * spatial_scale.magnitude)
+            dx, dx_err = calc_displacement(evts.times[idx].magnitude, coords['x'][idx])
+            dy, dy_err = calc_displacement(evts.times[idx].magnitude, coords['y'][idx])
             directions[i] = np.array([dx + 1j*dy, dx_err + 1j*dy_err])
 
     # transfrom to DataFrame
@@ -61,10 +68,10 @@ def calc_flow_direction(evts, asig):
             t_idx = times2ids(asig.times, evts.times[idx])
             channels = evts.array_annotations['channels'][idx]
             # ToDo: Normalize vectors?
-            x_avg = np.mean(np.real(signals[t_idx, channels]))
-            x_std = np.std(np.real(signals[t_idx, channels]))
-            y_avg = np.mean(np.imag(signals[t_idx, channels]))
-            y_std = np.std(np.imag(signals[t_idx, channels]))
+            x_avg = np.nanmean(np.real(signals[t_idx, channels]))
+            x_std = np.nanstd(np.real(signals[t_idx, channels]))
+            y_avg = np.nanmean(np.imag(signals[t_idx, channels]))
+            y_std = np.nanstd(np.imag(signals[t_idx, channels]))
             directions[i] = np.array([x_avg + 1j*y_avg, x_std + 1j*y_std])
 
     df = pd.DataFrame(directions,
@@ -165,12 +172,14 @@ if __name__ == '__main__':
 
     if args.method == 'trigger_interpolation':
         directions_df = trigger_interpolation(evts)
+        directions = directions_df.to_numpy()
+        #directions = directions_df['direction']#trigger_interpolation(evts)
     elif args.method == 'optical_flow':
         asig = block.filter(name='optical_flow', objects="AnalogSignal")[0]
-        directions = calc_flow_direction(evts, asig)
+        directions_df = calc_flow_direction(evts, asig)
+        directions = directions_df.to_numpy()
     else:
         raise NameError(f'Method name {args.method} is not recognized!')
-
     df = pd.DataFrame(np.unique(evts.labels), columns=[f'{args.event_name}_id'])
     df['direction_x'] = np.real(directions[:,0])
     df['direction_y'] = np.imag(directions[:,0])
@@ -180,10 +189,9 @@ if __name__ == '__main__':
     if args.output_img is not None:
         orientation_top = evts.annotations['orientation_top']
         orientation_right = evts.annotations['orientation_right']
-        plot_directions(directions_df, orientation_top, orientation_right)
+        plot_directions(df, orientation_top, orientation_right)
         save_plot(args.output_img)
         plt.figure()
         directions = directions_df.direction
 
-        
-    directions_df.to_csv(args.output)
+    df.to_csv(args.output)

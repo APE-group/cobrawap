@@ -32,7 +32,7 @@ PLOT_FORMAT = config["PLOT_FORMAT"]
 
 DETECTION_BLOCK = config['DETECTION_BLOCK']
 ADDITIONAL_PROPERTIES = config['ADDITIONAL_PROPERTIES']
-
+print(ADDITIONAL_PROPERTIES)
 #if config["DETECTION_BLOCK"] == "WaveHunt_Clustering":
 #    BLOCK_ORDER = ["clustering", "optical_flow", "critical_points", "critical_points_clustering", "merge_wave_definitions"]
 
@@ -142,6 +142,7 @@ rule merge_wave_definitions:
         """
         {ADD_UTILS}
         python {input.script} --waves "{input.waves}" \
+                              --properties "{params.properties}" \
                               --output "{output.data}"
         """
 
@@ -201,6 +202,33 @@ rule WaveHunt_Cropped:
         """
 
 #### ADDITIONAL PROPERTIES ####
+rule optical_flow:
+    input:
+        data = STAGE_INPUT,
+        script = os.path.join('scripts', 'horn_schunck.py')
+    params:
+        alpha = ALPHA,
+        max_Niter = MAX_NITER,
+        convergence_limit = CONVERGENCE_LIMIT,
+        gaussian_sigma = GAUSSIAN_SIGMA,
+        derivative_filter = DERIVATIVE_FILTER,
+        use_phases = USE_PHASES
+    output:
+        data = os.path.join('{dir}', 'optical_flow', 'optical_flow.'+NEO_FORMAT),
+        img = os.path.join('{dir}', 'optical_flow', 'optical_flow.'+PLOT_FORMAT)
+    shell:
+        """
+        {ADD_UTILS}
+        python {input.script} --data "{input.data}" \
+                              --output "{output.data}" \
+                              --output_img "{output.img}" \
+                              --alpha {params.alpha} \
+                              --max_Niter {params.max_Niter} \
+                              --convergence_limit {params.convergence_limit} \
+                              --gaussian_sigma {params.gaussian_sigma} \
+                              --derivative_filter {params.derivative_filter} \
+                              --use_phases {params.use_phases}
+        """
 
 rule critical_points:
     input:
