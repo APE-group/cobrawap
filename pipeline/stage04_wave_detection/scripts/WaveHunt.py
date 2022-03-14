@@ -9,8 +9,8 @@ from utils.parse import none_or_str, none_or_float
 
 import neo
 
-from WaveHuntUtils import timelag_optimization, iwi_optimization, 
-	RemoveSmallWaves, CleanWave, Neighbourhood_Search, PlotDetectedWaves
+from WaveHuntUtils import (timelag_optimization, iwi_optimization, 
+	RemoveSmallWaves, CleanWave, Neighbourhood_Search, PlotDetectedWaves)
 # =======================================================================================#
 
 if __name__ == '__main__':
@@ -44,8 +44,15 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
 
+    nSamples = np.shape(asig)[0]
+    nChannels = np.shape(asig)[1]
+
+    print('signal loaded:\n-- signal duration (nsamples) = ', nSamples)
+    print('-- nChannels = ',nChannels)
+
     spatial_scale = asig.annotations['spatial_scale'] 
-    # spatial_scale = pixel size (for regularly-spaced channel arrays) 
+    # spatial_scale = pixel size (for regularly -spaced and/or -downsampled channel arrays) 
+    # N.B. spatial_scale is set at native resolution for dataset processed with HOS
 
     #--- Get center of mass (cm) coordinates for each signal
     try:
@@ -58,12 +65,32 @@ if __name__ == '__main__':
         coords = {'x': (asig.array_annotations['x_coords']+0.5)*spatial_scale,
                   'y': (asig.array_annotations['y_coords']+0.5)*spatial_scale,
                   'radius': np.ones([len(asig.array_annotations['x_coords'])])}
-   
+
+    # 'radius' is the size of the pixel, expressed in terms of number of pixels at the spatial resolution 
+    # given by 'spatial_scale', e.g. radius = 2 corresponds to a downsampling into a 2 x 2 macropixel 
+
     #---
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[-1]
     
-    dim_x, dim_y = np.shape(imgseq[0])
+    dim_x, dim_y = np.shape(imgseq[0]) # size of the array/grid expressed in number of channels/pixels
+
+    #--- Printout geometry information and checks 
+    print('spatial_scale: ', spatial_scale)
+    print('dim_x, dim_y:', dim_x, dim_y)
+    
+    ##print('x: ', coords['x'])
+    ##print('y: ', coords['y'])
+    ##print('radius: ', coords['radius'])
+    ##print('min_radius: ', min(coords['radius']))
+    ##print('max_radius: ', max(coords['radius']))
+
+    result = all(element == coords['radius'][0] for element in coords['radius'])
+    if (result):
+       print("--> homogenous sampling, i.e. regularly-spaced channel grid")
+    else:
+       print("--> spatial resolution is not constant, dataset went through Hierarchical Optimal Sampling (HOS)\
+              \n('spatial_scale' is native spatial resolution, i.e. before the HOS)")
 
     #--- Get Events    
     evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
@@ -84,8 +111,23 @@ if __name__ == '__main__':
     nCh = len(np.unique(evts.array_annotations['channels'])) # total number of active channels
     print('Active Channels: ', nCh)
 
+    ChRatio = nCh/nChannels
+    print('--> Channel Ratio = ', ChRatio)
+# ChRatio < 1 means that there are channels among those identified at stage02 (after ROI and downsampling, 
+# or after ROI and then selected as non-noisy by HOS) for which no upward transitions (triggers) 
+# have been identified at stage03. 
+
 # neighbors --> used when facing the "unicity" issue
-    neighbors = Neighbourhood_Search(coords, evts.annotations['spatial_scale'])
+    neighbors = Neighbourhood_Search(coords, spatial_scale)
+
+    #--- check if pixels have empty list of neighbors (relevant for HOS)
+    emptyneighbors=0
+    for i in range(len(neighbors)):
+      if not neighbors[i]:
+         print('WARNING: pixel ', i, '(radius: ', coords['radius'][i], 'has no neighbors')
+         emptyneighbors+=1
+    if not emptyneighbors:
+      print('Each pixel has a valid list of neighbors')
 
 #--- WaveHunt Core Actions ---------------------------------------------------------------
 

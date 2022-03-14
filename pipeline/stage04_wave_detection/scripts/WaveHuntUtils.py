@@ -183,14 +183,17 @@ def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejec
     
     return(MergedWaves)
 
-#------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 # Wave Cleaning
-#------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 def Neighbourhood_Search(coords, spatial_scale):
     
-    ##LOCALITY criteria
-    # identify neighbpurds of each pixel as pixels whose barycenter lyes within a radius of
-    # pixel dimension
+    #--- LOCALITY criterion
+    # Identify the neighbours of each pixel as those pixels whose barycenter lies within a 
+    # radius of pixel size from the given pixel.
+    # Pixel size is spatial_scale for uniformly spaced grid, or a multiple ('radius') of 
+    # native resolution for dataset processed with HOS (Hierarchical Optimal Sampling) 
+
     neighbors = []
     for x, y, L in zip(coords['x'], coords['y'], coords['radius']): # for each channel
         idx_x = np.where(np.abs(coords['x']-x) <= L*spatial_scale)[0]
@@ -199,7 +202,13 @@ def Neighbourhood_Search(coords, spatial_scale):
         neighbors.append(list(idx))
     return(neighbors)
 
-#------------------------------------------------------------------------
+# NOTE. Beside border effects, for uniformly spaced grid each pixel has 4 neighbors, while 
+# for HOS if a small (high resolution) pixel is sorrounded by larger pixels (i.e. less 
+# informative) it could have an empty set of neighbors. This is in agreement with the 
+# assumption made that each pixel can be affected only by pixels (neighbors) having its same
+# size, i.e. same information density
+
+#-----------------------------------------------------------------------------------------
 def ChannelCleaning(Wave, neighbors):
 # (used by CleanWave)
     # --- (1) First CHANNEL CLEANING: check the TIME DISTANCE BETWEEN REPETITIONS IN A WAVE
