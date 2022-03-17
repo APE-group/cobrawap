@@ -73,7 +73,8 @@ DETECT_CRITICAL_POINTS: False
 MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
 ACCEPTABLE_REJECTION_RATE: 0.1;
 MIN_CH_FRACTION: 0.5 # percentage of minimum active channels to meet globality principle
-
+N_TRANS_TH_FRACTION: 0.05 # maximum percentage of active channels performing 
+                          # a transition to detect a stationarity
 
 # Wave Mode Clustering
 ######################

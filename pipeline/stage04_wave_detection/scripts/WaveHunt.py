@@ -9,12 +9,13 @@ from utils.parse import none_or_str, none_or_float
 
 import neo
 
-from WaveHuntUtils import (timelag_optimization, iwi_optimization, 
-	RemoveSmallWaves, CleanWave, Neighbourhood_Search, PlotDetectedWaves)
+from WaveHuntUtils import (timelag_optimization, iwi_optimization,
+                           RemoveSmallWaves, CleanWave, Neighbourhood_Search,
+                           PlotDetectedWaves, CropDetectedWaves)
+
 # =======================================================================================#
 
 if __name__ == '__main__':
-    
 #--- Parse CLI (input parameters) -------------------------------------------------------- 
     CLI = argparse.ArgumentParser(description=__doc__,
                       formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -35,6 +36,8 @@ if __name__ == '__main__':
     # N.B. parameter should be anchored to physiology inputs and/or inputs from data 
     CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=0.5,
                         help="minimum percentage of active channels involved in a wave")
+    CLI.add_argument("--n_trans_th_fraction", nargs='?', type=float, default=0.05,
+                        help="maximum percentage of active channels performing a transition to detect a stationarity")
 
     args = CLI.parse_args()
 
@@ -50,7 +53,9 @@ if __name__ == '__main__':
     print('signal loaded:\n-- signal duration (nsamples) = ', nSamples)
     print('-- nChannels = ',nChannels)
 
-    spatial_scale = asig.annotations['spatial_scale'] 
+    sampling_rate = 1./np.diff(asig.times)[0]
+    spatial_scale = asig.annotations['spatial_scale']
+
     # spatial_scale = pixel size (for regularly -spaced and/or -downsampled channel arrays) 
     # N.B. spatial_scale is set at native resolution for dataset processed with HOS
 
@@ -110,6 +115,7 @@ if __name__ == '__main__':
      
     nCh = len(np.unique(evts.array_annotations['channels'])) # total number of active channels
     print('Active Channels: ', nCh)
+    transition_th = np.int32(args.n_trans_th_fraction*nCh) # number of transition threshold to detect stationary
 
     ChRatio = nCh/nChannels
     print('--> Channel Ratio = ', ChRatio)
@@ -133,17 +139,31 @@ if __name__ == '__main__':
 
     # 1) search for the optimal abs timelag
     Waves_Inter = timelag_optimization(evts, args.max_abs_timelag)
-   
+
     # 2) search for the best max_iwi parameter
     Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.acceptable_rejection_rate)
+
+    # 2bis) wave collection refinement according to the cumulative distribution of transitionx
+    Waves_Inter = CropDetectedWaves(Waves_Inter, sampling_rate, transition_th)
 
     # 3) Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
 
     # 4) Globality principle
     Wave = RemoveSmallWaves(evts, args.min_ch_fraction, Waves_Inter, dim_x, dim_y)
+
     print('number of detected waves', len(Wave))
 
+
+    '''
+    from skimage import data, io, filters, measure
+    for w in Wave:
+        plt.figure()
+        grid = np.empty([50, 50])*np.nan
+        grid[w['ch']%50, w['ch']//50] = (w['times']-np.mean(w['times']))
+        plt.imshow(measure.block_reduce(grid, (6,6), func=np.nanmean), cmap = 'RdBu')
+        plt.show()
+    '''
     Waves = []
     Times = []
     Label = []
