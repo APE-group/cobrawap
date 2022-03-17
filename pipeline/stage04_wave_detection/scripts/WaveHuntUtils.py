@@ -122,7 +122,7 @@ def timelag_optimization(evts, max_abs_timelag):
     for w, ndx in enumerate(ndx_list):
         Wave[w] = {'ndx': ndx,
                    'ch': ChLabel[ndx],
-                   'times': UpTrans[ndx]*pq.s,
+                   'times': UpTrans[ndx],
                    'WaveUnique': len(ChLabel[ndx]) == len(np.unique(ChLabel[ndx])),
                    'WaveSize': len(ndx),
                    'WaveTime': np.mean(UpTrans[ndx]),
@@ -138,6 +138,7 @@ def timelag_optimization(evts, max_abs_timelag):
 def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejection_rate):
 # IWI = inter wave interval, i.e. distinct waves in the wave collection
 
+>>>>>>> e8793b5... [Stage04-WaveHunt] Stationary distribution cropping
     print('\n(2) IWIOptimization')
     
     min_ch_num = int(min_ch_fraction*(nCh + np.sqrt(nCh))) # (Globality parameter)
@@ -561,5 +562,91 @@ def RemoveSmallWaves(Evts_UpTrans, min_ch_fraction, FullWave, dim_x, dim_y):
 
     return Wave
 
+############################## REFINEMENT FUNC - TO BE REVISED #############################
+
+def DetectStationary(times, sampling_rate, transition_th):
+    #TODO: optimize this function!!!
+    minimum = np.min(times)
+    maximum = np.max(times)
+    n_bins = np.int32((maximum-minimum)*sampling_rate)
+
+    H, edges = np.histogram(times, range = (minimum, maximum),
+                            bins = n_bins)
+    CumulativeH = np.cumsum(H)
+    DiffCum = np.diff(CumulativeH)
+    DiffCum = np.insert(DiffCum, [0, DiffCum.size], [0,0])
+
+    Stationary = DiffCum <= transition_th
+    # select indexes associated with consecutive true values as transition 
+    # associated to the same wave phoenomenon
+    ndx_list_true_tmp = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(Stationary)[0]), 
+                                                                         lambda ix:ix[0]-ix[1])]
+
+    # delete single events
+    lenght = [len(n) for n in ndx_list_true_tmp]
+    ndx_list_true = [ndx_list_true_tmp[i] for i in np.where(np.array(lenght) > 1)[0]]
+
+    start_time_list = []
+    end_time_list = []
+    for n in ndx_list_true:
+        start_time_list.append(edges[n[-1]])
+        end_time_list.append(edges[n[0]])
+
+    if len(start_time_list) == 0:
+        start_time_list = [edges[0]]
+        end_time_list = [edges[-1]]
+    if end_time_list[0] < start_time_list[0]:
+        temp = [0]
+        start_time_list.insert(0, 0)
+    if end_time_list[-1] < start_time_list[-1]:
+        end_time_list.extend([edges[-1]])
+
+    return(DiffCum, ndx_list_true, start_time_list, end_time_list, edges)
+
+def CheckWave(Waves, sampling_rate, transition_th):
+    #TODO: optimize this function!!!
+    if np.int32((np.max(Waves['times'])-np.min(Waves['times']))*sampling_rate) > 1:
+
+        # compute cumulative of transition and identify stationary intervals
+        DiffCum, ndx_list_true, start_time_list, end_time_list, edges = DetectStationary(Waves['times'].magnitude, sampling_rate, transition_th)
+        # crop wave between start and stop
+        new_wave = []
+        #ax.plot(edges[:-1], DiffCum)
+        #print('start', start_time_list)
+        #print('end', end_time_list)
+        for s, e in zip(start_time_list, end_time_list):
+            temp1 = Waves['times'] <= e
+            temp2 = Waves['times'] >= s
+            idx = np.where(temp1 & temp2)[0]
+            if len(idx) != 0:
+                new_wave.append({'ndx': Waves['ndx'][idx],
+                                 'ch': Waves['ch'][idx],
+                                 'times': Waves['times'][idx],
+                                 'WaveUnique': len(Waves['ch'][idx]) == len(np.unique(Waves['ch'][idx])),
+                                 'WaveSize': len(idx),
+                                 'WaveTime': np.mean(Waves['times'][idx]),
+                                 'WaveUniqueSize': len(np.unique(Waves['ch'][idx]))})
+    else:
+        new_wave = [Waves]
+    if len(new_wave) ==0:
+        new_wave = [Waves]
+
+    return(new_wave)
+
+def CropDetectedWaves(Wave_coll, sampling_rate, transition_th):
+    #TODO: optimize this function!!!
+    NWaves = len(Wave_coll)  # whether each wave has been checked
+    del_idx = []
+    for w_idx in range(0, NWaves): # while there still is a wave to be checked
+        new_wave = CheckWave(Wave_coll[w_idx], sampling_rate, transition_th)
+        if len(new_wave) == 1:
+            Wave_coll[w_idx] = new_wave[0]
+        elif len(new_wave) > 1:
+            Wave_coll[w_idx] = new_wave[0]
+            for w in new_wave[1:]:
+                Wave_coll.append(w)
+        elif len(new_wave) == 0:
+            del_idx.append(w_idx)
+    return(Wave_coll)
 
 
