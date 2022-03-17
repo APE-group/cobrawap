@@ -173,6 +173,9 @@ if __name__ == '__main__':
 
     remove_annotations(evts, del_keys=['nix_name', 'neo_name'])
     waves.annotations.update(evts.annotations)
-    
+
     if args.output_img is not None:
         PlotDetectedWaves(evts, waves)
+        save_plot(args.output_img)
+    block.segments[0].events.append(waves)
+    write_neo(args.output, block)

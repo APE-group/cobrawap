@@ -6,6 +6,7 @@
 import numpy as np
 from itertools import groupby
 from operator import itemgetter
+import matplotlib.pyplot as plt
 import quantities as pq
 
 #------------------------------------------------------------------------
