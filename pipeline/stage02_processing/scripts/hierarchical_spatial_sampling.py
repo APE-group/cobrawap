@@ -160,7 +160,7 @@ if __name__ == '__main__':
     block = analogsignals_to_imagesequences(block)
     
     # load image sequences at the original spatial resolution
-    imgseq = block.segments[0].imagesequences[-1]
+    imgseq = block.segments[0].imagesequences[0]
     imgseq_array = imgseq.as_array().T
     dim_x, dim_y, dim_t = imgseq_array.shape
 
