@@ -119,7 +119,7 @@ def detect_minima(asig, interpolation_points, interpolation, maxima_threshold_fr
                     labels=['UP'] * len(minimum_times),
                     name='transitions',
                     trigger_detection='minima',
-                    use_quadtratic_interpolation=interpolation,
+                    use_quadratic_interpolation=interpolation,
                     num_interpolation_points=interpolation_points,
                     array_annotations={'channels':channel_idx[sort_idx]})
 
@@ -196,7 +196,7 @@ if __name__ == '__main__':
                      help="path of output file")
     CLI.add_argument("--num_interpolation_points", nargs='?', type=int, default=5,
                      help="number of neighbouring points to interpolate")
-    CLI.add_argument("--use_quadtratic_interpolation", nargs='?', type=strtobool, default=False,
+    CLI.add_argument("--use_quadratic_interpolation", nargs='?', type=strtobool, default=False,
                      help="wether use interpolation or not")
     CLI.add_argument("--min_peak_distance", nargs='?', type=float, default=0.200,
                      help="minimum distance between maxima/minima peaks (s)")
@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     transition_event, maxima_event = detect_minima(asig,
                                      interpolation_points=args.num_interpolation_points,
-                                     interpolation=args.use_quadtratic_interpolation,
+                                     interpolation=args.use_quadratic_interpolation,
                                      maxima_threshold_fraction=args.maxima_threshold_fraction,
                                      maxima_threshold_window=args.maxima_threshold_window,
                                      min_peak_distance=args.min_peak_distance,

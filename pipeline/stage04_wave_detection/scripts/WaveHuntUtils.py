@@ -7,6 +7,7 @@ import numpy as np
 from itertools import groupby
 from operator import itemgetter
 import quantities as pq
+import matplotlib.pyplot as plt
 
 #------------------------------------------------------------------------
 # Misc Functions
@@ -50,98 +51,125 @@ def PlotDetectedWaves(evts, waves):
 def timelag_optimization(evts, max_abs_timelag):
 # (intra-wave interval, i.e. time lag between triggers in the same candidate wave
 
+    print('\n(1) TimeLagOptimization')
+    
     StartingValue = max_abs_timelag
     UpTrans = evts.times.magnitude
     ChLabel = evts.array_annotations['channels']
     sorted_idx = np.argsort(UpTrans)
     UpTrans = UpTrans[sorted_idx]
     ChLabel = ChLabel[sorted_idx]
-    #tmp = np.unique([[u,c] for u,c in zip(UpTrans, ChLabel)], axis = 0)
-    #UpTrans = tmp.T[0]
-    #ChLabel = tmp.T[1]
+# N.B. UpTrans should be already sorted (chronological order)
+# a check if sorting is necessary could be introduced, if (UpTrans!=sorted(UpTrans)).any():
 
     DeltaTL = np.diff(UpTrans);
     
-    ####################################################
-    # Compute the time lags matrix looking for optimal MAX_ABS_TIMELAG...
-    # (depends on the distance between electrodes in the array)
+    ######################################################################################
+    # Compute the time lag matrix looking for optimal MAX_ABS_TIMELAG...
+    # (depends on the distance between electrodes in the array, i.d. spatial resolution)
 
-    WaveUnique_flag = True;
+    # UniqueWave = each channel appears only once (unique) in the recostructed wavefront 
+    WaveUnique_flag = True; #True if at least one wave is not unique
+    count=0
+# Starting assumption: MAX_ABS_TIMELAG starting value is large --> starting wave(s) are not unique
     
-    while WaveUnique_flag: #while there still is at least one non-unique wave...
-        WaveUnique_flag = False
-        # WnW is True if time distance between two consecutive transitions lies 
-        # within the MAX_ABS_TIMELAG parameter
+    while WaveUnique_flag: #while there is still at least one non-unique wave...
+        WaveUnique_flag = False #Let's assume that all the waves are unique...
+        
+        # WnW is True if time distance between two consecutive transitions lies within MAX_ABS_TIMELAG
         WnW = DeltaTL<= max_abs_timelag;
-        # select indexes associated with consecutive true values as transition 
-        # associated to the same wave phoenomenon
+        # --> consecutive true values are assumed to be transitions of the same wave
+
+# --- Group transition indexes associated with consecutive WnW true values as transitions associated to the same wave phenomenon
         ndx_list_true = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(WnW)[0]), lambda ix:ix[0]-ix[1])]
         ndx_list_false = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(~WnW)[0]), lambda ix:ix[0]-ix[1])]
 
-        #merge
+#--- Merge
         if len(ndx_list_false):
             ndx_list = []
             for t, f in zip(ndx_list_true, ndx_list_false):
                 ndx_list.append(t+f)
         else:
             ndx_list = ndx_list_true
+        
+        #print(count)
+        #print('len(ndx_list)', len(ndx_list))
 
         for ndx in ndx_list:
             #print(ndx)
-            duplicates = checkIfDuplicates(ChLabel[ndx])
-            if duplicates == True and max_abs_timelag > StartingValue*0.0001: # if the wave is not unique
-                WaveUnique_flag = True
+            duplicates = checkIfDuplicates(ChLabel[ndx]) #bool (True/False)
+            if duplicates == True and max_abs_timelag > StartingValue*0.0001: # if True, the wave is not unique
+# N.B. even if duplicates, if max_abs_timelag goes below the threshold, iteration (while loop) is stopped 
+# (a strict "no duplicates" condition would bring to infinite loops and meaningless wave collections
+# if there are zeros in DeltaTL, i.e. simultaneous triggers) 
+                WaveUnique_flag = True                
+                count+=1
                 max_abs_timelag *= 0.75; # rescale the parameter
                 break
     
+    print('number of iterations: ', count)
     print('maximum abs timelag: ', max_abs_timelag) 
-        
+    print('(check: ', StartingValue*pow(0.75,count),') (threshold: ', StartingValue*0.0001,')')        
+    print('>>> number of waves in WaveCollection_v1: ', len(ndx_list))
+    if duplicates:
+      print('    N.B. There are still non-unique waves')
+    nUniqueWaves=0 #counter initialised
+
+# --- Create dictionary for candidate waves
     Wave = [dict() for i in range(len(ndx_list))]
-    # fill the wave candidates dictionary
+# --- Fill the wave candidates dictionary ('Wave' is a list of dictionaries)
     for w, ndx in enumerate(ndx_list):
         Wave[w] = {'ndx': ndx,
                    'ch': ChLabel[ndx],
-                   'time': UpTrans[ndx],
+                   'times': UpTrans[ndx]*pq.s,
                    'WaveUnique': len(ChLabel[ndx]) == len(np.unique(ChLabel[ndx])),
                    'WaveSize': len(ndx),
                    'WaveTime': np.mean(UpTrans[ndx]),
                    'WaveUniqueSize': len(np.unique(ChLabel[ndx]))}
 
+        if Wave[w]['WaveUnique']: nUniqueWaves+=1
+
+    print('    number of UniqueWaves: ', nUniqueWaves, '(ratio: ', nUniqueWaves/len(ndx_list),')') 
+
     return Wave
 
 #------------------------------------------------------------------------
 def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejection_rate):
-# IWI = inter wave interval, i.g. distinct waves in the wave collection
+# IWI = inter wave interval, i.e. distinct waves in the wave collection
 
-    min_ch_num = min_ch_fraction*(nCh + np.sqrt(nCh))
-    WaveTime=list(map(lambda x : np.mean(x['time']), Wave))
+    print('\n(2) IWIOptimization')
+    
+    min_ch_num = int(min_ch_fraction*(nCh + np.sqrt(nCh))) # (Globality parameter)
+    WaveTime=list(map(lambda x : x['WaveTime'], Wave))
     IWI = np.diff(WaveTime)
-    ##Recollect small-waves in full waves (involving a wider area).
-    MAX_IWI = np.max(IWI)*0.5
+# --- Merge small waves in larger waves (involving a wider area)
+    MAX_IWI = np.max(IWI)*0.5 #StartingValue
 
     OneMoreLoop = True;
-    
-    while OneMoreLoop: #while there still is at least one non-unique wave...
-        
-    
-        # WnW is True if time distance between two consecutive waves lies 
-        # within the MAX_IWI parameter
+    count=1   
+
+    while OneMoreLoop:
+
+        # WnW is True if time distance between two consecutive waves lies within the MAX_IWI parameter
         WnW = IWI<=MAX_IWI;
-        # select indexes associated with consecutive true values as transition 
-        # associated to the same wave phoenomenon
+        # --> consecutive true values are assumed to be portions of the same wave
+
+# --- Group wave indexes associated with consecutive WnW true values as sub-waves associated to the same wave phenomenon
         wave_ndx_list = [list(map(itemgetter(1), g)) for k, g in groupby(enumerate(np.where(WnW)[0]), lambda ix:ix[0]-ix[1])]
 
+        print('iteration: ', count, '\tMAX_IWI: ', MAX_IWI, '\tnWaves: ', len(wave_ndx_list))
+        
         if len(wave_ndx_list) >= ExpectedTrans: OneMoreLoop = False # if more than expected waves are found, 
                                                                     # exit the loop
-        else: # otherwise
-            # check the number of non-unique waves
-            UniqueWaves = [] # wether a merged wave meets the unicity principle
-            WaveSize = [] # involved channels
+        else: # otherwise (we merged too much!)
+            
+            UniqueWaves = [] # whether a merged wave meets the unicity principle
+            WaveSize = [] # number of involved channels ('unique', e.g. without repetitions)
 
             for w_ndx in wave_ndx_list: # for each collected wave
                 temp_ch_labels = []
-                for w in w_ndx:
-                    temp_ch_labels.extend(Wave[w]['ch'])#merged channels
+                for w in w_ndx: # for each wave(portion) in the examined collected wave
+                    temp_ch_labels.extend(Wave[w]['ch']) # merge channels
                 
                 duplicates = checkIfDuplicates(temp_ch_labels)
                 WaveSize.append(len(np.unique(temp_ch_labels)))
@@ -150,29 +178,39 @@ def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejec
                     UniqueWaves.append(False)
                 else:
                     UniqueWaves.append(True)
+
             UniqueWaves = np.array(UniqueWaves, dtype = bool)
+            n_waves = len(UniqueWaves) #len(UniqueWaves) is the same as len(wave_ndx_list)
 
-            # if rejaction rate limit is not met
-            n_waves = len(UniqueWaves)
-
-            if n_waves <= ExpectedTrans and  len(np.where(~UniqueWaves)[0])/np.float64(n_waves) > acceptable_rejection_rate: # if there is at least 1 non-unique wave
-                MAX_IWI = MAX_IWI*0.75 # reduce max iwi
+# --- Check the UNICITY (number of non-unique waves) and the GLOBALITY (number of unique channels involved)
+            if n_waves <= ExpectedTrans and  len(np.where(~UniqueWaves)[0])/np.float64(n_waves) > acceptable_rejection_rate: 
+            # waves in the collection are too few (we merged too much) and 
+            # the percentage of non-unique waves is above the acceptable rejection rate (default: 10%)
+                MAX_IWI = MAX_IWI*0.75 # >>> reduce MAX_IWI, i.e. some merged waves should be splitted, in order to meet the unicity requirement
                 OneMoreLoop = True
             elif n_waves > ExpectedTrans and len(np.where(WaveSize < min_ch_num)[0])/np.float64(n_waves) > acceptable_rejection_rate:
-                MAX_IWI = MAX_IWI * 1.25
+            # waves in the collection are too many (we splitted too much) and 
+            # the percentage of waves not fulfilling the globality requirement is above the acceptable rejection rate (default: 10%)
+                MAX_IWI = MAX_IWI * 1.25 # >>> increase MAX_IWI, i.e. some splitted waves should bee merged, in order to meet the globality requirement
                 OneMoreLoop = True
-    
-    # create new dictionary for candidates waves
+            count+=1
+
+    print('number of iterations: ', count)
+    print('optimal MAX_IWI: ', MAX_IWI)
+    print('>>> number of waves in WaveCollection_v2: ', len(wave_ndx_list))
+    nUniqueWaves=0 #counter initialised
+
+# --- Create dictionary for candidate waves
     MergedWaves = [dict() for i in range(len(wave_ndx_list))]
-    # fill the wave candidates dictionary
+# --- Fill the wave candidates dictionary
     for i, w_ndx in enumerate(wave_ndx_list):
         temp_ch_labels = []
         temp_ndx = []
         temp_times = []
         for w in w_ndx:
             temp_ch_labels.extend(Wave[w]['ch'])#merged channels
-            temp_ndx.extend(Wave[w]['ndx'])#merged channels
-            temp_times.extend(Wave[w]['time'])#merged channels
+            temp_ndx.extend(Wave[w]['ndx'])#merged transition ids
+            temp_times.extend(Wave[w]['times'])#merged transition times
         MergedWaves[i] = {'ndx': np.array(temp_ndx),
                    'ch': np.array(temp_ch_labels, dtype = np.int32),
                    'times': np.array(temp_times)*pq.s,
@@ -180,7 +218,9 @@ def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejec
                    'WaveSize': len(temp_ndx),
                    'WaveTime': np.mean(temp_times),
                    'WaveUniqueSize': len(np.unique(temp_ch_labels))}
-    
+        if MergedWaves[i]['WaveUnique']: nUniqueWaves+=1    
+    print('    number of UniqueWaves: ', nUniqueWaves, '(ratio: ', nUniqueWaves/len(wave_ndx_list),')')
+
     return(MergedWaves)
 
 #-----------------------------------------------------------------------------------------
@@ -199,14 +239,21 @@ def Neighbourhood_Search(coords, spatial_scale):
         idx_x = np.where(np.abs(coords['x']-x) <= L*spatial_scale)[0]
         idx_y = np.where(np.abs(coords['y']-y) <= L*spatial_scale)[0]
         idx = np.intersect1d(idx_x, idx_y)
+        if len(idx)==1:
+          print('--- ', x,y)
+          print(len(idx_x), idx_x)
+          print(len(idx_y), idx_y)
         neighbors.append(list(idx))
     return(neighbors)
 
-# NOTE. Beside border effects, for uniformly spaced grid each pixel has 4 neighbors, while 
-# for HOS if a small (high resolution) pixel is sorrounded by larger pixels (i.e. less 
-# informative) it could have an empty set of neighbors. This is in agreement with the 
-# assumption made that each pixel can be affected only by pixels (neighbors) having its same
-# size, i.e. same information density
+# Beside border effects, for uniformly spaced grid each pixel has up to 9 neighbors 
+# (including itself), while for HOS if a small (high resolution) pixel is sorrounded by 
+# larger pixels (i.e. less informative) it could have an empty set of neighbors 
+# (len(neighbors[i] is 1, i.e. itself only). This is in agreement with the assumption made 
+# that each pixel can be affected only by pixels (neighbors) having its same size, i.e. 
+# same information density.
+# N.B. proximity in the grid is evaluated along x and y are separately (not as a radius centered 
+# at the pixel c.m., i.e. through a distance computed with a quadratic sum ad a square root  
 
 #-----------------------------------------------------------------------------------------
 def ChannelCleaning(Wave, neighbors):
@@ -215,24 +262,17 @@ def ChannelCleaning(Wave, neighbors):
 
     chs = Wave['ch'];            
     nhc_pixel, nhc_count = np.unique(chs, return_counts=True)
-    rep = np.where(nhc_count > 1.)[0]; # channels index where the wave pass more than once           
+    rep = np.where(nhc_count > 1)[0]; # repeated channels, i.e. where the wave passes more than once           
 
     k = 0
-
-
-    
     while k < len(rep):
-        
         i=rep[k];
-        
-        repeted_index = np.where(chs == nhc_pixel[i])[0] # where i have repetitions
-        
+        repeted_index = np.where(chs == nhc_pixel[i])[0] # where repetitions of channel nhc_pixel[i] occurs in Wave        
         timeStamp = Wave['times'][repeted_index].magnitude #UpTrans[idx];
         
-        if np.max(np.diff(timeStamp))<0.125: #if repeted transition happen to be close in time                   
-            # delta waves freqeunci is 1-4Hz -> minimum distance between two waves = 0.250s
-            # open a time-window around each occurrence of i and check
-            # how many members of the clan are in the time-window
+        if np.max(np.diff(timeStamp))<0.125: #if repeted transitions happen to be close in time                   
+            # delta wave frequency is 1-4Hz -> minimum distance between two waves = 0.250s
+# --- Open a time-window around each occurrence of i and check how many members of the 'clan' are in the time-window
             
             nClan=[];
             idx_noClan = []
@@ -353,21 +393,20 @@ def Clean_NonUniqueWave(Wave, neighbors):
     return(delCh)
 
 #------------------------------------------------------------------------
-def CleanWave(UpTrans,ChLabel, neighbors,  FullWave):
+def CleanWave(UpTrans, ChLabel, neighbors, FullWave):
 
     FullWaveUnique=list(map(lambda x : x['WaveUnique'], FullWave))
     FullWaveSize=list(map(lambda x : x['WaveSize'], FullWave))
     FullWaveTime=list(map(lambda x : x['WaveTime'], FullWave))
 
-    nPixel = len(np.unique(ChLabel))
+    nPixel = len(np.unique(ChLabel)) # total number of active channels (nCh)
     nw=0;
 
-    
-    while nw<len(FullWave): # for each wave
+    while nw<len(FullWave): # for each wave in the WaveCollection
         
-        if len(FullWave[nw]['ch']) != len(np.unique(FullWave[nw]['ch'])):
+        if len(FullWave[nw]['ch']) != len(np.unique(FullWave[nw]['ch'])): # wave is not unique
             
-            # CLEAN wave channels
+# --- CLEAN wave channels (using neighbors information)
             FullWave[nw] = ChannelCleaning(FullWave[nw], neighbors)
 
             # Look for CANDIDATE SEGMENTS                            
