@@ -25,7 +25,7 @@ if __name__ == '__main__':
     CLI.add_argument("--output", nargs='?', type=str, required=True,
                         help="path of output file")
     CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
-                     help="path of output image", default=None)
+                        help="path of output image", default=None)
 
     #--- Algorythm Parameters 
     CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8, #units: [s]
