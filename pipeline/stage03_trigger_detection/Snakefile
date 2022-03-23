@@ -237,7 +237,7 @@ rule minima:
         maxima_threshold_fraction = MAXIMA_THRESHOLD_FRACTION,
         maxima_threshold_window = MAXIMA_THRESHOLD_WINDOW,
         num_interpolation_points = NUM_INTERPOLATION_POINTS,
-        use_quadtratic_interpolation = USE_QUADRATIC_INTERPOLATION,
+        use_quadratic_interpolation = USE_QUADRATIC_INTERPOLATION,
         plot_channels = PLOT_CHANNELS,
         plot_tstart = PLOT_TSTART,
         plot_tstop = PLOT_TSTOP,
@@ -260,7 +260,7 @@ rule minima:
                               --plot_tstop {params.plot_tstop} \
                               --maxima_threshold_fraction {params.maxima_threshold_fraction} \
                               --maxima_threshold_window {params.maxima_threshold_window} \
-                              --use_quadtratic_interpolation {params.use_quadtratic_interpolation} \
+                              --use_quadratic_interpolation {params.use_quadratic_interpolation} \
                               --num_interpolation_points {params.num_interpolation_points}
         """
 
