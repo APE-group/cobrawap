@@ -3,7 +3,7 @@ import numpy as np
 import quantities as pq
 import argparse
 from sklearn.cluster import DBSCAN
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 from utils.neo import remove_annotations
 
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                      help="minimum number of trigger times to form a wavefront")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
 
     evts = block.filter(name='transitions', objects="Event")[0]
@@ -82,4 +82,4 @@ if __name__ == '__main__':
 
     block.segments[0].events.append(wave_evt)
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

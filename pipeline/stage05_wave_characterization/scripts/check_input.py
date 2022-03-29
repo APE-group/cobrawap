@@ -6,7 +6,7 @@ import argparse
 import quantities as pq
 import warnings
 import re
-from utils.io import load_neo
+from utils.io import load_input
 from utils.parse import none_or_str
 
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                           'calculated for wavemodes and will be skipped: '
                          f'{", ".join(invalid_measures)}.')
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     if len(block.segments) > 1:
         print("More than one Segment found; all except the first one " \

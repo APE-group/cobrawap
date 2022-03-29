@@ -3,11 +3,12 @@ import numpy as np
 from scipy.stats import shapiro
 import matplotlib.pyplot as plt
 import argparse
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.parse import none_or_float, none_or_int, none_or_str
 from utils.neo import analogsignals_to_imagesequences, imagesequences_to_analogsignals
 
 
+import cProfile, pstats
 def next_power_of_2(n):
     if n == 0:
         return 1
@@ -155,13 +156,14 @@ if __name__ == '__main__':
                       help="path of output numpy array", default=None)
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
     block = analogsignals_to_imagesequences(block)
     
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
-    imgseq_array = imgseq.as_array().T
+    imgseq_array = np.swapaxes(imgseq.as_array().T, 0 ,1)
+
     dim_x, dim_y, dim_t = imgseq_array.shape
 
     # pad image sequences with nans to make it divisible by 2
@@ -217,7 +219,4 @@ if __name__ == '__main__':
     new_asig.description += "Non homogeneous downsampling obtained by cheching the signal to noise ratio of macropixels ad different size."
     block.segments[0].analogsignals[0] = new_asig
 
-    write_neo(args.output, block)
-
-
-
+    write_output(args.output, block)

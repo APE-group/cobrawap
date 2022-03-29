@@ -8,7 +8,7 @@ from matplotlib.colors import ListedColormap
 import seaborn as sns
 import random
 import warnings
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot #load_neo, save_plot
 from utils.parse import none_or_float
 from utils.neo import time_slice
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                      help="length of time_slice in seconds.")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     evts = block.filter(name='wavefronts', objects="Event")[0]
 

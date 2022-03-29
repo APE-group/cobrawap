@@ -4,13 +4,14 @@ import quantities as pq
 from scipy.signal import find_peaks
 import argparse
 from distutils.util import strtobool
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot, load_neo
 from utils.neo import remove_annotations, time_slice
 from utils.parse import none_or_int, none_or_float
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 
+import cProfile, pstats
 def _boolrelextrema(data, comparator, axis=0, order=1, mode='clip'):
     
     if((int(order) != order) or (order < 1)):
@@ -220,7 +221,10 @@ if __name__ == '__main__':
 
 
     args = CLI.parse_args()
-    block = load_neo(args.data)
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
 
     transition_event, maxima_event = detect_minima(asig,
@@ -234,7 +238,8 @@ if __name__ == '__main__':
    
     block.segments[0].events.append(transition_event)
     block.segments[0].events.append(maxima_event)
-    write_neo(args.output, block)
+    #write_neo(args.output, block)
+    write_output(args.output, block)
 
     if args.plot_channels[0] is not None:
         for channel in args.plot_channels:

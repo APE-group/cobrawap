@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import quantities as pq
 import random
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot
 from utils.neo import time_slice
 from utils.parse import parse_plot_channels, none_or_int, determine_dims
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                      help="list of channels to plot")
     args = CLI.parse_args()
 
-    asig = load_neo(args.data, 'analogsignal', lazy=True)
+    asig = (load_input(args.data)).segments[0].analogsignals[0]
 
     channels = parse_plot_channels(args.channels, args.data)
 

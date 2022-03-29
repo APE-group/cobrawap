@@ -6,10 +6,10 @@ STAGE_NAME: 'stage01_data_entry'
 # The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
 PROFILE: 'dataset_key'
 
-# Name of stage output file.
-STAGE_OUTPUT: 'data.nix'
+# Name of stage output file (without extension.
+STAGE_OUTPUT: 'data'
 
-# File format in which all intermediate neo objects are stored
+# File format in which all intermediate neo objects are stored (nix or pkl supported)
 NEO_FORMAT: 'nix'
 
 # If True (default), the output file of a stage is created as symbolic link

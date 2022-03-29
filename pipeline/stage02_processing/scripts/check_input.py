@@ -4,7 +4,7 @@
 import numpy as np
 import argparse
 import quantities as pq
-from utils.io import load_neo
+from utils.io import load_input
 
 
 if __name__ == '__main__':
@@ -14,7 +14,7 @@ if __name__ == '__main__':
                      help="path to input data in neo format")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     if len(block.segments) > 1:
         print("More than one Segment found; all except the first one " \

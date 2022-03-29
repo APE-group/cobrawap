@@ -9,10 +9,11 @@ import neo
 import quantities as pq
 from skimage import data, io, filters, measure
 import scipy
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.parse import none_or_str
 from utils.neo import analogsignals_to_imagesequences, imagesequences_to_analogsignals
 
+import cProfile, pstats
 def spatial_smoothing(images, macro_pixel_dim):
 
     # Now we need to reduce the noise from the images by performing a spatial smoothing
@@ -63,8 +64,13 @@ if __name__ == '__main__':
     CLI.add_argument("--macro_pixel_dim",  nargs='?', type=int,
                      help="smoothing factor", default=2)
 
+
+    profiler = cProfile.Profile()
+    profiler.enable()
+
     args = CLI.parse_args()
-    block = load_neo(args.data)
+    #block = load_neo(args.data)
+    block = load_input(args.data)
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[0]
 
@@ -81,4 +87,10 @@ if __name__ == '__main__':
 
     block.segments[0].analogsignals[0] = new_block.segments[0].analogsignals[0]
 
-    write_neo(args.output, block)
+    #write_neo(args.output, block)
+    write_output(args.output, block)
+
+
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(10)

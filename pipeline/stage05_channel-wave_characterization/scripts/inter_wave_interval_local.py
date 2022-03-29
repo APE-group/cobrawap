@@ -7,7 +7,7 @@ import quantities as pq
 import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot
 from utils.parse import none_or_str
 from utils.neo import analogsignals_to_imagesequences
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
                      help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
     block = analogsignals_to_imagesequences(block)
 
     imgseq = block.segments[0].imagesequences[0]

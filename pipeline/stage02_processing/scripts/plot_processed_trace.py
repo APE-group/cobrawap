@@ -3,7 +3,7 @@ import seaborn as sns
 import argparse
 import os
 import random
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot 
 from utils.neo import time_slice
 
 
@@ -51,11 +51,14 @@ if __name__ == '__main__':
                      help="channel to plot")
     args = CLI.parse_args()
 
-    orig_asig = load_neo(args.original_data, 'analogsignal', lazy=False)
+    orig_asig = (load_input(args.original_data)).segments[0].analogsignals[0]
+    
     orig_asig = time_slice(orig_asig, t_start=args.t_start, t_stop=args.t_stop,
                            lazy=False, channel_indexes=args.channels)
 
-    proc_asig = load_neo(args.processed_data, 'analogsignal', lazy=False)
+    #proc_asig = load_neo(args.processed_data, 'analogsignal', lazy=False)
+    proc_asig = (load_input(args.processed_data)).segments[0].analogsignals[0]
+    
     proc_asig = time_slice(proc_asig, t_start=args.t_start, t_stop=args.t_stop,
                            lazy=False, channel_indexes=args.channels)
 

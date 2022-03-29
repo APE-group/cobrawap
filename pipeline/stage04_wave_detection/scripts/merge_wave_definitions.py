@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import neo
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 
 
 if __name__ == '__main__':
@@ -15,7 +15,7 @@ if __name__ == '__main__':
                      help="path of output file")
 
     args = CLI.parse_args()
-    waves_block = load_neo(args.waves)
+    waves_block = load_input(args.waves)
 
     asig_names = [asig.name for asig in waves_block.segments[0].analogsignals]
     event_names = [event.name for event in waves_block.segments[0].events]
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         args.properties = []
 
     for property in args.properties:
-        block = load_neo(property)
+        block = load_input(property)
 
         for asig in block.segments[0].analogsignals:
             if asig.name not in asig_names:
@@ -44,4 +44,4 @@ if __name__ == '__main__':
 
         del block
 
-    write_neo(args.output, waves_block)
+    write_output(args.output, waves_block)

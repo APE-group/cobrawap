@@ -3,6 +3,41 @@ import neo
 import matplotlib.pyplot as plt
 import warnings
 
+import pickle
+
+def load_input(filename):
+    # read extension
+    ext = os.path.splitext(filename)[-1].lower()
+    if ext == '.nix':
+        block = load_neo(filename)
+    elif ext == '.pkl':
+        block = load_pkl(filename)
+    return block
+
+def write_output(filename, block):
+    # read extension
+    ext = os.path.splitext(filename)[-1].lower()
+    if ext == '.nix':
+        write_neo(filename, block)
+    elif ext == '.pkl':
+        write_pkl(filename, block)
+
+def load_pkl(filename):
+
+    # reconstruct
+    with open(filename, 'rb') as outp:  # Overwrites any existing file.
+        block = pickle.load(outp)
+    return block
+
+def write_pkl(filename, block):
+    # get rid of imagesequences
+    while block.segments[0].imagesequences:
+        del block.segments[0].imagesequences[0]
+    #obj_as = block.segments[0].analogsignals[0]
+    with open(filename, 'wb') as outp:  # Overwrites any existing file.
+        pickle.dump(block, outp, pickle.HIGHEST_PROTOCOL)
+
+
 def load_neo(filename, object='block', lazy=False, *args, **kwargs):
     try:
         io = neo.io.get_io(str(filename), 'ro', *args, **kwargs)

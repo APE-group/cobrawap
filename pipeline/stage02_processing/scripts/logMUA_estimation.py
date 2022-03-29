@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 import os
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.parse import none_or_float, none_or_int
 from utils.neo import time_slice
 
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                      help="list of channels to plot")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     logMUA_rate = None if args.logMUA_rate is None \
                   else args.logMUA_rate*pq.Hz
@@ -189,4 +189,4 @@ if __name__ == '__main__':
                                 os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

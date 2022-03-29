@@ -6,8 +6,10 @@ import argparse
 import neo
 import os
 import sys
-from utils.io import write_neo, load_neo
+from utils.io import write_output, load_input
 
+
+import cProfile, pstats
 
 def normalize(asig, normalize_by):
     if normalize_by == 'median':
@@ -46,7 +48,7 @@ if __name__ == '__main__':
                      help="division factor: 'max', 'mean', or 'median'")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     asig = normalize(block.segments[0].analogsignals[0], args.normalize_by)
 
@@ -55,4 +57,4 @@ if __name__ == '__main__':
                         .format(args.normalize_by, os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

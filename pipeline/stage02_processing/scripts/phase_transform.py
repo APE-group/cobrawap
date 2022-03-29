@@ -2,7 +2,7 @@ import numpy as np
 from elephant.signal_processing import hilbert
 import argparse
 import os
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 
 
 if __name__ == '__main__':
@@ -14,7 +14,7 @@ if __name__ == '__main__':
                      help="path of output file")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
 
     phase = np.angle(hilbert(asig).as_array())
@@ -27,4 +27,4 @@ if __name__ == '__main__':
                         .format(os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

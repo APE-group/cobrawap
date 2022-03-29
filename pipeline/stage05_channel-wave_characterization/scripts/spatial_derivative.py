@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import itertools
 from warnings import warn
 from scipy.interpolate import RBFInterpolator
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot
 from utils.parse import none_or_str
 from utils.convolve import nan_conv2d, get_kernel
 
@@ -70,11 +70,12 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
                 trigger_collection = sample_wave_pattern(pattern_func,
                                                          dim_x=dim_x, dim_y=dim_y)
             except ValueError as ve:
-                warn(ve + ' Continuing without interpolation.')
+                warn(repr(ve))
+                warn('Continuing without interpolation.')
 
         kernel = get_kernel(kernel_name)
-        d_vertical = -1 * nan_conv2d(trigger_collection, kernel.y)
-        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.x)
+        d_vertical = -1 * nan_conv2d(trigger_collection, kernel.x)
+        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.y)
 
 
         dt_x = d_vertical[x_coords, y_coords]
@@ -127,7 +128,7 @@ if __name__ == '__main__':
                      help="smoothing factor for the interpolation")
     args, unknown = CLI.parse_known_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     asig = block.segments[0].analogsignals[0]
     evts = block.filter(name=args.event_name, objects="Event")[0]

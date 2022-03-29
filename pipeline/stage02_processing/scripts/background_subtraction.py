@@ -5,9 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import os
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.parse import none_or_str
-
 
 def shape_frame(value_array, coords):
     dim_x = np.max(coords[:,0]) + 1
@@ -38,8 +37,10 @@ if __name__ == '__main__':
                       help="path of output numpy array", default=None)
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
+
     signal = asig.as_array()
     background = np.nanmean(signal, axis=0)
     signal -= background
@@ -58,9 +59,10 @@ if __name__ == '__main__':
 
     new_asig = asig.duplicate_with_new_data(signal)
     new_asig.array_annotations = asig.array_annotations
-    new_asig.name += ""
+    new_asig.name = ""
     new_asig.description += "The mean of each channel was subtracted ({})."\
                         .format(os.path.basename(__file__))
     block.segments[0].analogsignals[0] = new_asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)
+

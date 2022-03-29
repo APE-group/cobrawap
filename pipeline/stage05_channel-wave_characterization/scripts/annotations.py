@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import quantities as pq
 import re
-from utils.io import load_neo, save_plot
+from utils.io import load_input,  save_plot
 from utils.parse import none_or_str
 from utils.neo import remove_annotations
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     if len(args.include_keys):
         args.ingnore_keys = []
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     asig = block.segments[0].analogsignals[0]
     evts = block.filter(name=args.event_name, objects="Event")[0]

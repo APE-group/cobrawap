@@ -7,7 +7,7 @@ import os
 import argparse
 import scipy
 import pandas as pd
-from utils.io import load_neo, save_plot
+from utils.io import load_input,save_plot
 from utils.parse import none_or_str
 
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
                      help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     asig = block.segments[0].analogsignals[0]
     evts = block.filter(name=args.event_name, objects="Event")[0]

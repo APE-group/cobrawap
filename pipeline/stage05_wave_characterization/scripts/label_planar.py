@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import copy
 import seaborn as sns
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot
 from utils.neo import analogsignals_to_imagesequences
 from utils.parse import none_or_str
 
@@ -22,7 +22,6 @@ def label_planar(waves_event, vector_field, times, threshold):
                  in waves_event.times[idx]]
         x = waves_event.array_annotations['x_coords'][idx]
         y = waves_event.array_annotations['y_coords'][idx]
-
         wave_directions = vector_field[t_idx, x.astype(int), y.astype(int)]
         norm = np.array([np.linalg.norm(w) for w in wave_directions])
         wave_directions /= norm
@@ -100,7 +99,7 @@ if __name__ == '__main__':
                      help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     block = analogsignals_to_imagesequences(block)
     asig = block.segments[0].analogsignals[0]

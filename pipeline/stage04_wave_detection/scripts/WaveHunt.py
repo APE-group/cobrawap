@@ -3,7 +3,7 @@ import quantities as pq
 import argparse
 import matplotlib.pyplot as plt
 
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.neo import remove_annotations, analogsignals_to_imagesequences
 from utils.parse import none_or_str, none_or_float
 
@@ -40,8 +40,8 @@ if __name__ == '__main__':
 
 #--- Load Input Data 
 #    Collect Geometry Information from data ----------------------------------------------
-
-    block = load_neo(args.data)
+    print(args.data)
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
 
     nSamples = np.shape(asig)[0]
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     #---
     block = analogsignals_to_imagesequences(block)
-    imgseq = block.segments[0].imagesequences[-1]
+    imgseq = block.segments[0].imagesequences[0]
     
     dim_x, dim_y = np.shape(imgseq[0]) # size of the array/grid expressed in number of channels/pixels
 
@@ -121,28 +121,23 @@ if __name__ == '__main__':
     neighbors = Neighbourhood_Search(coords, spatial_scale)
 
     #--- check if pixels have empty list of neighbors (relevant for HOS)
-    emptyneighbors=0
-    for i in range(len(neighbors)):
-      if not neighbors[i]:
-         print('WARNING: pixel ', i, '(radius: ', coords['radius'][i], 'has no neighbors')
-         emptyneighbors+=1
-    if not emptyneighbors:
-      print('Each pixel has a valid list of neighbors')
-
+    #emptyneighbors=0
+    #for i in range(len(neighbors)):
+    #  if not neighbors[i]:
+    #     print('WARNING: pixel ', i, '(radius: ', coords['radius'][i], 'has no neighbors')
+    #     emptyneighbors+=1
+    #if not emptyneighbors:
+    #  print('Each pixel has a valid list of neighbors')
 #--- WaveHunt Core Actions ---------------------------------------------------------------
 
     # 1) search for the optimal abs timelag
     Waves_Inter = timelag_optimization(evts, args.max_abs_timelag)
-   
     # 2) search for the best max_iwi parameter
     Waves_Inter = iwi_optimization(Waves_Inter, ExpectedTrans, args.min_ch_fraction, nCh, args.acceptable_rejection_rate)
-
     # 3) Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
-
     # 4) Globality principle
     Wave = RemoveSmallWaves(evts, args.min_ch_fraction, Waves_Inter, dim_x, dim_y)
-    print('number of detected waves', len(Wave))
 
     Waves = []
     Times = []
@@ -178,4 +173,4 @@ if __name__ == '__main__':
         PlotDetectedWaves(evts, waves)
         save_plot(args.output_img)
     block.segments[0].events.append(waves)
-    write_neo(args.output, block)
+    write_output(args.output, block)

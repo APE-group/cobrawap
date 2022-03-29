@@ -9,11 +9,11 @@ import argparse
 from distutils.util import strtobool
 import neo
 import os
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot, load_neo
 from utils.parse import none_or_str
 from utils.neo import analogsignals_to_imagesequences, imagesequences_to_analogsignals
 
-
+import cProfile, pstats
 def calculate_contour(img, contour_limit):
     # Computing the contour lines...
     vmax = np.max(img)
@@ -132,7 +132,11 @@ if __name__ == '__main__':
                      help="discard frame outside of ROI")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+    #block = load_neo(args.data)
+    block = load_input(args.data)
     block = analogsignals_to_imagesequences(block)
 
     # get average image
@@ -173,7 +177,7 @@ if __name__ == '__main__':
         asig.array_annotate(**new_asig.array_annotations)
 
     # save data and figure
-    asig.name += ""
+    asig.name = ""
     asig.description += "Border regions with mean intensity below "\
                       + "{args.intensity_threshold} were discarded. "\
                       + "({})".format(os.path.basename(__file__))
@@ -182,4 +186,12 @@ if __name__ == '__main__':
     plot_roi(avg_img, contour)
     save_plot(args.output_img)
 
-    write_neo(args.output, block)
+    #write_neo(args.output, block)
+    
+    write_output(args.output, block)
+
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(10)
+
+

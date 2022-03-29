@@ -8,7 +8,7 @@ import quantities as pq
 import neo
 from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
 from utils.neo import imagesequences_to_analogsignals, flip_image, rotate_image, time_slice
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 
 
 if __name__ == '__main__':
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     # Load data with Neo IO or custom loading routine
-    block = load_neo(args.data)
+    block = load_input(args.data)
     # If there is no Neo IO for the data type available,
     # the data must be loaded conventioally and added to a newly constructed
     # Neo block. For building a Neo objects, have a look into the documentation
@@ -83,4 +83,4 @@ if __name__ == '__main__':
     block.segments[0].analogsignals[0] = asig
 
     # Save data to file
-    write_neo(args.output, block)
+    write_output(args.output, block)

@@ -4,7 +4,7 @@ import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 from elephant.spectral import welch_psd
-from utils.io import load_neo, save_plot
+from utils.io import load_input, save_plot #load_neo, save_plot
 from utils.parse import none_or_float
 
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
                      help="overlap parameter for Welch's algorithm [0-1]")
     args = CLI.parse_args()
 
-    asig = load_neo(args.data, 'analogsignal')
+    asig = load_input(args.data).segments[0].analogsignals[0]
 
     freqs, psd = welch_psd(asig,
                            freq_res=args.psd_freq_res*pq.Hz,

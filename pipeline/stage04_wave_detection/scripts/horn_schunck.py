@@ -7,7 +7,7 @@ import numpy as np
 from copy import copy
 import matplotlib.pyplot as plt
 from distutils.util import strtobool
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 from utils.parse import none_or_str
 from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imagesequences
 from utils.convolve import phase_conv2d, get_kernel, conv, norm_angle
@@ -227,11 +227,11 @@ if __name__ == '__main__':
                      help='whether to use signal phase instead of amplitude')
 
     args = CLI.parse_args()
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     block = analogsignals_to_imagesequences(block)
-    imgseq = block.segments[0].imagesequences[-1]
-    asig = block.segments[0].analogsignals[-1]
+    imgseq = block.segments[0].imagesequences[0]
+    asig = block.segments[0].analogsignals[0]
 
     frames = imgseq.as_array()
     # frames /= np.nanmax(np.abs(frames))
@@ -282,8 +282,4 @@ if __name__ == '__main__':
 
     block.segments[0].imagesequences = [vec_imgseq]
     block = imagesequences_to_analogsignals(block)
-    write_neo(args.output, block)
-    
-    block = load_neo(args.output)
-    block = analogsignals_to_imagesequences(block)
-    optical_flow = block.filter(name='optical_flow', objects="ImageSequence")[0]
+    write_output(args.output, block)

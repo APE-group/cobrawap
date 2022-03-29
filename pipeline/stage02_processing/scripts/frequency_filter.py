@@ -6,9 +6,8 @@ import argparse
 import quantities as pq
 import os
 from elephant.signal_processing import butter
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 from utils.parse import none_or_float
-
 
 if __name__ == '__main__':
     CLI = argparse.ArgumentParser(description=__doc__,
@@ -27,7 +26,7 @@ if __name__ == '__main__':
                      help="filterfunction used in the scipy backend")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     asig = butter(block.segments[0].analogsignals[0],
                   highpass_freq=args.highpass_freq*pq.Hz,
@@ -50,4 +49,6 @@ if __name__ == '__main__':
                                 os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)
+
+

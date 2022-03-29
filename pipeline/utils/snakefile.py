@@ -11,14 +11,17 @@ def safe_open_w(path):
 
 
 def read_stage_output(stage, config_dir, config_name,
-                      output_namespace="STAGE_OUTPUT"):
+                      output_namespace="STAGE_OUTPUT", neo_format = "NEO_FORMAT"):
+
     with open(os.path.join(config_dir, stage, config_name), 'r') as f:
         config_dict = yaml.safe_load(f)
     if config_dict is None:
         warnings.warn(f'config file {os.path.join(config_dir, stage, config_name)} '
                        'can not be loaded! Skipping reading stage output.')
         return None
-    elif output_namespace in config_dict.keys():
+    elif output_namespace in config_dict.keys() and neo_format in config_dict.keys():
+        return config_dict[output_namespace] + '.' + config_dict[neo_format]
+    elif output_namespace in config_dict.keys() and ~(neo_format in config_dict.keys()):
         return config_dict[output_namespace]
     else:
         raise ValueError(f"config file of stage {stage} "

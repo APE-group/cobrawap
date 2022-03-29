@@ -6,7 +6,7 @@ import argparse
 import quantities as pq
 import warnings
 import re
-from utils.io import load_neo
+from utils.io import load_input
 from utils.parse import none_or_str
 
 if __name__ == '__main__':
@@ -20,7 +20,7 @@ if __name__ == '__main__':
                      help="list of measure names to apply")
     args, unknown = CLI.parse_known_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     if len(block.segments) > 1:
         print("More than one Segment found; all except the first one " \

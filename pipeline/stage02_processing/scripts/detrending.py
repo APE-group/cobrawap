@@ -9,7 +9,7 @@ import argparse
 import os
 from copy import copy
 import warnings
-from utils.io import load_neo, write_neo, save_plot
+from utils.io import load_input, write_output, save_plot
 
 ## REPLACED BY SCIPY FUNCTION
 # def detrending(signal, order):
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                      help="channel to plot")
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
     asig = block.segments[0].analogsignals[0]
 
     detrend_asig = detrend(asig, args.order)
@@ -119,4 +119,4 @@ if __name__ == '__main__':
                         .format(args.order, os.path.basename(__file__))
     block.segments[0].analogsignals[0] = detrend_asig
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

@@ -13,7 +13,7 @@ import quantities as pq
 from skimage import data, io, filters, measure
 from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
 from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imagesequences, flip_image, rotate_image, time_slice
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 import scipy
 
 def hemodyn_correction(imgseq_fluo, imgseq_refl):
@@ -84,7 +84,9 @@ if __name__ == '__main__':
                      help="path of output file")
     
     args = CLI.parse_args()
-    block = load_neo(args.data)
+
+    block = load_input(args.data)
+    
     block = analogsignals_to_imagesequences(block)
     imgseq_fluo = block.segments[0].imagesequences[0]
     imgseq_refl = block.segments[0].imagesequences[1]
@@ -99,5 +101,4 @@ if __name__ == '__main__':
 
     block.segments[0].analogsignals[0] = new_block.segments[0].analogsignals[0]
 
-    write_neo(args.output, block)
-
+    write_output(args.output, block)
