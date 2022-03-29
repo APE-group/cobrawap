@@ -45,9 +45,7 @@ if __name__ == '__main__':
     direction_df.to_csv(args.output)
 
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    #ax.hist(np.angle(df.dt_x*1j + df.dt_y), bins=36, range=[-np.pi, np.pi])
-    #ax.hist(np.arctan2(1./df.dt_y,  1./df.dt_x), bins=36, range=[-np.pi, np.pi])
-    ax.hist(np.arctan2(1./np.array(dt_y_red),  1./np.array(dt_x_red)), bins=36, range=[-np.pi, np.pi])
+    ax.hist(np.angle(df.dt_x + 1j*df.dt_y), bins=36, range=[-np.pi, np.pi])
 
     if args.output_img is not None:
         save_plot(args.output_img)
