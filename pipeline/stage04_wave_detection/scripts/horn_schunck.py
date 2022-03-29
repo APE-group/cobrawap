@@ -230,8 +230,8 @@ if __name__ == '__main__':
     block = load_neo(args.data)
 
     block = analogsignals_to_imagesequences(block)
-    imgseq = block.segments[0].imagesequences[-1]
-    asig = block.segments[0].analogsignals[-1]
+    imgseq = block.segments[0].imagesequences[0]
+    asig = block.segments[0].analogsignals[0]
 
     frames = imgseq.as_array()
     # frames /= np.nanmax(np.abs(frames))

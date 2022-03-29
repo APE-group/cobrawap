@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     #---
     block = analogsignals_to_imagesequences(block)
-    imgseq = block.segments[0].imagesequences[-1]
+    imgseq = block.segments[0].imagesequences[0]
     
     dim_x, dim_y = np.shape(imgseq[0]) # size of the array/grid expressed in number of channels/pixels
 
