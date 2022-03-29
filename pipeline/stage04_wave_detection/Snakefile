@@ -31,6 +31,8 @@ PLOT_CHANNELS = parse_plot_channels(config["PLOT_CHANNELS"], STAGE_INPUT)
 PLOT_FORMAT = config["PLOT_FORMAT"]
 
 DETECTION_BLOCK = config['DETECTION_BLOCK']
+ADDITIONAL_PROPERTIES = config['ADDITIONAL_PROPERTIES']
+
 #if config["DETECTION_BLOCK"] == "WaveHunt_Clustering":
 #    BLOCK_ORDER = ["clustering", "optical_flow", "critical_points", "critical_points_clustering", "merge_wave_definitions"]
 

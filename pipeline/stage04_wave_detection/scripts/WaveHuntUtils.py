@@ -649,3 +649,51 @@ def CropDetectedWaves(Wave_coll, sampling_rate, transition_th):
     return(Wave_coll)
 
 
+
+def reject_outliers(data, m=2):
+        return m * np.std(data)
+
+def GetRidOfSlowTransition(Waves, neigh, spatial_scale):
+    #TODO: optimize this function!!!
+    #TODO: allign this function to non homogeneous sampling
+    # compute local velocity of each trnasition
+    for w_idx, w in enumerate(Waves):
+        # for each transition
+        w_vel = []
+        vel_ch = []
+        for t, ch in zip(w['times'], w['ch']):
+            ch_neigh = neigh[ch]
+
+            # get transition time from neigh
+            times = []
+            for n in ch_neigh:
+                idx = np.where(w['ch'] == n)[0]
+                if len(idx):
+                    times.append(w['times'][idx][0]-t)
+            vel_r = times/spatial_scale.magnitude
+            vel_ch.append(vel_r)
+            w_vel.extend(vel_r)
+
+        # compute wave quartile at a set threshold
+        th = reject_outliers(w_vel)
+        median = np.median(w_vel)
+
+        # compute the number of outliers per transition
+        count_good = []
+        for v in vel_ch:
+            count_good.append(np.sum(np.abs(v-median)<=th)/len(v))
+        #select only transition with more than the half non-outliers neigh
+        good_idx = np.where(np.array(count_good) >= 0.5)[0]
+
+        
+        w['ndx'] = w['ndx'][good_idx]
+        w['ch'] = w['ch'][good_idx]
+        w['times'] = w['times'][good_idx]
+        w['WaveUnique'] = len(w['ch']) == len(np.unique(w['ch']))
+        w['WaveSize'] = len(good_idx)
+        w['WaveTime'] = np.mean(w['times'])
+        w['WaveUniqueSize'] = len(np.unique(w['ch']))
+
+    return(Waves)
+
+
