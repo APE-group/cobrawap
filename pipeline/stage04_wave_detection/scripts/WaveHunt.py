@@ -11,7 +11,7 @@ import neo
 
 from WaveHuntUtils import (timelag_optimization, iwi_optimization,
                            RemoveSmallWaves, CleanWave, Neighbourhood_Search,
-                           PlotDetectedWaves, CropDetectedWaves)
+                           PlotDetectedWaves, CropDetectedWaves, GetRidOfSlowTransition)
 
 # =======================================================================================#
 
@@ -147,6 +147,10 @@ if __name__ == '__main__':
 
     # 3) Unicity principle refinement
     Waves_Inter = CleanWave(evts.times, evts.array_annotations['channels'], neighbors, Waves_Inter)
+
+    # 3bis) Get rid og too fast transitions
+    Waves_Inter = GetRidOfSlowTransition(Waves_Inter, neighbors, spatial_scale)
+
     # 4) Globality principle
     Wave = RemoveSmallWaves(evts, args.min_ch_fraction, Waves_Inter, dim_x, dim_y)
 
