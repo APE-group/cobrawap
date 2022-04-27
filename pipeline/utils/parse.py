@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 utils_path = str((Path(__file__).parent / '..').resolve())
 sys.path.append(utils_path)
-from utils.io import load_neo
+from utils.io import load_input
 
 
 def get_base_type(datatype):
@@ -125,8 +125,7 @@ def parse_plot_channels(channels, input_file):
     channels = [none_or_int(channel) for channel in channels]
     # ToDo: check is channel exsits, even when there is no None
     if None in channels:
-        dim_t, channel_num = load_neo(input_file, object='analogsignal',
-                                      lazy=True).shape
+        dim_t, channel_num = ((load_input(input_file)).segments[0].analogsignals[0]).shape
         for i, channel in enumerate(channels):
             if channel is None or channel >= channel_num:
                 channels[i] = random.randint(0,channel_num-1)

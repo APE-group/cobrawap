@@ -6,7 +6,7 @@ import neo
 import argparse
 import quantities as pq
 from distutils.util import strtobool
-from utils.io import load_neo, write_neo
+from utils.io import load_input, write_output
 
 
 def remove_short_states(evt, min_duration, start_label='UP', stop_label='DOWN'):
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     args = CLI.parse_args()
 
-    block = load_neo(args.data)
+    block = load_input(args.data)
 
     evt_idx, evt = [(i,ev) for i, ev in enumerate(block.segments[0].events)
                     if ev.name == 'transitions'][0]
@@ -94,4 +94,4 @@ if __name__ == '__main__':
 
     block.segments[0].events[evt_idx] = evt
 
-    write_neo(args.output, block)
+    write_output(args.output, block)

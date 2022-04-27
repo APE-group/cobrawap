@@ -22,7 +22,7 @@ OUTPUT_DIR = os.path.join(output_path, PROFILE, STAGE_NAME)
 if 'STAGE_INPUT' in config and config['STAGE_INPUT'] is not None:
     STAGE_INPUT = config["STAGE_INPUT"]
 else:
-    STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage01_data_entry', 'data.nix')
+    STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage01_data_entry', 'data.' + NEO_FORMAT)
 
 PLOT_TSTART = config["PLOT_TSTART"]
 PLOT_TSTOP = config["PLOT_TSTOP"]

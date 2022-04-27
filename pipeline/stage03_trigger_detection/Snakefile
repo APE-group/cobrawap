@@ -24,7 +24,7 @@ if 'STAGE_INPUT' in config and config['STAGE_INPUT'] is not None:
     STAGE_INPUT = config["STAGE_INPUT"]
 else:
     STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage02_processing',
-                               'processed_data.nix')
+                               'processed_data.' + NEO_FORMAT)
 
 PLOT_TSTART = config["PLOT_TSTART"]
 PLOT_TSTOP = config["PLOT_TSTOP"]

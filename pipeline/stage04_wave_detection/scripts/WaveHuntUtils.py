@@ -138,7 +138,6 @@ def timelag_optimization(evts, max_abs_timelag):
 def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejection_rate):
 # IWI = inter wave interval, i.e. distinct waves in the wave collection
 
->>>>>>> e8793b5... [Stage04-WaveHunt] Stationary distribution cropping
     print('\n(2) IWIOptimization')
     
     min_ch_num = int(min_ch_fraction*(nCh + np.sqrt(nCh))) # (Globality parameter)
