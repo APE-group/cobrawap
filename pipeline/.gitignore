@@ -64,3 +64,26 @@ stage04_wave_detection/configs/config_TI_MF_LENS.yaml
 stage04_wave_detection/run_pkl_iso_4.txt
 stage05_channel-wave_characterization/configs/config_TI_LENS.yaml
 
+../PostPipelineAnalysis/
+Create_Configs_MF.py
+Deconvolve.py
+Deconvolve_old.py
+ReadGridValues.py
+RunMFSimulations.sh
+stage01_data_entry/configs/config_TI_LENS_170110_t1.yaml
+stage01_data_entry/configs/config_TI_LENS_170110_t2.yaml
+stage01_data_entry/configs/config_TI_LENS_170110_t3.yaml
+stage01_data_entry/configs/config_TI_LENS_170110_t5.yaml
+stage01_data_entry/configs/config_TI_LENS_170110_t6.yaml
+stage01_data_entry/configs/config_TI_LENS_170110_t7.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t1.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t11.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t12.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t2.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t6.yaml
+stage01_data_entry/configs/config_TI_LENS_170111_t9.yaml
+stage01_data_entry/configs/config_TI_LENS_MF.yaml
+stage01_data_entry/configs/config_TI_LENS_MF_170110_t5_InnerLoop.yaml
+stage02_processing/configs/config_TI_LENS_MF.yaml
+
+
