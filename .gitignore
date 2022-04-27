@@ -10,6 +10,8 @@ pipeline/config.yaml
 pipeline/settings.py
 .idea/
 
+PostPipelineAnalysis/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
