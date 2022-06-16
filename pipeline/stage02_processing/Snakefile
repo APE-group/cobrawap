@@ -106,7 +106,7 @@ rule check_input:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}"
+        python3 "{input.script}" --data "{input.data}"
         touch "{output}"
         """
 
@@ -137,13 +137,13 @@ checkpoint plot_processed_traces:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --original_data "{input.stage_input}" \
-                              --processed_data "{input.stage_output}" \
-                              --img_dir "{output.img_dir}" \
-                              --img_name {params.img_name} \
-                              --t_start {wildcards.t_start} \
-                              --t_stop {wildcards.t_stop} \
-                              --channels {params.channels}
+        python3 "{input.script}" --original_data "{input.stage_input}" \
+                                 --processed_data "{input.stage_output}" \
+                                 --img_dir "{output.img_dir}" \
+                                 --img_name {params.img_name} \
+                                 --t_start {wildcards.t_start} \
+                                 --t_stop {wildcards.t_stop} \
+                                 --channels {params.channels}
         """
 
 rule plot_power_spectrum:
@@ -160,12 +160,12 @@ rule plot_power_spectrum:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.img}" \
-                              --highpass_freq {params.highpass_freq} \
-                              --lowpass_freq {params.lowpass_freq} \
-                              --psd_freq_res {params.psd_freq_res} \
-                              --psd_overlap {params.psd_overlap} \
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.img}" \
+                                 --highpass_freq {params.highpass_freq} \
+                                 --lowpass_freq {params.lowpass_freq} \
+                                 --psd_freq_res {params.psd_freq_res} \
+                                 --psd_overlap {params.psd_overlap} \
         """
 
 #### PROCESSING BLOCKS (choose any)####
@@ -185,10 +185,10 @@ rule background_subtraction:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{output.img}" \
-                              --output_array "{output.array}"
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --output_img "{output.img}" \
+                                 --output_array "{output.array}"
         """
 rule hemodynamics_subtraction:
     input:
@@ -223,10 +223,10 @@ rule spatial_downsampling:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{output.img}" \
-				              --macro_pixel_dim {params.macro_pixel_dim}
+        python3 "{input.script}" --data "{input.data}" \
+                                --output "{output.data}" \
+                                --output_img "{output.img}" \
+				                --macro_pixel_dim {params.macro_pixel_dim}
 
         """
 
@@ -244,9 +244,9 @@ rule normalization:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --normalize_by {params.normalize_by}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --normalize_by {params.normalize_by}
         """
 
 rule detrending:
@@ -267,12 +267,12 @@ rule detrending:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --order {params.order} \
-                              --img_dir "{output.img_dir}" \
-                              --img_name {params.img_name} \
-                              --channels {params.plot_channels}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --order {params.order} \
+                                 --img_dir "{output.img_dir}" \
+                                 --img_name {params.img_name} \
+                                 --channels {params.plot_channels}
         """
 
 rule frequency_filter:
@@ -292,12 +292,12 @@ rule frequency_filter:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --highpass_freq {params.highpass_freq} \
-                              --lowpass_freq {params.lowpass_freq} \
-                              --order {params.order} \
-                              --filter_function {params.filter_function}
+        python3 "{input.script}" --data "{input.data}" \
+                                --output "{output.data}" \
+                                --highpass_freq {params.highpass_freq} \
+                                --lowpass_freq {params.lowpass_freq} \
+                                --order {params.order} \
+                                --filter_function {params.filter_function}
         """
 
 
@@ -317,11 +317,11 @@ rule roi_selection:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{output.img}" \
-                              --intensity_threshold {params.intensity_threshold} \
-                              --crop_to_selection {params.crop_to_selection}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --output_img "{output.img}" \
+                                 --intensity_threshold {params.intensity_threshold} \
+                                 --crop_to_selection {params.crop_to_selection}
         """
 
 rule logMUA_estimation:
@@ -351,17 +351,17 @@ rule logMUA_estimation:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --output_img "{params.img}" \
-                              --highpass_freq {params.highpass_freq} \
-                              --lowpass_freq {params.lowpass_freq} \
-                              --logMUA_rate {params.logMUA_rate} \
-                              --fft_slice {params.fft_slice} \
-                              --psd_overlap {params.psd_overlap} \
-                              --t_start {params.plot_tstart} \
-                              --t_stop {params.plot_tstop} \
-                              --channels {params.plot_channels}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --output_img "{params.img}" \
+                                 --highpass_freq {params.highpass_freq} \
+                                 --lowpass_freq {params.lowpass_freq} \
+                                 --logMUA_rate {params.logMUA_rate} \
+                                 --fft_slice {params.fft_slice} \
+                                 --psd_overlap {params.psd_overlap} \
+                                 --t_start {params.plot_tstart} \
+                                 --t_stop {params.plot_tstop} \
+                                 --channels {params.plot_channels}
         """
 
 rule phase_transform:
@@ -375,8 +375,8 @@ rule phase_transform:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}"
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}"
         """
 
 rule zscore:
@@ -389,8 +389,8 @@ rule zscore:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}"
+        python3 "{input.script}" --data "{input.data}" \
+                                --output "{output.data}"
         """
 
 rule subsampling:
@@ -405,9 +405,9 @@ rule subsampling:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.data}" \
-                              --target_rate {params.target_rate}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.data}" \
+                                 --target_rate {params.target_rate}
         """
 
 rule hierarchical_spatial_sampling:

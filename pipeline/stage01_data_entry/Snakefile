@@ -82,7 +82,7 @@ rule check_input:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}"
+        python3 "{input.script}" --data "{input.data}"
         touch "{output}"
         """
 
@@ -99,11 +99,11 @@ rule plot_traces:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.img}" \
-                              --t_start {params.plot_tstart} \
-                              --t_stop {params.plot_tstop} \
-                              --channels {params.plot_channels}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.img}" \
+                                 --t_start {params.plot_tstart} \
+                                 --t_stop {params.plot_tstop} \
+                                 --channels {params.plot_channels}
         """
 
 def curation_script(w):
@@ -136,7 +136,7 @@ rule enter_data:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
+        python3 {input.script} --data "{input.data}" \
                               --output "{output.data}" \
                               --data_name {wildcards.data_name} \
                               --sampling_rate {params.sampling_rate} \
