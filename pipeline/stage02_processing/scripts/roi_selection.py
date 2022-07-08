@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from skimage import measure
 import shapely.geometry as geo
 import argparse
+from distutils.util import strtobool
 import neo
 import os
 from utils.io import load_neo, write_neo, save_plot
@@ -127,15 +128,15 @@ if __name__ == '__main__':
                      help="path of output image", default=None)
     CLI.add_argument("--intensity_threshold", nargs='?', type=float,
                      help="threshold for mask [0,1]", default=0.5)
-    CLI.add_argument("--crop_to_selection", nargs='?', type=bool,
-                     help="discard frame outside of ROI", default=True)
+    CLI.add_argument("--crop_to_selection",type=lambda x:bool(strtobool(x)),nargs = '?',const=True,default=False,
+                     help="discard frame outside of ROI")
     args = CLI.parse_args()
 
     block = load_neo(args.data)
     block = analogsignals_to_imagesequences(block)
 
     # get average image
-    imgseq = block.segments[0].imagesequences[-1]
+    imgseq = block.segments[0].imagesequences[0]
     imgseq_array = imgseq.as_array()
     dim_t, dim_x, dim_y = imgseq_array.shape
     avg_img = np.mean(imgseq_array, axis=0)
@@ -150,7 +151,10 @@ if __name__ == '__main__':
 
     # apply mask
     imgseq_array[:, np.bitwise_not(mask)] = np.nan
-    if args.crop_to_selection:
+    
+    print('crop to selection ', args.crop_to_selection)
+    if args.crop_to_selection == True:
+        print(args.crop_to_selection)
         imgseq_array = crop_to_selection(imgseq_array)
 
     # replace analogsingal

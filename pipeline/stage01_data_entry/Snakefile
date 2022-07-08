@@ -28,7 +28,10 @@ PLOT_TSTOP = config["PLOT_TSTOP"]
 PLOT_CHANNELS = config["PLOT_CHANNELS"]
 PLOT_FORMAT = config["PLOT_FORMAT"]
 
+HEMODYNAMICS_CORRECTION = config["HEMODYNAMICS_CORRECTION"]
 DATA_SETS = config["DATA_SETS"]
+DATA_SETS_REFLECTANCE = config["DATA_SETS_REFLECTANCE"]
+
 CURATION_SCRIPT = config["CURATION_SCRIPT"]
 SPATIAL_SCALE = config['SPATIAL_SCALE']
 SAMPLING_RATE = config["SAMPLING_RATE"]
@@ -79,7 +82,7 @@ rule check_input:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}"
+        python3 "{input.script}" --data "{input.data}"
         touch "{output}"
         """
 
@@ -96,11 +99,11 @@ rule plot_traces:
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
-                              --output "{output.img}" \
-                              --t_start {params.plot_tstart} \
-                              --t_stop {params.plot_tstop} \
-                              --channels {params.plot_channels}
+        python3 "{input.script}" --data "{input.data}" \
+                                 --output "{output.img}" \
+                                 --t_start {params.plot_tstart} \
+                                 --t_stop {params.plot_tstop} \
+                                 --channels {params.plot_channels}
         """
 
 def curation_script(w):
@@ -124,13 +127,16 @@ rule enter_data:
         annotations = ANNOTATIONS,
         array_annotations = ARRAY_ANNOTATIONS,
         kwargs = KWARGS,
-        trial = TRIAL
+        trial = TRIAL,
+        hemodynamics_correction = HEMODYNAMICS_CORRECTION,
+        data_sets_reflectance = DATA_SETS_REFLECTANCE
+
     output:
         data = os.path.join('{dir}', '{data_name}', '{data_name}.'+NEO_FORMAT)
     shell:
         """
         {ADD_UTILS}
-        python {input.script} --data "{input.data}" \
+        python3 {input.script} --data "{input.data}" \
                               --output "{output.data}" \
                               --data_name {wildcards.data_name} \
                               --sampling_rate {params.sampling_rate} \
@@ -142,5 +148,8 @@ rule enter_data:
                               --annotations {params.annotations} \
                               --array_annotations {params.array_annotations} \
                               --kwargs {params.kwargs} \
-                              --trial {params.trial}
+                              --trial {params.trial} \
+                              --hemodynamics_correction {params.hemodynamics_correction} \
+                              --path_to_reflectance_data {params.data_sets_reflectance}
+
         """

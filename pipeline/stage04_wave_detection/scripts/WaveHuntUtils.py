@@ -122,7 +122,7 @@ def timelag_optimization(evts, max_abs_timelag):
     for w, ndx in enumerate(ndx_list):
         Wave[w] = {'ndx': ndx,
                    'ch': ChLabel[ndx],
-                   'times': UpTrans[ndx]*pq.s,
+                   'times': UpTrans[ndx],
                    'WaveUnique': len(ChLabel[ndx]) == len(np.unique(ChLabel[ndx])),
                    'WaveSize': len(ndx),
                    'WaveTime': np.mean(UpTrans[ndx]),
@@ -227,27 +227,25 @@ def iwi_optimization(Wave, ExpectedTrans, min_ch_fraction, nCh, acceptable_rejec
 #-----------------------------------------------------------------------------------------
 # Wave Cleaning
 #-----------------------------------------------------------------------------------------
-def Neighbourhood_Search(coords, spatial_scale):
+def Neighbourhood_Search(coords, spatial_scale, tolerance = 0.01):
     
     #--- LOCALITY criterion
-    # Identify the neighbours of each pixel as those pixels whose barycenter lies within a 
+    # Identify the neighbours of each pixel as those pixels whose barycenter lies within a
     # radius of pixel size from the given pixel.
-    # Pixel size is spatial_scale for uniformly spaced grid, or a multiple ('radius') of 
-    # native resolution for dataset processed with HOS (Hierarchical Optimal Sampling) 
-
+    # Pixel size is spatial_scale for uniformly spaced grid, or a multiple ('radius') of
+    # native resolution for dataset processed with HOS (Hierarchical Optimal Sampling)
+    
+    # tolerance is set aat 1% to avoid rounding problems for small differences
     neighbors = []
-    for x, y, L in zip(coords['x'], coords['y'], coords['radius']): # for each channel
-        idx_x = np.where(np.abs(coords['x']-x) <= L*spatial_scale)[0]
-        idx_y = np.where(np.abs(coords['y']-y) <= L*spatial_scale)[0]
-        idx = np.intersect1d(idx_x, idx_y)
-        if len(idx)==1:
-          print('--- ', x,y)
-          print(len(idx_x), idx_x)
-          print(len(idx_y), idx_y)
+    for idx_ch, (x, y, L) in enumerate(zip(coords['x'], coords['y'], coords['radius'])): # for each channel
+        dist = ((coords['x']-x)**2 + (coords['y']-y)**2)
+        idx = np.where(dist  <= (L*(spatial_scale + tolerance*spatial_scale))**2)
+        # delete itself
+        idx = np.delete(idx, np.where(idx == idx_ch)[0])
         neighbors.append(list(idx))
     return(neighbors)
 
-# Beside border effects, for uniformly spaced grid each pixel has up to 9 neighbors 
+# Beside border effects, for uniformly spaced grid each pixel has up to 4 neighbors
 # (including itself), while for HOS if a small (high resolution) pixel is sorrounded by 
 # larger pixels (i.e. less informative) it could have an empty set of neighbors 
 # (len(neighbors[i] is 1, i.e. itself only). This is in agreement with the assumption made 

@@ -28,6 +28,8 @@ if __name__ == '__main__':
                      help="start time, in s, delimits the interval of recordings to be analysed")
     CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=None,
                      help="stop time, in s, delimits the interval of recordings to be analysed")
+    CLI.add_argument("--trial", nargs='?', type=none_or_int, default=None,
+                     help="int which identifies the trial")
     CLI.add_argument("--orientation_top", nargs='?', type=str, required=True,
                      help="upward orientation of the recorded cortical region")
     CLI.add_argument("--orientation_right", nargs='?', type=str, required=True,

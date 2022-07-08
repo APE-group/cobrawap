@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     #---
     block = analogsignals_to_imagesequences(block)
-    imgseq = block.segments[0].imagesequences[-1]
+    imgseq = block.segments[0].imagesequences[0]
     
     dim_x, dim_y = np.shape(imgseq[0]) # size of the array/grid expressed in number of channels/pixels
 
@@ -196,12 +196,9 @@ if __name__ == '__main__':
 
     remove_annotations(evts, del_keys=['nix_name', 'neo_name'])
     waves.annotations.update(evts.annotations)
-    
+
     if args.output_img is not None:
         PlotDetectedWaves(evts, waves)
         save_plot(args.output_img)
-
     block.segments[0].events.append(waves)
     write_neo(args.output, block)
-
-
