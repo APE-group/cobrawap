@@ -160,8 +160,8 @@ if __name__ == '__main__':
                      help="minimum time minima (s)")
     CLI.add_argument("--maxima_threshold_fraction", nargs='?', type=float, default=0.5,
                      help="amplitude fraction to set the threshold detecting local maxima")
-    CLI.add_argument("--maxima_threshold_window", nargs='?', type=int, default=2,
-                     help="time window to use to set the threshold detecting local maxima [s]")
+    CLI.add_argument("--maxima_threshold_window", nargs='?', type=none_or_float, default=None,
+                     help="time window to use to set the threshold detecting local maxima (s)")
     CLI.add_argument("--min_peak_distance", nargs='?', type=float, default=0.200,
                      help="minimum distance between peaks (s)")
     CLI.add_argument("--img_dir", nargs='?', type=Path,
@@ -179,24 +179,25 @@ if __name__ == '__main__':
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-
+    
     transition_event, maxima_event = detect_minima(asig,
-                                     interpolation_points=args.num_interpolation_points,
-                                     maxima_threshold_fraction=args.maxima_threshold_fraction,
-                                     maxima_threshold_window=args.maxima_threshold_window,
-                                     min_peak_distance=args.min_peak_distance,
-                                     minima_persistence=args.minima_persistence)
+                                                   interpolation_points = args.num_interpolation_points,
+                                                   maxima_threshold_fraction = args.maxima_threshold_fraction,
+                                                   maxima_threshold_window = min(args.maxima_threshold_window, asig.t_stop-asig.t_start),
+                                                   min_peak_distance = args.min_peak_distance,
+                                                   minima_persistence = args.minima_persistence)
+    
     block.segments[0].events.append(transition_event)
 
     write_neo(args.output, block)
 
     if args.plot_channels[0] is not None:
         for channel in args.plot_channels:
-            plot_minima(asig=time_slice(asig, args.plot_tstart, args.plot_tstop),
-                        event=time_slice(transition_event, args.plot_tstart, args.plot_tstop),
-                        channel=int(channel),
-                        maxima_threshold_window = args.maxima_threshold_window,
-                        maxima_threshold_fraction = args.maxima_threshold_fraction, 
+            plot_minima(asig = time_slice(asig, args.plot_tstart, args.plot_tstop),
+                        event = time_slice(transition_event, args.plot_tstart, args.plot_tstop),
+                        channel = int(channel),
+                        maxima_threshold_window = min(args.maxima_threshold_window, args.plot_tstop-args.plot_tstart),
+                        maxima_threshold_fraction = args.maxima_threshold_fraction,
                         min_peak_distance = args.min_peak_distance)
             output_path = args.img_dir / args.img_name.replace('_channel0', f'_channel{channel}')
             save_plot(output_path)
