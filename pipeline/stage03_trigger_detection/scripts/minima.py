@@ -180,10 +180,13 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
     
+    if args.maxima_threshold_window is None or args.maxima_threshold_window > asig.t_stop - asig.t_start:
+        args.maxima_threshold_window = asig.t_stop - asig.t_start
+    
     transition_event, maxima_event = detect_minima(asig,
                                                    interpolation_points = args.num_interpolation_points,
                                                    maxima_threshold_fraction = args.maxima_threshold_fraction,
-                                                   maxima_threshold_window = min(args.maxima_threshold_window, asig.t_stop-asig.t_start),
+                                                   maxima_threshold_window = args.maxima_threshold_window,
                                                    min_peak_distance = args.min_peak_distance,
                                                    minima_persistence = args.minima_persistence)
     
