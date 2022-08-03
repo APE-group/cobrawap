@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import copy
 import seaborn as sns
 from utils.io import load_neo, save_plot
-from utils.neo import analogsignals_to_imagesequences
+from utils.neo_utils import analogsignals_to_imagesequences
 from utils.parse import none_or_str
 
 
@@ -66,7 +66,7 @@ def plot_planarity(waves_event, vector_field, times, wave_id, skip_step=1, ax=No
         yi = y[frame_i]
         ti = t_idx[frame_i]
         frame = vector_field[ti, xi.astype(int), yi.astype(int)].magnitude
-        ax.quiver(yi, xi, np.real(frame), np.imag(frame),
+        ax.quiver(yi, xi, np.imag(frame), np.real(frame),
                   # units='width', scale=max(frame.shape)/(10*skip_step),
                   # width=0.15/max(frame.shape),
                   color=palette[i], alpha=0.8,
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     block = analogsignals_to_imagesequences(block)
     asig = block.segments[0].analogsignals[0]
-
+    
     wavefront_evt = block.filter(name=args.event_name, objects="Event")[0]
     wavefront_evt = wavefront_evt[wavefront_evt.labels.astype('str') != '-1']
 

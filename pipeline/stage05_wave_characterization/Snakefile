@@ -22,8 +22,7 @@ config = SimpleNamespace(**config)
 config.ADD_UTILS = f"export PYTHONPATH='$PYTHONPATH:{utils_path}'"
 config.OUTPUT_DIR = os.path.join(output_path, config.PROFILE, config.STAGE_NAME)
 SCRIPT_ARGS = ' '.join([f"--{key} '{value}'" for key, value
-                                           in config.__dict__.items()])
-ADD_UTILS = f"export PYTHONPATH='$PYTHONPATH:{utils_path}'"
+                                             in config.__dict__.items()])
 
 #### Housekeeping ####
 
@@ -66,7 +65,7 @@ rule check_input:
         data = config.STAGE_INPUT,
         script = os.path.join('scripts', 'check_input.py')
     output:
-        temp(os.path.join('{dir}', 'input.check'))
+        os.path.join('{dir}', 'input.check')
     shell:
         """
         {ADD_UTILS}

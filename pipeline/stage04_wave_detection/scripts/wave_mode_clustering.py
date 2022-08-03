@@ -16,7 +16,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from utils.io import load_neo, write_neo, save_plot
 from utils.parse import none_or_str, none_or_int
-from utils.neo import analogsignals_to_imagesequences, remove_annotations
+from utils.neo_utils import analogsignals_to_imagesequences, remove_annotations
 
 
 def build_timelag_dataframe(waves_evt, normalize=True):
@@ -47,6 +47,7 @@ def build_timelag_dataframe(waves_evt, normalize=True):
 
 def fill_nan_sites_from_similar_waves(timelag_df, num_neighbours=5,
                                       outlier_quantile=0.95):
+    # ToDo: this doesn't work with too few waves!
     ## init arrays
     num_waves = timelag_df.index.size
     pair_indices = np.triu_indices(num_waves, 1)
@@ -98,6 +99,8 @@ def pca_transform(timelag_matrix, dims=None):
         warn(f'Too few waves ({len(timelag_df)}) to peform a pca reduction '
            + f'to {dims} dims. Skipping.')
         dims = None
+    if dims is None:
+        return timelag_matrix
     # n_samples x n_features
     if type(timelag_matrix) == pd.DataFrame:
         timelag_matrix = timelag_matrix.to_numpy()
@@ -106,6 +109,11 @@ def pca_transform(timelag_matrix, dims=None):
     return pca_out.transform(x_scaled)
 
 def kmeans_cluster_waves(timelag_matrix, n_cluster=7):
+    n_waves = len(timelag_matrix)
+    if n_cluster > n_waves:
+        warn(f'Too few waves {n_waves} to determine {n_cluster} '
+           + f'cluster. Reducing to {n_waves} cluster.')
+        n_cluster = n_waves
     kmeans = KMeans(init="k-means++",
                     n_clusters=n_cluster,
                     tol=1e-10,

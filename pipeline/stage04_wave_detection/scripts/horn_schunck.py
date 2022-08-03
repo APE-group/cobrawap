@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from distutils.util import strtobool
 from utils.io import load_neo, write_neo, save_plot
 from utils.parse import none_or_str
-from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imagesequences
+from utils.neo_utils import imagesequences_to_analogsignals, analogsignals_to_imagesequences
 from utils.convolve import phase_conv2d, get_kernel, conv, norm_angle
 
 def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
@@ -179,8 +179,8 @@ def plot_opticalflow(frame, vec_frame, skip_step=None, are_phases=False):
 
     ax.quiver(np.arange(dim_y)[::skip_step],
               np.arange(dim_x)[::skip_step],
-              np.real(vec_frame[::skip_step,::skip_step]),
-              -np.imag(vec_frame[::skip_step,::skip_step]))
+              np.imag(vec_frame[::skip_step,::skip_step]),
+              np.real(vec_frame[::skip_step,::skip_step]))
 
     ax.axis('image')
     ax.set_xticks([])
