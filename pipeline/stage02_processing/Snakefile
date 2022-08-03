@@ -9,7 +9,7 @@ import sys
 utils_path = str((Path() / '..').resolve())
 sys.path.append(utils_path)
 from settings import output_path
-from utils.parse import parse_plot_channels, guess_type
+from utils.parse import check_plot_boundaries, parse_plot_channels, guess_type
 
 STAGE_NAME = config["STAGE_NAME"]
 STAGE_OUTPUT = config["STAGE_OUTPUT"]
@@ -24,8 +24,8 @@ if 'STAGE_INPUT' in config and config['STAGE_INPUT'] is not None:
 else:
     STAGE_INPUT = os.path.join(output_path, PROFILE, 'stage01_data_entry', 'data.nix')
 
-PLOT_TSTART = config["PLOT_TSTART"]
-PLOT_TSTOP = config["PLOT_TSTOP"]
+PLOT_TSTART = check_plot_boundaries(STAGE_INPUT, config["PLOT_TSTART"], 't_start')
+PLOT_TSTOP = check_plot_boundaries(STAGE_INPUT, config["PLOT_TSTOP"], 't_stop')
 PLOT_CHANNELS = parse_plot_channels(config["PLOT_CHANNELS"], STAGE_INPUT)
 PLOT_FORMAT = config["PLOT_FORMAT"]
 

@@ -1,9 +1,17 @@
 # Stage 03 Trigger Detection
 import os
 from pathlib import Path
+import sys
+utils_path = str((Path() / '..').resolve())
+sys.path.append(utils_path)
+from utils.parse import check_plot_boundaries, parse_plot_channels
 
 configfile: Path('configs') / 'config_template.yaml'
 include: Path() / '..' / 'utils' / 'Snakefile'
+
+config.PLOT_TSTART = check_plot_boundaries(config.STAGE_INPUT, config.PLOT_TSTART, 't_start')
+config.PLOT_TSTOP = check_plot_boundaries(config.STAGE_INPUT, config.PLOT_TSTOP, 't_stop')
+config.PLOT_CHANNELS = parse_plot_channels(config.PLOT_CHANNELS, config.STAGE_INPUT)
 
 #### Housekeeping ####
 
@@ -28,7 +36,7 @@ def filtered_triggers(wildcards):
 
 localrules: all, check_input
 
-#### UTILTY BLOCKS ####
+#### UTILITY BLOCKS ####
 
 use rule template_all as all with:
     input:

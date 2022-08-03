@@ -17,7 +17,7 @@ import quantities as pq
 import random
 from utils.io import load_neo, save_plot
 from utils.neo_utils import time_slice
-from utils.parse import parse_plot_channels, none_or_int, determine_dims
+from utils.parse import parse_plot_channels, none_or_int, none_or_float, determine_dims
 
 
 def plot_traces(asig, channels):
@@ -58,13 +58,13 @@ if __name__ == '__main__':
                      help="path to input data in neo format")
     CLI.add_argument("--output",  nargs='?', type=str, required=True,
                      help="path of output figure")
-    CLI.add_argument("--t_start", nargs='?', type=float, default=0,
+    CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                      help="start time in seconds")
-    CLI.add_argument("--t_stop",  nargs='?', type=float, default=10,
+    CLI.add_argument("--t_stop",  nargs='?', type=none_or_float, default=10,
                      help="stop time in seconds")
     CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
                      help="list of channels to plot")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     asig = load_neo(args.data, 'analogsignal', lazy=True)
 

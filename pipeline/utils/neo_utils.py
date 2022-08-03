@@ -99,7 +99,7 @@ def robust_t(neo_obj, t_value=None, t_name='t_start', unit='s'):
         if hasattr(neo_obj, t_name):
             t_value = getattr(neo_obj, t_name).rescale('s').magnitude
         else:
-            raise Warning("t_start is not defined by the input or the object!")
+            raise Warning("%s is not defined by the input or the object!" % t_name)
     else:
         if isinstance(t_value, pq.Quantity):
             t_value = t_value.rescale('s').magnitude

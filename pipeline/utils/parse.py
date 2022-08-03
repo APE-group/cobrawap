@@ -117,7 +117,7 @@ def ordereddict_to_dict(input_dict):
 
 
 def none_or_X(value, dtype):
-    if value is None or not bool(value) or value == 'None':
+    if value is None or value == 'None':
         return None
     try:
         return dtype(value)
@@ -134,7 +134,7 @@ def parse_plot_channels(channels, input_file):
     channels = channels if isinstance(channels, list) else [channels]
     channels = [none_or_int(channel) for channel in channels]
     # ToDo:
-    #   * check is channel exists, even when there is no None
+    #   * check if channel exists, even when there is no None
     #   * use annotation channel ids instead of array indices
     if None in channels:
         dim_t, channel_num = load_neo(input_file, object='analogsignal',
@@ -158,3 +158,16 @@ def determine_dims(coords):
     int_coords = np.round(np.array(coords)).astype(int)
     dim_x, dim_y = np.max(int_coords[:,0])+1, np.max(int_coords[:,1])+1
     return dim_x, dim_y
+
+
+def check_plot_boundaries(input_file, t_value, t_name):
+    
+    t_value = none_or_float(t_value)
+    asig = load_neo(input_file, object='analogsignal', lazy=True)
+    t_start = asig.t_start.rescale('s').magnitude
+    t_stop = asig.t_stop.rescale('s').magnitude
+    
+    if t_value is None or not (t_start <= t_value <= t_stop):
+        t_value = getattr(asig, t_name).rescale('s').magnitude
+    
+    return t_value
