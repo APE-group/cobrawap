@@ -125,9 +125,12 @@ def plot_minima(asig, event, channel, maxima_threshold_window,
     sampling_rate = asig.sampling_rate.rescale('Hz').magnitude
     window_frame = int(maxima_threshold_window*sampling_rate) 
     threshold_func = moving_threshold(signal, window_frame, maxima_threshold_fraction)
-
-    peaks, _ = find_peaks(signal, height=threshold_func, distance=np.max([min_peak_distance*sampling_rate, 1]))  
-        
+    
+    event = time_slice(event, asig.times[0], asig.times[-1])
+    
+    peaks, _ = find_peaks(signal, height=threshold_func, 
+                          distance=np.max([min_peak_distance*sampling_rate, 1]))
+    
     # plot figure
     sns.set(style='ticks', palette="deep", context="notebook")
     fig, ax = plt.subplots()
@@ -183,12 +186,12 @@ if __name__ == '__main__':
     if args.maxima_threshold_window is None or args.maxima_threshold_window > asig.t_stop - asig.t_start:
         args.maxima_threshold_window = asig.t_stop - asig.t_start
     
-    transition_event, maxima_event = detect_minima(asig,
-                                                   interpolation_points = args.num_interpolation_points,
-                                                   maxima_threshold_fraction = args.maxima_threshold_fraction,
-                                                   maxima_threshold_window = args.maxima_threshold_window,
-                                                   min_peak_distance = args.min_peak_distance,
-                                                   minima_persistence = args.minima_persistence)
+    transition_event = detect_minima(asig,
+                                     interpolation_points = args.num_interpolation_points,
+                                     maxima_threshold_fraction = args.maxima_threshold_fraction,
+                                     maxima_threshold_window = args.maxima_threshold_window,
+                                     min_peak_distance = args.min_peak_distance,
+                                     minima_persistence = args.minima_persistence)
     
     block.segments[0].events.append(transition_event)
 
