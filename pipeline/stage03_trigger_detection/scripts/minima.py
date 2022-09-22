@@ -66,7 +66,6 @@ def detect_minima(asig, interpolation_points, maxima_threshold_fraction,
             if distance_to_peak.size:
                 trans_idx = np.argmin(distance_to_peak)
                 clean_mins = np.append(clean_mins, mins[trans_idx])
-                clean_max = np.append(clean_max,peak)
 
         min_time_idx = np.append(min_time_idx, clean_mins)
         channel_idx = np.append(channel_idx, np.ones(len(clean_mins), dtype=int)*channel)
