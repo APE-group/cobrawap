@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import argparse
 from utils.io import load_neo, write_neo, save_plot
 from utils.parse import none_or_float, none_or_int, none_or_str
-from utils.neo import analogsignals_to_imagesequences, imagesequences_to_analogsignals
+from utils.neo_utils import analogsignals_to_imagesequences, imagesequences_to_analogsignals
 
 
 def next_power_of_2(n):
