@@ -3,7 +3,6 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 utils_path = str((Path() / '..').resolve())
-print(utils_path)
 sys.path.append(utils_path)
 from settings import output_path
 from utils.parse import parse_plot_channels
