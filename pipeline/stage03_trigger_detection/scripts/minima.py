@@ -141,14 +141,10 @@ def plot_minima(asig, event, channel, maxima_threshold_window,
     
     ax.plot(times[peaks], signal[peaks], 'x', color='r', label='detected maxima')
     
-    if event.annotations['num_interpolation_points']:
-        # time of each minimum is the one interpolated with num_interpolation_points points
-        # corresponding signal height is the one obtained through linear interpolation (for visualization purposes)
-        ax.plot(event.times[idx_ch], np.interp(event.times[idx_ch], times, signal),
-                'x', color='g', label='selected minima')
-    else:
-        ax.plot(event.times[idx_ch], signal[(event.times[idx_ch]*sampling_rate).astype(int)], 
-                'x', color='g', label='selected minima')
+    # time of each minimum is the one interpolated with num_interpolation_points points
+    # corresponding signal height is the one obtained through linear interpolation (for visualization purposes)
+    ax.plot(event.times[idx_ch], np.interp(event.times[idx_ch], times, signal),
+            'x', color='g', label='selected minima')
     
     ax.set_title(f'channel {channel}')
     ax.set_xlabel('time [s]')
