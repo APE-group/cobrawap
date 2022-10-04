@@ -53,7 +53,7 @@ wildcard_constraints:
 localrules: all, check_input
 
 def input_file(wildcards):
-    print(DATA_SETS[wildcards.data_name])
+    # print(DATA_SETS[wildcards.data_name])
     # return S3.remote(DATA_SETS[wildcards.data_name])
     return DATA_SETS[wildcards.data_name]
 

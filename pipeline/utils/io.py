@@ -41,7 +41,8 @@ def write_neo(filename, block, *args, **kwargs):
     except Exception as e:
         warnings.warn(str(e))
     finally:
-        io.close()
+        if (filename.split('.')[-1] != 'pkl'):
+            io.close()
     return True
 
 
