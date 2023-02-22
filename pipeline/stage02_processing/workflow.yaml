@@ -1,0 +1,13 @@
+output: 'roi_selection.nix'
+
+output_img: '/qst0/home1/homedirs/bernavai/CWL_attempts/KETAMINE/plots/roi.png'
+
+data: '/qst0/home1/homedirs/bernavai/CWL_attempts/KETAMINE/stage01_data_entry/LENS_170111_mouse2_t3/LENS_170111_mouse2_t3.nix'
+
+pipeline_path: "/qst0/home1/homedirs/bernavai/wavescalephant/pipeline"
+
+intensity_threshold: 0.5
+
+crop_to_selection: False
+
+background_subtraction_output: 'background_subtraction.nix'
