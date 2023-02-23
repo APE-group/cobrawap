@@ -9,25 +9,32 @@ class: Workflow
 inputs:
   data: string
   output_img: string
-  output: string
   pipeline_path: string
   intensity_threshold: float
   crop_to_selection: boolean
-  background_subtraction_output: string
+  roi_selection_out: string
+  background_subtraction_out: string
 
 outputs:
-  output_file:
+  step1:
+    type: File
+    outputSource: roi_selection/roi_selection_out
+  step2:
+    type: File
+    outputSource: background_subtraction/background_subtraction_out
+  final_output:
     type: File
     outputSource: background_subtraction/background_subtraction_out
 
 
 steps:
+  
   roi_selection:
     run: cwl_steps/roi_selection_wf.cwl
     in:
       data: data
       output_img: output_img
-      output: output
+      roi_selection_out: roi_selection_out
       pipeline_path: pipeline_path
       intensity_threshold: intensity_threshold
       crop_to_selection: crop_to_selection
@@ -38,5 +45,5 @@ steps:
     in:
       pipeline_path: pipeline_path
       input_file: roi_selection/roi_selection_out
-      output_file: background_subtraction_output
+      background_subtraction_out: background_subtraction_out
     out: [background_subtraction_out]

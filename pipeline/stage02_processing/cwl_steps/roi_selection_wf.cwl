@@ -25,7 +25,7 @@ inputs:
     inputBinding:
       position: 1
       prefix: --data
-  output:
+  roi_selection_out:
     type: string
     inputBinding:
       position: 2
@@ -56,4 +56,4 @@ outputs:
   roi_selection_out:
     type: File
     outputBinding:
-      glob: $(inputs.output)
+      glob: $(inputs.roi_selection_out)

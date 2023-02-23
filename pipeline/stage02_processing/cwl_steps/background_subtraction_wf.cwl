@@ -25,7 +25,7 @@ inputs:
     inputBinding:
       position: 1
       prefix: --data
-  output_file:
+  background_subtraction_out:
     type: string
     inputBinding:
       position: 2
@@ -41,4 +41,4 @@ outputs:
   background_subtraction_out:
     type: File
     outputBinding:
-      glob: $(inputs.output_file)
+      glob: $(inputs.background_subtraction_out)

@@ -1,13 +1,13 @@
-output: 'roi_selection.nix'
+pipeline_path: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/wavescalephant/pipeline"
 
-output_img: '/qst0/home1/homedirs/bernavai/CWL_attempts/KETAMINE/plots/roi.png'
+# INPUT
+data: '/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage01_data_entry/LENS_170111_mouse2_t3/LENS_170111_mouse2_t3.nix'
 
-data: '/qst0/home1/homedirs/bernavai/CWL_attempts/KETAMINE/stage01_data_entry/LENS_170111_mouse2_t3/LENS_170111_mouse2_t3.nix'
-
-pipeline_path: "/qst0/home1/homedirs/bernavai/wavescalephant/pipeline"
-
+# ROI selection
+output_img: '/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage02_processing/plots/roi.png'
 intensity_threshold: 0.5
-
 crop_to_selection: False
 
-background_subtraction_output: 'background_subtraction.nix'
+# filenames for the outputs of single steps
+roi_selection_out: 'roi_selection.nix'
+background_subtraction_out: 'background_subtraction.nix'
