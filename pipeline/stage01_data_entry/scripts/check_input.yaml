@@ -1,0 +1,10 @@
+block_name: "check_input"
+args:
+  - name: "data"
+    type: "str"
+    required: "True"
+    help: "path to input data in neo format"
+  - name: "img"
+    type: "str"
+    required: "True"
+    help: "path to input data in neo format"
