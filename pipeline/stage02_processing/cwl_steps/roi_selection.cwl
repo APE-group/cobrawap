@@ -17,11 +17,11 @@ inputs:
     type: File?
     default:
       class: File
-      path: "../scripts/roi_selection.py"
+      location: "../scripts/roi_selection.py"
     inputBinding:
       position: 0
   data:
-    type: string
+    type: File
     inputBinding:
       position: 1
       prefix: --data
@@ -31,7 +31,7 @@ inputs:
       position: 2
       prefix: --output
   output_img:
-    type: string?
+    type: Any
     inputBinding:
       position: 3
       prefix: --output_img
@@ -41,14 +41,13 @@ inputs:
       position: 4
       prefix: --intensity_threshold
   crop_to_selection:
-    type: boolean?
+    type: Any?
     inputBinding:
       position: 5
       prefix: --crop_to_selection
 
-stdout:
-  output.txt
-
 outputs:
-  example_out:
-    type: stdout
+  roi_selection_out:
+    type: File
+    outputBinding:
+      glob: $(inputs.output)

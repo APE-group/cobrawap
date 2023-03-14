@@ -69,7 +69,7 @@ if __name__ == '__main__':
               for a,arg in enumerate(yaml_config['args']):
                 f_out.write('  ' + arg['name'] + ':\n')
                 f_out.write('    type: ' + arg['type'])
-                if not arg['required']:
+                if arg['required']=="False":
                   f_out.write('?')
                 f_out.write('\n')
                 f_out.write('    inputBinding:\n')
@@ -80,7 +80,7 @@ if __name__ == '__main__':
               f_out.write('  ' + block_name + '_out:\n')
               f_out.write('    type: File\n')
               f_out.write('    outputBinding:\n')
-              f_out.write('      glob: $(inputs.' + block_name + '_out)\n')
+              f_out.write('      glob: $(inputs.output)\n')
           
           except yaml.YAMLError as exc:
             print(exc)

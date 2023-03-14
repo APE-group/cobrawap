@@ -7,13 +7,16 @@ class: Workflow
 # All the inputs with their types are defined here.
 # (when the parameter type ends with a question mark "?" it indicates that the parameter is optional)
 inputs:
-  data: string
-  output_img: string
+  data: File
   pipeline_path: string
+  # roi selection
+  roi_selection_output_img: string
   intensity_threshold: float
   crop_to_selection: boolean
   roi_selection_out: string
+  # background subtraction
   background_subtraction_out: string
+  background_subtraction_output_img: string
 
 outputs:
   step1:
@@ -30,20 +33,21 @@ outputs:
 steps:
   
   roi_selection:
-    run: cwl_steps/roi_selection_wf.cwl
+    run: cwl_steps/roi_selection.cwl
     in:
       data: data
-      output_img: output_img
-      roi_selection_out: roi_selection_out
-      pipeline_path: pipeline_path
+      output: roi_selection_out
+      output_img: roi_selection_output_img
       intensity_threshold: intensity_threshold
       crop_to_selection: crop_to_selection
+      pipeline_path: pipeline_path
     out: [roi_selection_out]
 
   background_subtraction:
-    run: cwl_steps/background_subtraction_wf.cwl 
+    run: cwl_steps/background_subtraction.cwl 
     in:
+      data: roi_selection/roi_selection_out
+      output: background_subtraction_out
+      output_img: background_subtraction_output_img
       pipeline_path: pipeline_path
-      input_file: roi_selection/roi_selection_out
-      background_subtraction_out: background_subtraction_out
     out: [background_subtraction_out]
