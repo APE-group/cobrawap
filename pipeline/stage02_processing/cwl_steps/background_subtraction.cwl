@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/check_input.py"
+      location: "../scripts/background_subtraction.py"
     inputBinding:
       position: 0
   data:
@@ -25,14 +25,24 @@ inputs:
     inputBinding:
       position: 1
       prefix: --data
-  img:
+  output:
     type: string
     inputBinding:
       position: 2
-      prefix: --img
+      prefix: --output
+  output_img:
+    type: Any?
+    inputBinding:
+      position: 3
+      prefix: --output_img
+  output_array:
+    type: Any?
+    inputBinding:
+      position: 4
+      prefix: --output_array
 
 outputs:
-  check_input_out:
+  background_subtraction_out:
     type: File
     outputBinding:
       glob: $(inputs.output)

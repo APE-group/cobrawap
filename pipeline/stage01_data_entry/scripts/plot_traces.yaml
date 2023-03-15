@@ -1,11 +1,11 @@
 block_name: "plot_traces"
 args:
   - name: "data"
-    type: "str"
+    type: "File"
     required: "True"
     help: "path to input data in neo format"
   - name: "output"
-    type: "str"
+    type: "string"
     required: "True"
     help: "path of output figure"
   - name: "t_start"

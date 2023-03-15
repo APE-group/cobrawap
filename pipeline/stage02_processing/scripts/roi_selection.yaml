@@ -1,7 +1,7 @@
 block_name: "roi_selection"
 args:
   - name: "data"
-    type: "string"
+    type: "File"
     required: "True"
     help: "path to input data in neo format"
   - name: "output"

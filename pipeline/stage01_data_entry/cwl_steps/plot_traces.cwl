@@ -21,27 +21,27 @@ inputs:
     inputBinding:
       position: 0
   data:
-    type: str
+    type: File
     inputBinding:
       position: 1
       prefix: --data
   output:
-    type: str
+    type: string
     inputBinding:
       position: 2
       prefix: --output
   t_start:
-    type: Any
+    type: Any?
     inputBinding:
       position: 3
       prefix: --t_start
   t_stop:
-    type: Any
+    type: Any?
     inputBinding:
       position: 4
       prefix: --t_stop
   channels:
-    type: Any
+    type: Any?
     inputBinding:
       position: 5
       prefix: --channels
@@ -50,4 +50,4 @@ outputs:
   plot_traces_out:
     type: File
     outputBinding:
-      glob: $(inputs.plot_traces_out)
+      glob: $(inputs.output)

@@ -1,10 +1,10 @@
 block_name: "check_input"
 args:
   - name: "data"
-    type: "str"
+    type: "File"
     required: "True"
     help: "path to input data in neo format"
   - name: "img"
-    type: "str"
+    type: "string"
     required: "True"
     help: "path to input data in neo format"
