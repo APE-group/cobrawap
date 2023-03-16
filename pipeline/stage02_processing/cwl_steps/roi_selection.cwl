@@ -31,7 +31,7 @@ inputs:
       position: 2
       prefix: --output
   output_img:
-    type: Any
+    type: Any?
     inputBinding:
       position: 3
       prefix: --output_img

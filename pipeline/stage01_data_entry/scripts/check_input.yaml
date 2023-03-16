@@ -4,7 +4,3 @@ args:
     type: "File"
     required: "True"
     help: "path to input data in neo format"
-  - name: "img"
-    type: "string"
-    required: "True"
-    help: "path to input data in neo format"

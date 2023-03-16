@@ -25,11 +25,6 @@ inputs:
     inputBinding:
       position: 1
       prefix: --data
-  img:
-    type: string
-    inputBinding:
-      position: 2
-      prefix: --img
 
 outputs:
   check_input_out:
