@@ -29,6 +29,10 @@ def ComputeCenterOfMass(s, scale):
 
 # List con x,y,L,flag,x_parent, y_parent, L_parent
 
+def evaluate_shapiro(value):
+    stat,p = shapiro(value)
+    return p
+
 def CheckCondition(coords, Input_image, method = 'shapiro'):
     #function to check whether node is compliant with the condition
     value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
@@ -36,11 +40,19 @@ def CheckCondition(coords, Input_image, method = 'shapiro'):
         return(1)
     else:
         if method == 'shapiro':
-            stat, p = shapiro(value)
+            p = evaluate_shapiro(value)
             if p <= 0.05:
                 return(0)
             else:
                 return(1)
+        if method == 'shapiroplus':
+            p_1 = evaluate_shapiro(value)
+            p_2 = second_test(Input_image,value)
+            if (p_1 > 0.05) and (p_2 > th_second_test): # the pixel is classified as noise
+                return(1) 
+            else:
+                return(0)
+
 
 def NewLayer(l, Input_image, evaluation_method):
     new_list = []
