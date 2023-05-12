@@ -1,6 +1,7 @@
 import neo
 import numpy as np
-from scipy.stats import shapiro
+
+from scipy.stats import shapiro,ks_1samp
 import matplotlib.pyplot as plt
 import argparse
 from utils.io import load_neo, write_neo, save_plot
@@ -29,11 +30,63 @@ def ComputeCenterOfMass(s, scale):
 
 # List con x,y,L,flag,x_parent, y_parent, L_parent
 
-def evaluate_shapiro(value):
+
+def above_th_points(y, n, fs):
+    m = np.nanmean(y)
+    sigma = np.nanstd(y)
+    th_min = m+n*sigma
+    ind_min = np.where(y>th_min)[0]
+    return [_/fs for _ in ind_min]
+
+
+def InitShapiroplus(Input_image,fs,n = 2.5):
+    means = np.nanmean(Input_image,axis = 2)
+    stds = np.nanstd(Input_image,axis = 2)
+    m = np.nanmean(means)
+    s = np.nanmean(stds)
+    rolled = np.roll(Input_image,1,axis = 2) 
+    r_num = np.tensordot(Input_image,rolled, axes = ([2],[2]))
+    r_den = np.tensordot(Input_image,Input_image, axes = ([2],[2]))
+    r = np.nanmean(r_num/r_den)
+    # loop per generare N canali sintetici
+    bins = np.arange(0, (np.shape(Input_image)[2]+0.5)/fs, 0.1)
+    bin_size = bins[1]-bins[0]
+
+    av_h = np.zeros(len(bins)-1)
+    c = 0
+
+     
+    for i in range(np.shape(Input_image)[0]*np.shape(Input_image)[1]):
+        red_signal = [np.random.normal(loc=m, scale=s) for t in range(np.shape(Input_image)[2])]
+
+        for t in range(1,len(red_signal)):
+            red_signal[t] = r*red_signal[t-1] + np.sqrt(1-r**2)*red_signal[t]
+       
+        y = np.diff(above_th_points(red_signal, n, fs))
+
+    
+
+    
+        h,b = np.histogram(y, bins=bins, density=True)
+        if not np.isnan(np.sum(h)):
+            av_h += h
+            c += 1
+    av_h /= c
+
+
+    z = np.polyfit(b[:-1], np.cumsum(av_h)*bin_size, 4)
+    zz = np.poly1d(z)
+    return zz
+
+def EvaluateShapiroPlus(value,zz):
+    stat, p = ks_1samp(value, zz)
+    return p
+
+def EvaluateShapiro(value):
     stat,p = shapiro(value)
     return p
 
-def CheckCondition(coords, Input_image, method = 'shapiro'):
+def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None):
     #function to check whether node is compliant with the condition
     value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
     if np.isnan(np.nanmax(value)):
@@ -45,36 +98,36 @@ def CheckCondition(coords, Input_image, method = 'shapiro'):
                 return(0)
             else:
                 return(1)
-        if method == 'shapiroplus':
-            p_1 = evaluate_shapiro(value)
-            p_2 = second_test(Input_image,value)
-            if (p_1 > 0.05) and (p_2 > th_second_test): # the pixel is classified as noise
+        elif method == 'shapiroplus':
+            p_1 = EvaluateShapiro(value)
+            p_2 = EvaluateShapiroPlus(value,null_distr)
+            if (p_1 > 0.05) and (p_2 > 0.05): # the pixel is classified as noise
                 return(1) 
             else:
                 return(0)
 
 
-def NewLayer(l, Input_image, evaluation_method):
+def NewLayer(l, Input_image, evaluation_method = 'shapiro',null_distr = None):
     new_list = []
     # first leaf
-    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, evaluation_method)
+    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, evaluation_method,null_distr)
     new_list.append([l[0], l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # second leaf
-    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method)
+    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr)
     new_list.append([l[0], l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # third leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method)
+    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method,null_distr)
     new_list.append([l[0]+l[2]//2, l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     # fourth leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method)
+    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr)
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     return(new_list)
 
-def CreateMacroPixel(Input_image, exit_method = 'consecutive', signal_eval_method = 'shapiro', threshold = 0.5, n_bad = 2):
+def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method = 'shapiro',null_distr = None, threshold = 0.5, n_bad = 2):
     # initialized node list
     NodeList = []
     MacroPixelCoords = []
@@ -85,7 +138,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', signal_eval_metho
     while len(NodeList):
 
         # create node's children
-        Children = NewLayer(NodeList[0], Input_image, evaluation_method = signal_eval_method)
+        Children = NewLayer(NodeList[0], Input_image, evaluation_method,null_distr)
         NodeList.pop(0) # delete investigated node
        
         #check wether exit condition is met
@@ -170,12 +223,15 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
     block = analogsignals_to_imagesequences(block)
-    
+    fs = 25   
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
-
+    if args.signal_eval_method == 'shapiroplus':
+        null_distr = InitShapiroplus(imgseq_array,fs,n = 2.5)
+    else: 
+        null_distr = None
     # pad image sequences with nans to make it divisible by 2
     N_pad = next_power_of_2(max(dim_x, dim_y)) 
     padded_image_seq = np.pad(imgseq_array, 
@@ -186,7 +242,8 @@ if __name__ == '__main__':
     # List con x,y,L,flag,x_parent, y_parent, L_parent
     MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
                                         exit_method = args.exit_condition,
-                                        signal_eval_method = args.signal_eval_method,
+                                        evaluation_method = args.signal_eval_method,
+                                        null_distr = null_distr,
                                         threshold = args.voting_threshold,
                                         n_bad = args.n_bad_nodes)
     if args.output_img is not None:
