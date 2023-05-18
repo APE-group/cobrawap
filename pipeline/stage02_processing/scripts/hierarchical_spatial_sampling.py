@@ -45,7 +45,7 @@ def InitShapiroplus(Input_image,fs,n = 2.5):
     m = np.nanmean(means)
     s = np.nanmean(stds)
     rolled = np.roll(Input_image,1,axis = 2) 
-    L = np.shape(Input_1image)[0] * np.shape(Input_image)[1]
+    L = np.shape(Input_image)[0] * np.shape(Input_image)[1]
     rs = np.zeros(L);
     
     for k in range(L):
@@ -204,6 +204,8 @@ def plot_masked_image(original_img, MacroPixelCoords):
 
     im = axs[2].hist(ls, bins = np.max(ls))
     axs[2].set_yscale('Log')
+    #axs[2].set_xscale('log',base = 2)
+
     axs[2].set_xlabel('macro-pixel size', fontsize = 7.)
 
     plt.tight_layout()
