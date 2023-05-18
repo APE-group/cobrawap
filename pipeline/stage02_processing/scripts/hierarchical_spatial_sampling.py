@@ -45,9 +45,19 @@ def InitShapiroplus(Input_image,fs,n = 2.5):
     m = np.nanmean(means)
     s = np.nanmean(stds)
     rolled = np.roll(Input_image,1,axis = 2) 
-    r_num = np.tensordot(Input_image,rolled, axes = ([2],[2]))
-    r_den = np.tensordot(Input_image,Input_image, axes = ([2],[2]))
-    r = np.nanmean(r_num/r_den)
+    L = np.shape(Input_1image)[0] * np.shape(Input_image)[1]
+    rs = np.zeros(L);
+    
+    for k in range(L):
+        i = k // np.shape(Input_image)[0];
+        j = k % np.shape(Input_image)[0];
+        if not np.isnan(Input_image[i,j,:]).all():
+            rs[k] = np.nanmean(Input_image[i,j,:] * rolled[i,j,:])/np.nanmean(Input_image[i,j,:] * Input_image[i,j,:])
+    r = np.nanmean(rs)
+    print('r = ',r,np.nanstd(rs))
+    print('m =',m,'s = ',s)
+    
+    
     # loop per generare N canali sintetici
     bins = np.arange(0, (np.shape(Input_image)[2]+0.5)/fs, 0.1)
     bin_size = bins[1]-bins[0]
@@ -93,7 +103,7 @@ def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None):
         return(1)
     else:
         if method == 'shapiro':
-            p = evaluate_shapiro(value)
+            p = EvaluateShapiro(value)
             if p <= 0.05:
                 return(0)
             else:
