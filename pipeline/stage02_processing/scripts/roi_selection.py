@@ -173,7 +173,7 @@ if __name__ == '__main__':
         asig.array_annotate(**new_asig.array_annotations)
 
     # save data and figure
-    asig.name += ""
+    asig.name = ""
     asig.description += "Border regions with mean intensity below "\
                       + "{args.intensity_threshold} were discarded. "\
                       + "({})".format(os.path.basename(__file__))
