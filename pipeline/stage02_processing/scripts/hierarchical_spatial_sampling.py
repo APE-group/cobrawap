@@ -1,7 +1,7 @@
 import neo
 import numpy as np
 
-from scipy.stats import shapiro,ks_1samp
+from scipy.stats import shapiro,ks_1samp,ks_2samp
 import matplotlib.pyplot as plt
 import argparse
 from utils.io import load_neo, write_neo, save_plot
@@ -65,7 +65,7 @@ def InitShapiroplus(Input_image,fs,n = 2.5):
     av_h = np.zeros(len(bins)-1)
     c = 0
 
-     
+    Y = [] 
     for i in range(np.shape(Input_image)[0]*np.shape(Input_image)[1]):
         red_signal = [np.random.normal(loc=m, scale=s) for t in range(np.shape(Input_image)[2])]
 
@@ -76,27 +76,30 @@ def InitShapiroplus(Input_image,fs,n = 2.5):
 
     
 
-    
+        Y.extend(y)    
         h,b = np.histogram(y, bins=bins, density=True)
         if not np.isnan(np.sum(h)):
             av_h += h
             c += 1
     av_h /= c
-
-
+    
+    np.random.shuffle(Y)
+    
     z = np.polyfit(b[:-1], np.cumsum(av_h)*bin_size, 4)
     zz = np.poly1d(z)
-    return zz
+    return zz,Y[0:1000] 
 
-def EvaluateShapiroPlus(value,zz):
-    stat, p = ks_1samp(value, zz)
+def EvaluateShapiroPlus(value,zz,Y):
+    #stat, p = ks_1samp(value, zz)
+    stat, p = ks_2samp(value, Y)
+
     return p
 
 def EvaluateShapiro(value):
     stat,p = shapiro(value)
     return p
 
-def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None):
+def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None, null_array = []):
     #function to check whether node is compliant with the condition
     value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
     if np.isnan(np.nanmax(value)):
@@ -110,34 +113,34 @@ def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None):
                 return(1)
         elif method == 'shapiroplus':
             p_1 = EvaluateShapiro(value)
-            p_2 = EvaluateShapiroPlus(value,null_distr)
+            p_2 = EvaluateShapiroPlus(value,null_distr,null_array)
             if (p_1 > 0.05) and (p_2 > 0.05): # the pixel is classified as noise
                 return(1) 
             else:
                 return(0)
 
 
-def NewLayer(l, Input_image, evaluation_method = 'shapiro',null_distr = None):
+def NewLayer(l, Input_image, evaluation_method = 'shapiro',null_distr = None,null_array = []):
     new_list = []
     # first leaf
-    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, evaluation_method,null_distr)
+    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, evaluation_method,null_distr,null_array )
     new_list.append([l[0], l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # second leaf
-    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr)
+    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr,null_array )
     new_list.append([l[0], l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # third leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method,null_distr)
+    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method,null_distr,null_array )
     new_list.append([l[0]+l[2]//2, l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     # fourth leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr)
+    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr,null_array )
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     return(new_list)
 
-def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method = 'shapiro',null_distr = None, threshold = 0.5, n_bad = 2):
+def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method = 'shapiro',null_distr = None, null_array = [],threshold = 0.5, n_bad = 2):
     # initialized node list
     NodeList = []
     MacroPixelCoords = []
@@ -148,7 +151,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method
     while len(NodeList):
 
         # create node's children
-        Children = NewLayer(NodeList[0], Input_image, evaluation_method,null_distr)
+        Children = NewLayer(NodeList[0], Input_image, evaluation_method,null_distr,null_array )
         NodeList.pop(0) # delete investigated node
        
         #check wether exit condition is met
@@ -172,7 +175,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method
         idx = np.where(l_list)[0]
         if len(idx):
             for i in range(0, len(l_list)):
-                if l_list[i] == True:
+                if l_list[i] == True and not np.isnan(Input_image[Children[i][0],Children[i][1]]).all():
                     MacroPixelCoords.append(Children[i][0:3])
             Children = [ch for ch in Children if ch[2] != 1]
 
@@ -241,9 +244,10 @@ if __name__ == '__main__':
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
     if args.signal_eval_method == 'shapiroplus':
-        null_distr = InitShapiroplus(imgseq_array,fs,n = 2.5)
+        null_distr,null_array = InitShapiroplus(imgseq_array,fs,n = 2.5)
     else: 
         null_distr = None
+        null_array = []
     # pad image sequences with nans to make it divisible by 2
     N_pad = next_power_of_2(max(dim_x, dim_y)) 
     padded_image_seq = np.pad(imgseq_array, 
@@ -256,6 +260,7 @@ if __name__ == '__main__':
                                         exit_method = args.exit_condition,
                                         evaluation_method = args.signal_eval_method,
                                         null_distr = null_distr,
+                                        null_array = null_array,
                                         threshold = args.voting_threshold,
                                         n_bad = args.n_bad_nodes)
     if args.output_img is not None:
