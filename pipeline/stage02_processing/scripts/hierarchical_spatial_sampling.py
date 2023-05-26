@@ -175,6 +175,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method
         idx = np.where(l_list)[0]
         if len(idx):
             for i in range(0, len(l_list)):
+                # check whether minimum-dimension pixels are actually included in the roi
                 if l_list[i] == True and not np.isnan(Input_image[Children[i][0],Children[i][1]]).all():
                     MacroPixelCoords.append(Children[i][0:3])
             Children = [ch for ch in Children if ch[2] != 1]
