@@ -8,7 +8,6 @@ from utils.io import load_neo, write_neo, save_plot
 from utils.parse import none_or_float, none_or_int, none_or_str
 from utils.neo_utils import analogsignals_to_imagesequences, imagesequences_to_analogsignals
 
-
 def next_power_of_2(n):
     if n == 0:
         return 1
@@ -31,32 +30,28 @@ def ComputeCenterOfMass(s, scale):
 # List con x,y,L,flag,x_parent, y_parent, L_parent
 
 
-def above_th_points(y, n, fs):
+def above_th_points(y, fs, shapiro_plus_th):
     m = np.nanmean(y)
     sigma = np.nanstd(y)
-    th_min = m+n*sigma
+    th_min = m + sigma*shapiro_plus_th
     ind_min = np.where(y>th_min)[0]
     return [_/fs for _ in ind_min]
 
 
-def InitShapiroplus(Input_image,fs,n = 2.5):
-    means = np.nanmean(Input_image,axis = 2)
-    stds = np.nanstd(Input_image,axis = 2)
+def InitShapiroPlus(Input_image, fs, shapiro_plus_th):
+    means = np.nanmean(Input_image, axis = 2)
+    stds = np.nanstd(Input_image, axis = 2)
     m = np.nanmean(means)
     s = np.nanmean(stds)
-    rolled = np.roll(Input_image,1,axis = 2) 
-    L = np.shape(Input_image)[0] * np.shape(Input_image)[1]
-    rs = np.zeros(L);
-    
-    for k in range(L):
-        i = k // np.shape(Input_image)[0];
-        j = k % np.shape(Input_image)[0];
-        if not np.isnan(Input_image[i,j,:]).all():
-            rs[k] = np.nanmean(Input_image[i,j,:] * rolled[i,j,:])/np.nanmean(Input_image[i,j,:] * Input_image[i,j,:])
-    r = np.nanmean(rs)
-    print('r = ',r,np.nanstd(rs))
-    print('m =',m,'s = ',s)
-    
+    rs = []
+    for i in range(np.shape(Input_image)[0]):
+        for j in range(np.shape(Input_image)[1]):
+            y_0 = Input_image[i,j,:]
+            if not np.isnan(y_0).all():
+                y_1 = np.roll(y_0,-1)
+                rs.append(np.sum(y_0*y_1)/np.sum(y_0*y_0))
+    r_mean = np.nanmean(rs)
+    r_std = np.nanstd(rs)
     
     # loop per generare N canali sintetici
     bins = np.arange(0, (np.shape(Input_image)[2]+0.5)/fs, 0.1)
@@ -64,83 +59,84 @@ def InitShapiroplus(Input_image,fs,n = 2.5):
 
     av_h = np.zeros(len(bins)-1)
     c = 0
-
-    Y = [] 
-    for i in range(np.shape(Input_image)[0]*np.shape(Input_image)[1]):
+    
+    for i in range(10000):
         red_signal = [np.random.normal(loc=m, scale=s) for t in range(np.shape(Input_image)[2])]
-
+        r = r_mean
+        #r = np.random.normal(loc=r_mean, scale=r_std)
         for t in range(1,len(red_signal)):
             red_signal[t] = r*red_signal[t-1] + np.sqrt(1-r**2)*red_signal[t]
-       
-        y = np.diff(above_th_points(red_signal, n, fs))
-
-    
-
-        Y.extend(y)    
-        h,b = np.histogram(y, bins=bins, density=True)
-        if not np.isnan(np.sum(h)):
-            av_h += h
-            c += 1
+        
+        y = np.diff(above_th_points(red_signal, fs, shapiro_plus_th))
+        
+        if len(y) > 0:
+            h,b = np.histogram(y, bins=bins, density=True)
+            if not np.isnan(np.sum(h)):
+                av_h += h
+                c += 1
     av_h /= c
-    
-    np.random.shuffle(Y)
     
     z = np.polyfit(b[:-1], np.cumsum(av_h)*bin_size, 4)
     zz = np.poly1d(z)
-    return zz,Y[0:1000] 
+    return zz
 
-def EvaluateShapiroPlus(value,zz,Y):
-    #stat, p = ks_1samp(value, zz)
-    stat, p = ks_2samp(value, Y)
-
-    return p
+def EvaluateShapiroPlus(value, cumul_distr, fs, shapiro_plus_th):
+    y = np.diff(above_th_points(value, fs, shapiro_plus_th))
+    try:
+        stat, p = ks_1samp(y, cumul_distr)
+        return p
+    except Exception:
+        return np.nan
 
 def EvaluateShapiro(value):
     stat,p = shapiro(value)
     return p
 
-def CheckCondition(coords, Input_image, method = 'shapiro', null_distr = None, null_array = []):
-    #function to check whether node is compliant with the condition
+def CheckCondition(coords, Input_image, fs, method = 'shapiro', null_distr = None, shapiro_plus_th = None):
+    # function to check whether node is compliant with the condition
     value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
-    if np.isnan(np.nanmax(value)):
-        return(1)
+    # if np.isnan(np.nanmax(value)):
+    if np.isnan(value).all():
+        return 1
     else:
         if method == 'shapiro':
             p = EvaluateShapiro(value)
             if p <= 0.05:
-                return(0)
+                return 0
             else:
-                return(1)
+                # the pixel is classified as noise
+                return 1
         elif method == 'shapiroplus':
             p_1 = EvaluateShapiro(value)
-            p_2 = EvaluateShapiroPlus(value,null_distr,null_array)
-            if (p_1 > 0.05) and (p_2 > 0.05): # the pixel is classified as noise
-                return(1) 
+            p_2 = EvaluateShapiroPlus(value, null_distr, fs, shapiro_plus_th)
+            if (p_1 > 0.05) and ((p_2 > 0.05) or (p_2 is np.nan)):
+                # the pixel is classified as noisy
+                return 1
             else:
-                return(0)
+                return 0
 
 
-def NewLayer(l, Input_image, evaluation_method = 'shapiro',null_distr = None,null_array = []):
+def NewLayer(l, Input_image, fs, evaluation_method = 'shapiro', null_distr = None, shapiro_plus_th = None):
     new_list = []
     # first leaf
-    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, evaluation_method,null_distr,null_array )
+    cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0], l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # second leaf
-    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr,null_array )
+    cond = CheckCondition([l[0], l[1]+l[2]//2, l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0], l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     # third leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method,null_distr,null_array )
+    cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0]+l[2]//2, l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     # fourth leaf
-    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method,null_distr,null_array )
+    cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
     
     return(new_list)
 
-def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method = 'shapiro',null_distr = None, null_array = [],threshold = 0.5, n_bad = 2):
+def CreateMacroPixel(Input_image, fs, exit_method = 'consecutive', evaluation_method = 'shapiro', null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
     # initialized node list
     NodeList = []
     MacroPixelCoords = []
@@ -151,7 +147,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', evaluation_method
     while len(NodeList):
 
         # create node's children
-        Children = NewLayer(NodeList[0], Input_image, evaluation_method,null_distr,null_array )
+        Children = NewLayer(NodeList[0], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
         NodeList.pop(0) # delete investigated node
        
         #check wether exit condition is met
@@ -216,6 +212,7 @@ def plot_masked_image(original_img, MacroPixelCoords):
     return axs
 
 if __name__ == '__main__':
+    
     CLI = argparse.ArgumentParser(description=__doc__,
                    formatter_class=argparse.RawDescriptionHelpFormatter)
     CLI.add_argument("--data",    nargs='?', type=str, required=True,
@@ -239,31 +236,37 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
     block = analogsignals_to_imagesequences(block)
-    fs = 25   
+    fs = asig.sampling_rate.magnitude
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
+    
     if args.signal_eval_method == 'shapiroplus':
-        null_distr,null_array = InitShapiroplus(imgseq_array,fs,n = 2.5)
-    else: 
+        shapiro_plus_th = 2.5
+        null_distr = InitShapiroPlus(imgseq_array, fs, shapiro_plus_th)
+    else:
+        shapiro_plus_th = None
         null_distr = None
-        null_array = []
+    
     # pad image sequences with nans to make it divisible by 2
     N_pad = next_power_of_2(max(dim_x, dim_y)) 
     padded_image_seq = np.pad(imgseq_array, 
                          pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2), 
                                       ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2), 
                                       (0,0)], mode = 'constant', constant_values = np.nan)
+    
     # tree search for the best macro-pixel dimension
     # List con x,y,L,flag,x_parent, y_parent, L_parent
     MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
+                                        fs = fs,
                                         exit_method = args.exit_condition,
                                         evaluation_method = args.signal_eval_method,
                                         null_distr = null_distr,
-                                        null_array = null_array,
+                                        shapiro_plus_th = shapiro_plus_th,
                                         threshold = args.voting_threshold,
                                         n_bad = args.n_bad_nodes)
+    
     if args.output_img is not None:
         plot_masked_image(padded_image_seq, MacroPixelCoords)
         save_plot(args.output_img)
@@ -278,9 +281,7 @@ if __name__ == '__main__':
     y_coord_cm = np.empty([len(MacroPixelCoords)]) # new y coord
 
     for px_idx, px in enumerate(MacroPixelCoords): # for each new pixel
-        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2], 
-                                                     px[1]:px[1]+px[2]], 
-                                    axis = (0,1))
+        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]], axis = (0,1))
         x_coord_cm[px_idx], y_coord_cm[px_idx] = ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
                                  imgseq.spatial_scale)
 
@@ -305,6 +306,3 @@ if __name__ == '__main__':
     block.segments[0].analogsignals[0] = new_asig
 
     write_neo(args.output, block)
-
-
-
