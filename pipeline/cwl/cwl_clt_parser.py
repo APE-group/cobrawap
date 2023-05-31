@@ -98,6 +98,46 @@ def parse_CLI_args(script):
     
   return args
 
+def write_cwl_file(file_path, block_name, args):
+  with open(file_path, "w+") as f_out:
+    f_out.write('#!/usr/bin/env cwltool\n')
+    f_out.write('\n')
+    f_out.write('cwlVersion: v1.2\n')
+    f_out.write('class: CommandLineTool\n')
+    f_out.write('\n')
+    f_out.write('baseCommand: python3\n')
+    f_out.write('\n')
+    f_out.write('requirements:\n')
+    f_out.write('  EnvVarRequirement:\n')
+    f_out.write('    envDef:\n')
+    f_out.write('      PYTHONPATH: $(inputs.pipeline_path)\n')
+    f_out.write('\n')
+    f_out.write('inputs:\n')
+    f_out.write('  pipeline_path:\n')
+    f_out.write('    type: string\n')
+    f_out.write('  step:\n')
+    f_out.write('    type: File?\n')
+    f_out.write('    default:\n')
+    f_out.write('      class: File\n')
+    f_out.write('      location: \"../scripts/' + block_name + '.py\"\n')
+    f_out.write('    inputBinding:\n')
+    f_out.write('      position: 0\n')
+    for a,arg in enumerate(args):
+      f_out.write('  ' + arg['name'] + ':\n')
+      f_out.write('    type: ' + arg['type'])
+      if not arg['required']:
+        f_out.write('?')
+      f_out.write('\n')
+      f_out.write('    inputBinding:\n')
+      f_out.write('      position: ' + str(a+1) + '\n')
+      f_out.write('      prefix: --' + arg['name'] + '\n')
+    f_out.write('\n')
+    f_out.write('outputs:\n')
+    f_out.write('  ' + block_name + '_out:\n')
+    f_out.write('    type: File\n')
+    f_out.write('    outputBinding:\n')
+    f_out.write('      glob: $(inputs.output)\n')
+          
 if __name__ == '__main__':
   
     CLI = argparse.ArgumentParser(description=__doc__,
@@ -130,50 +170,15 @@ if __name__ == '__main__':
       args_1 = parse_CLI_args(block_script)
       #print('from parsing', args_1)
       
+      """
       if not os.path.isfile(block_yaml):
         print(' > There is no \'.yaml\' file for block script \'' + block_name + '\'.')
       else:
         args_2 = read_args_from_yaml(block_yaml)
         #print('from yaml', args_2)
         #print('parse == yaml?', args_1 == args_2)
-            
-        with open(cwl_file, "w+") as f_out:
-          f_out.write('#!/usr/bin/env cwltool\n')
-          f_out.write('\n')
-          f_out.write('cwlVersion: v1.2\n')
-          f_out.write('class: CommandLineTool\n')
-          f_out.write('\n')
-          f_out.write('baseCommand: python3\n')
-          f_out.write('\n')
-          f_out.write('requirements:\n')
-          f_out.write('  EnvVarRequirement:\n')
-          f_out.write('    envDef:\n')
-          f_out.write('      PYTHONPATH: $(inputs.pipeline_path)\n')
-          f_out.write('\n')
-          f_out.write('inputs:\n')
-          f_out.write('  pipeline_path:\n')
-          f_out.write('    type: string\n')
-          f_out.write('  step:\n')
-          f_out.write('    type: File?\n')
-          f_out.write('    default:\n')
-          f_out.write('      class: File\n')
-          f_out.write('      location: \"../scripts/' + block_name + '.py\"\n')
-          f_out.write('    inputBinding:\n')
-          f_out.write('      position: 0\n')
-          for a,arg in enumerate(args_1):
-            f_out.write('  ' + arg['name'] + ':\n')
-            f_out.write('    type: ' + arg['type'])
-            if not arg['required']:
-              f_out.write('?')
-            f_out.write('\n')
-            f_out.write('    inputBinding:\n')
-            f_out.write('      position: ' + str(a+1) + '\n')
-            f_out.write('      prefix: --' + arg['name'] + '\n')
-          f_out.write('\n')
-          f_out.write('outputs:\n')
-          f_out.write('  ' + block_name + '_out:\n')
-          f_out.write('    type: File\n')
-          f_out.write('    outputBinding:\n')
-          f_out.write('      glob: $(inputs.output)\n')
+      """
+      
+      write_cwl_file(cwl_file, block_name, args_1)
 
 print('')
