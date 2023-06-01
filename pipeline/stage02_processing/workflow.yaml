@@ -1,3 +1,8 @@
+# Config file for Stage 2 - Processing (CWL p.o.c.)
+
+# Name of stage, must be identical with folder name
+STAGE_NAME: 'stage02_processing'
+
 pipeline_path: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/wavescalephant/pipeline"
 
 # INPUT
@@ -5,15 +10,17 @@ data:
   class: File
   location: '/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage01_data_entry/LENS_170111_mouse2_t3/LENS_170111_mouse2_t3.nix'
 
+BLOCK_ORDER: ['roi_selection', 'background_subtraction', 'normalization']
+
 # ROI selection
 roi_selection_output_img: '/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage02_processing/plots/roi.png'
-intensity_threshold: 0.5
-crop_to_selection: False
+roi_selection_intensity_threshold: 0.5
+roi_selection_crop_to_selection: False
 
 # Background subtraction
 background_subtraction_output_img: '/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage02_processing/plots/background.png'
 
 # filenames for the outputs of single steps
-roi_selection_out: 'roi_selection.nix'
-background_subtraction_out: 'background_subtraction.nix'
+roi_selection_output: 'roi_selection.nix'
+background_subtraction_output: 'background_subtraction.nix'
 

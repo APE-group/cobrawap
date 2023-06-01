@@ -98,7 +98,7 @@ def parse_CLI_args(script):
     
   return args
 
-def write_cwl_file(file_path, block_name, args):
+def write_clt_file(file_path, block_name, args):
   with open(file_path, "w+") as f_out:
     f_out.write('#!/usr/bin/env cwltool\n')
     f_out.write('\n')
@@ -133,10 +133,13 @@ def write_cwl_file(file_path, block_name, args):
       f_out.write('      prefix: --' + arg['name'] + '\n')
     f_out.write('\n')
     f_out.write('outputs:\n')
-    f_out.write('  ' + block_name + '_out:\n')
-    f_out.write('    type: File\n')
-    f_out.write('    outputBinding:\n')
-    f_out.write('      glob: $(inputs.output)\n')
+    f_out.write('  ' + block_name + '_output:\n')
+    if 'output' in [_['name'] for _ in args]:
+      f_out.write('    type: File\n')
+      f_out.write('    outputBinding:\n')
+      f_out.write('      glob: $(inputs.output)\n')
+    else:
+      f_out.write('    type: stdout\n')
           
 if __name__ == '__main__':
   
@@ -179,6 +182,6 @@ if __name__ == '__main__':
         #print('parse == yaml?', args_1 == args_2)
       """
       
-      write_cwl_file(cwl_file, block_name, args_1)
+      write_clt_file(cwl_file, block_name, args_1)
 
 print('')
