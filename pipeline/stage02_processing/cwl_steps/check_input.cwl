@@ -27,7 +27,5 @@ inputs:
       prefix: --data
 
 outputs:
-  check_input_out:
-    type: File
-    outputBinding:
-      glob: $(inputs.output)
+  check_input_output:
+    type: stdout

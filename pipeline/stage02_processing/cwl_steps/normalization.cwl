@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/background_subtraction.py"
+      location: "../scripts/normalization.py"
     inputBinding:
       position: 0
   data:
@@ -30,19 +30,14 @@ inputs:
     inputBinding:
       position: 2
       prefix: --output
-  output_img:
-    type: Any?
+  normalize_by:
+    type: string?
     inputBinding:
       position: 3
-      prefix: --output_img
-  output_array:
-    type: Any?
-    inputBinding:
-      position: 4
-      prefix: --output_array
+      prefix: --normalize_by
 
 outputs:
-  background_subtraction_output:
+  normalization_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

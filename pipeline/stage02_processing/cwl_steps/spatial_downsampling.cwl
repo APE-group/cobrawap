@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/background_subtraction.py"
+      location: "../scripts/spatial_downsampling.py"
     inputBinding:
       position: 0
   data:
@@ -35,14 +35,14 @@ inputs:
     inputBinding:
       position: 3
       prefix: --output_img
-  output_array:
-    type: Any?
+  macro_pixel_dim:
+    type: int?
     inputBinding:
       position: 4
-      prefix: --output_array
+      prefix: --macro_pixel_dim
 
 outputs:
-  background_subtraction_output:
+  spatial_downsampling_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

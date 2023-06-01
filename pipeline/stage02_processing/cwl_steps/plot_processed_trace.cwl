@@ -17,37 +17,45 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/plot_traces.py"
+      location: "../scripts/plot_processed_trace.py"
     inputBinding:
       position: 0
-  data:
-    type: File
+  original_data:
+    type: string
     inputBinding:
       position: 1
-      prefix: --data
-  output:
+      prefix: --original_data
+  processed_data:
     type: string
     inputBinding:
       position: 2
-      prefix: --output
-  t_start:
-    type: Any?
+      prefix: --processed_data
+  img_dir:
+    type: string
     inputBinding:
       position: 3
-      prefix: --t_start
-  t_stop:
-    type: Any?
+      prefix: --img_dir
+  img_name:
+    type: string?
     inputBinding:
       position: 4
-      prefix: --t_stop
-  channels:
-    type: Any?
+      prefix: --img_name
+  t_start:
+    type: float?
     inputBinding:
       position: 5
+      prefix: --t_start
+  t_stop:
+    type: float?
+    inputBinding:
+      position: 6
+      prefix: --t_stop
+  channels:
+    type: int?
+    inputBinding:
+      position: 7
       prefix: --channels
 
 outputs:
-  plot_traces_output:
-    type: File
-    outputBinding:
-      glob: $(inputs.output)
+  plot_processed_trace_output:
+    type: stdout

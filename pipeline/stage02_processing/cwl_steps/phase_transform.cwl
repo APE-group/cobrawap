@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/background_subtraction.py"
+      location: "../scripts/phase_transform.py"
     inputBinding:
       position: 0
   data:
@@ -30,19 +30,9 @@ inputs:
     inputBinding:
       position: 2
       prefix: --output
-  output_img:
-    type: Any?
-    inputBinding:
-      position: 3
-      prefix: --output_img
-  output_array:
-    type: Any?
-    inputBinding:
-      position: 4
-      prefix: --output_array
 
 outputs:
-  background_subtraction_output:
+  phase_transform_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

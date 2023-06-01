@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/background_subtraction.py"
+      location: "../scripts/plot_power_spectrum.py"
     inputBinding:
       position: 0
   data:
@@ -30,19 +30,29 @@ inputs:
     inputBinding:
       position: 2
       prefix: --output
-  output_img:
+  highpass_freq:
     type: Any?
     inputBinding:
       position: 3
-      prefix: --output_img
-  output_array:
+      prefix: --highpass_freq
+  lowpass_freq:
     type: Any?
     inputBinding:
       position: 4
-      prefix: --output_array
+      prefix: --lowpass_freq
+  psd_freq_res:
+    type: float?
+    inputBinding:
+      position: 5
+      prefix: --psd_freq_res
+  psd_overlap:
+    type: float?
+    inputBinding:
+      position: 6
+      prefix: --psd_overlap
 
 outputs:
-  background_subtraction_output:
+  plot_power_spectrum_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

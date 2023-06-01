@@ -47,7 +47,7 @@ inputs:
       prefix: --crop_to_selection
 
 outputs:
-  roi_selection_out:
+  roi_selection_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

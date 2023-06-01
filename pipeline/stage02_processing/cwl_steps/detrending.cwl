@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/background_subtraction.py"
+      location: "../scripts/detrending.py"
     inputBinding:
       position: 0
   data:
@@ -30,19 +30,29 @@ inputs:
     inputBinding:
       position: 2
       prefix: --output
-  output_img:
-    type: Any?
+  order:
+    type: int?
     inputBinding:
       position: 3
-      prefix: --output_img
-  output_array:
-    type: Any?
+      prefix: --order
+  img_dir:
+    type: string
     inputBinding:
       position: 4
-      prefix: --output_array
+      prefix: --img_dir
+  img_name:
+    type: string?
+    inputBinding:
+      position: 5
+      prefix: --img_name
+  channels:
+    type: int?
+    inputBinding:
+      position: 6
+      prefix: --channels
 
 outputs:
-  background_subtraction_output:
+  detrending_output:
     type: File
     outputBinding:
       glob: $(inputs.output)

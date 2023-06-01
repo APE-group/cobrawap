@@ -17,7 +17,7 @@ inputs:
     type: File?
     default:
       class: File
-      location: "../scripts/plot_traces.py"
+      location: "../scripts/logMUA_estimation.py"
     inputBinding:
       position: 0
   data:
@@ -30,24 +30,54 @@ inputs:
     inputBinding:
       position: 2
       prefix: --output
-  t_start:
+  output_img:
     type: Any?
     inputBinding:
       position: 3
-      prefix: --t_start
-  t_stop:
-    type: Any?
+      prefix: --output_img
+  highpass_freq:
+    type: float?
     inputBinding:
       position: 4
+      prefix: --highpass_freq
+  lowpass_freq:
+    type: float?
+    inputBinding:
+      position: 5
+      prefix: --lowpass_freq
+  logMUA_rate:
+    type: Any?
+    inputBinding:
+      position: 6
+      prefix: --logMUA_rate
+  psd_overlap:
+    type: float?
+    inputBinding:
+      position: 7
+      prefix: --psd_overlap
+  fft_slice:
+    type: Any?
+    inputBinding:
+      position: 8
+      prefix: --fft_slice
+  t_start:
+    type: float?
+    inputBinding:
+      position: 9
+      prefix: --t_start
+  t_stop:
+    type: float?
+    inputBinding:
+      position: 10
       prefix: --t_stop
   channels:
     type: Any?
     inputBinding:
-      position: 5
+      position: 11
       prefix: --channels
 
 outputs:
-  plot_traces_output:
+  logMUA_estimation_output:
     type: File
     outputBinding:
       glob: $(inputs.output)
