@@ -4,17 +4,18 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python >= 3.7
+  - python >= 3.8
   - pip >= 19.3.1
   - jinja2 >= 2.10.3
   - pygments >= 2.4.2
   - pygraphviz >= 1.5
-  - snakemake >= 7.9.0
+  - snakemake == 7.9.0
   - h5py
+  - shapely
   - pip:
     - elephant >= 0.10.0
-    - neo >= 0.10.0
-    - nixio >= 1.5.0b4
+    - neo >= 0.10.2
+    - nixio >= 1.5.3
     - pillow >= 7.0.0
     - pandas >= 1.2.0
     - scikit-learn >= 0.22.1
@@ -23,5 +24,3 @@ dependencies:
     - matplotlib >= 3.5.1
     - seaborn
     - networkx
-    - shapely >= 1.6.4.post2
-    # - mpi4py
