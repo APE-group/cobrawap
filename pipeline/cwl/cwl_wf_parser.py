@@ -36,7 +36,7 @@ def stage_block_list(stage_fullname, yaml_config):
     
     return block_list
 
-def write_wf_file(file_path, block_list, global_input_list, detailed_input):
+def write_wf_file(file_path, block_list, neo_format, plot_format, global_input_list, detailed_input):
     with open(file_path, "w+") as f_out:
         f_out.write('#!/usr/bin/env cwltool\n')
         f_out.write('\n')
@@ -46,7 +46,17 @@ def write_wf_file(file_path, block_list, global_input_list, detailed_input):
         f_out.write('inputs:\n')
         f_out.write('\n')
         for inp in global_input_list:
-            f_out.write('  %s: %s\n' % (inp['key'],inp['type']))
+            if inp['input_name']=='output':
+                f_out.write('  %s:\n' % inp['input_name_with_prefix'])
+                f_out.write('    type: string?\n')
+                if 'plot' not in inp['block_name']:
+                    # NEO OUTPUT
+                    f_out.write('    default: \"%s.%s\"\n' % (inp['block_name'],neo_format))
+                else:
+                    # PLOT OUTPUT
+                    f_out.write('    default: \"plot.%s\"\n' % plot_format)
+            else:
+                f_out.write('  %s: %s\n' % (inp['input_name_with_prefix'],inp['input_type']))
         f_out.write('\n')
         f_out.write('outputs:\n')
         f_out.write('\n')
@@ -119,6 +129,9 @@ if __name__ == '__main__':
       
     if yaml_config['STAGE_NAME'] != stage_fullname:
         raise Exception('The loaded config file is not coherent with the stage specified.')
+
+    neo_format = yaml_config['NEO_FORMAT']
+    plot_format = yaml_config['PLOT_FORMAT']
     
     try:
         block_list = stage_block_list(stage_fullname, yaml_config)
@@ -128,7 +141,10 @@ if __name__ == '__main__':
         
         ## now reading the cwl clt required files
         detailed_input = {}
-        global_input_list = [{'key': 'data', 'type': 'File'}, {'key': 'pipeline_path', 'type': 'string'}]
+        global_input_list = [
+            {'block_name': '', 'input_name': 'data', 'input_name_with_prefix': 'data', 'input_type': 'string'},
+            {'block_name': '', 'input_name': 'pipeline_path', 'input_name_with_prefix': 'pipeline_path', 'input_type': 'string'}
+        ]
         for b,block in enumerate(block_list):
             detailed_input[block] = []
             with open('../%s/cwl_steps/%s.cwl' % (stage_fullname,block), "r") as f:
@@ -143,14 +159,14 @@ if __name__ == '__main__':
                 
                 for inp in z:
                     detailed_input[block].append(inp)
-                    global_input_list.append({'key': block+'_'+inp, 'type': y['inputs'][inp]['type']})
+                    global_input_list.append({'block_name': block, 'input_name': inp, 'input_name_with_prefix': block+'_'+inp, 'input_type': y['inputs'][inp]['type']})
             
-        print('global_list:', global_input_list)
-        print('detailed_list:', detailed_input)
+        print('\nglobal_list:\n', global_input_list, '\n')
+        print('detailed_list:\n', detailed_input, '\n')
         
         cwl_file = "../%s/workflow.cwl" % stage_fullname
         
-        write_wf_file(cwl_file, block_list, global_input_list, detailed_input)
+        write_wf_file(cwl_file, block_list, neo_format, plot_format, global_input_list, detailed_input)
         
     except Exception as exc:
         raise exc
