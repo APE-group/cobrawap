@@ -48,7 +48,7 @@ def write_neo(filename, block, *args, **kwargs):
 
 def save_plot(filename):
     dirname = os.path.dirname(filename)
-    if not os.path.exists(dirname):
+    if not os.path.exists(dirname) and dirname!='':
         os.makedirs(dirname)
     try:
         plt.savefig(fname=filename, bbox_inches='tight')
