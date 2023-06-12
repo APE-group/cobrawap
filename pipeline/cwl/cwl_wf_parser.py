@@ -20,7 +20,7 @@ def stage_block_list(stage_fullname, yaml_config):
         
         case 'stage01_data_entry':
             curate_block = yaml_config['CURATION_SCRIPT'].split('.')[0]
-            block_list = ['check_input',curate_block,'plot_traces']
+            block_list = [curate_block,'check_input','plot_traces']
             
         case 'stage02_processing':
             block_list = ['check_input']
