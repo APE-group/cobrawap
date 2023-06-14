@@ -142,7 +142,7 @@ if __name__ == '__main__':
         ## now reading the cwl clt required files
         detailed_input = {}
         global_input_list = [
-            {'block_name': '', 'input_name': 'data', 'input_name_with_prefix': 'data', 'input_type': 'string'},
+            {'block_name': '', 'input_name': 'data', 'input_name_with_prefix': 'data', 'input_type': 'Any'},
             {'block_name': '', 'input_name': 'pipeline_path', 'input_name_with_prefix': 'pipeline_path', 'input_type': 'string'}
         ]
         for b,block in enumerate(block_list):

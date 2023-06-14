@@ -92,7 +92,7 @@ def parse_CLI_args(script):
         arg_type = 'Any'
     
     if arg_name == 'data':
-      arg_type = 'File'
+      arg_type = 'Any'
     
     args.append({'name': arg_name, 'type': arg_type, 'required': arg_req, 'help': arg_help})
     
