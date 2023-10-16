@@ -5,18 +5,26 @@ class: Workflow
 
 inputs:
 
-  data: File
+  data: string
   pipeline_path: string
-  roi_selection_output: string
+  roi_selection_output:
+    type: string?
+    default: "roi_selection.nix"
   roi_selection_output_img: Any?
   roi_selection_intensity_threshold: float?
   roi_selection_crop_to_selection: Any?
-  background_subtraction_output: string
+  background_subtraction_output:
+    type: string?
+    default: "background_subtraction.nix"
   background_subtraction_output_img: Any?
   background_subtraction_output_array: Any?
-  normalization_output: string
+  normalization_output:
+    type: string?
+    default: "normalization.nix"
   normalization_normalize_by: string?
-  plot_power_spectrum_output: string
+  plot_power_spectrum_output:
+    type: string?
+    default: "plot.png"
   plot_power_spectrum_highpass_freq: Any?
   plot_power_spectrum_lowpass_freq: Any?
   plot_power_spectrum_psd_freq_res: float?

@@ -115,4 +115,12 @@ ENV/
 .mypy_cache/
 
 # MacOS
-.DS_Store
+./.DS_Store
+*/.DS_Store
+pipeline/.DS_Store
+pipeline/*/.DS_Store
+pipeline/*/*/.DS_Store
+
+# Config and curate files
+pipeline/*/configs/config_LENS*
+pipeline/stage01_data_entry/scripts/curate_LENS*
