@@ -1,5 +1,0 @@
-pipeline_path: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/wavescalephant/pipeline"
-
-data: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage01_data_entry/data.nix"
-output: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage02_processing/data.nix"
-output_img: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/OUTPUT/LENS_Ketamine/stage02_processing/plots/roi.png"

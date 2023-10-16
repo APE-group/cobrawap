@@ -1,0 +1,90 @@
+# Config file for Stage 1 - Processing (CWL p.o.c.)
+
+# Name of stage, must be identical with folder name
+STAGE_NAME: 'stage01_data_entry'
+
+NEO_FORMAT: 'nix'
+
+#pipeline_path: "/g100_work/icei_Cbrwser/wavescalephant/pipeline"
+pipeline_path: "/qst0/home1/homedirs/lupocosi/CoBraWAP/CoBraWAP_APE/wavescalephant/pipeline"
+
+# INPUT
+data:
+#  class: File
+#  location: '/g100_work/icei_Cbrwser/Dataset/LENS/Ketamine/t3' # /provevideo3_1.tif'
+#  location: '/mnt/beegfs/Dataset/LENS/Ketamine/ketamine_25Hz/170110/mouse2/deep/t3'
+#  '/g100_work/icei_Cbrwser/Dataset/LENS/Ketamine/t3'
+  '/mnt/beegfs/Dataset/LENS/Ketamine/ketamine_25Hz/170110/mouse2/deep/t3'
+
+# filenames for the outputs of single steps
+#roi_selection_output: 'roi_selection.nix'
+#check_input_output: '/g100_work/icei_Cbrwser/Dataset/cobrawap_output/LENS/Ketamine/check_input.nix'
+check_input_output: 'Ketamine/check_input.nix'
+#curate_LENS_Ketamine_APE_output_string: '/g100_work/icei_Cbrwser/Dataset/cobrawap_output/LENS/Ketamine/curate.nix'
+#curate_LENS_Ketamine_APE_output: 'curate.nix'
+#plot_traces_output: '/g100_work/icei_Cbrwser/Dataset/cobrawap_output/LENS/Ketamine/plot_traces.png'
+plot_traces_output: 'plot_traces.png'
+
+# The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
+PROFILE: 'LENS_Ketamine'
+
+# Name of stage output file.
+STAGE_OUTPUT: "data.nix"
+
+# If True (default), the output file of a stage is created as symbolic link
+# to the last block output. If False, a duplicate is created (e.g. for cloud
+# application, where sym-links are not supported).
+USE_LINK_AS_STAGE_OUTPUT: True
+
+# Datasets which should be processed with identical settings.
+# To set as key-value pairs
+# Name_of_dataset: /path/to/data/files/
+#DATA_SETS:
+#    LENS_170111_mouse2_t3: '/mnt/beegfs/Dataset/LENS/Ketamine/ketamine_25Hz/170110/mouse2/deep/t3'
+
+CURATION_SCRIPT: 'curate_LENS_Ketamine_APE.py'
+HEMODYNAMICS_CORRECTION: False # true if applicable
+# name of the refletance acquisition path
+DATA_SETS_REFLECTANCE: 'None'
+
+# pixel size
+SPATIAL_SCALE: 0.05  # mm
+curate_LENS_Ketamine_APE_spatial_scale: 0.05
+
+SAMPLING_RATE: 25  # Hz
+curate_LENS_Ketamine_APE_sampling_rate: 25
+
+# time slice in s
+# if None, the entire recording is used
+T_START: 0
+T_STOP: 5
+curate_LENS_Ketamine_APE_t_start: 0
+curate_LENS_Ketamine_APE_t_stop: 5
+
+# recommend top: ventral
+ORIENTATION_TOP: 'ventral'
+# recommended right: 'lateral' for right hemisphere, 'medial' for left hemisphere
+ORIENTATION_RIGHT: 'lateral'
+
+curate_LENS_Ketamine_APE_orientation_right: 'lateral'
+curate_LENS_Ketamine_APE_orientation_top: 'ventral'
+
+TRIAL: None
+# Metadata
+ANNOTATIONS:
+    experimental_lab: 'Pavone lab - Florence'
+
+ARRAY_ANNOTATIONS: 'None'
+
+KWARGS: 'None'
+
+# Plot settings
+PLOT_TSTART: 1  # float (in s) or 'None'.
+PLOT_TSTOP: 'None'  # float (in s) or 'None'.
+PLOT_CHANNELS: [140, 150, 160]  # int, list of ints, or 'None' (default) -> picks channel by random
+PLOT_FORMAT: 'png'
+
+curate_LENS_Ketamine_APE_plot_tstart: 1
+curate_LENS_Ketamine_APE_plot_tstop: 'None'
+curate_LENS_Ketamine_APE_plot_channels: [140, 150, 160]
+curate_LENS_Ketamine_APE_plot_format: 'png'
