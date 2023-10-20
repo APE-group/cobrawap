@@ -11,6 +11,8 @@ sys.path.append(utils_path)
 from settings import output_path
 from utils.parse import check_plot_boundaries, parse_plot_channels, guess_type
 
+if 'OUTPUT_PATH' in config and config["OUTPUT_PATH"] is not None and config["OUTPUT_PATH"] != 'None':
+    output_path = config["OUTPUT_PATH"]
 STAGE_NAME = config["STAGE_NAME"]
 STAGE_OUTPUT = config["STAGE_OUTPUT"]
 PROFILE = config["PROFILE"]

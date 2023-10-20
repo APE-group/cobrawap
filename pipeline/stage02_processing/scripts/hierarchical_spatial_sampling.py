@@ -203,7 +203,7 @@ def plot_masked_image(original_img, MacroPixelCoords):
     ls = [macro[2] for macro in MacroPixelCoords]
 
     im = axs[2].hist(ls, bins = np.max(ls))
-    axs[2].set_yscale('Log')
+    axs[2].set_yscale('log')
     #axs[2].set_xscale('log',base = 2)
 
     axs[2].set_xlabel('macro-pixel size', fontsize = 7.)

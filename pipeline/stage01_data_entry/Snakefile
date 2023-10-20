@@ -13,11 +13,12 @@ from utils.snakefile import get_param
 from utils.parse import ordereddict_to_dict
 # from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
 # S3 = S3RemoteProvider(host="https://object.cscs.ch")
-# output_path = 'cobrawap/'
 
 if not bool(config):
     raise FileNotFoundError("Please specify a config file with '--configfile=...'")
 
+if 'OUTPUT_PATH' in config and config["OUTPUT_PATH"] is not None and config["OUTPUT_PATH"] != 'None':
+    output_path = config["OUTPUT_PATH"]
 STAGE_NAME = config["STAGE_NAME"]
 STAGE_OUTPUT = config["STAGE_OUTPUT"]
 PROFILE = config["PROFILE"]
