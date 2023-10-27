@@ -27,6 +27,7 @@ DATA_SETS: # Note that only the first entry will be used for the pipeline!
 CURATION_SCRIPT: 'curate_dataset_key.py'
 
 # Distance between electrodes (or pixel size)
+# Spatial scale can be None if not relevant eg. Human data
 SPATIAL_SCALE: 0.05  # mm
 
 # Rate of acquisition of data points

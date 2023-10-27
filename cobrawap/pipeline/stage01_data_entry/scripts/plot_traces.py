@@ -37,16 +37,20 @@ def plot_traces(asig, channels):
     array_annotations = [f'{k}: {v[channels]}'
                         for k,v in asig.array_annotations.items()]
 
-    x_coords = asig.array_annotations['x_coords']
-    y_coords = asig.array_annotations['y_coords']
-    dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
+    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+        x_coords = asig.array_annotations['x_coords']
+        y_coords = asig.array_annotations['y_coords']
+        dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
-    ax.text(ax.get_xlim()[1]*1.05, ax.get_ylim()[0],
-            f'ANNOTATIONS FOR CHANNEL(s) {channels} \n'\
-          +  '\n ANNOTATIONS:\n' + '\n'.join(annotations) \
-          +  '\n\n ARRAY ANNOTATIONS:\n' + '\n'.join(array_annotations) +'\n' \
-          + f' t_start: {asig.t_start}; t_stop: {asig.t_stop} \n' \
-          + f' dimensions(x,y): {dim_x}, {dim_y}')
+    text_string=f'ANNOTATIONS FOR CHANNEL(s) {channels} \n'\
+          +  '\n ANNOTATIONS:\n' + '\n'.join(annotations);
+    if len(array_annotations)>0:
+        text_string+=f'\n\n ARRAY ANNOTATIONS:\n' + '\n'.join(array_annotations) +'\n';
+    text_string+=f' t_start: {asig.t_start}; t_stop: {asig.t_stop} \n'
+    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+        text_string+=f' dimensions(x,y): {dim_x}, {dim_y}'
+
+    ax.text(ax.get_xlim()[1]*1.05, ax.get_ylim()[0], text_string)
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')
     ax.set_ylabel(f'channels [in {asig.units.dimensionality.string}]')

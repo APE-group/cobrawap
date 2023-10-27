@@ -27,12 +27,12 @@ if __name__ == '__main__':
             + "will be ignored.")
 
     asig = block.segments[0].analogsignals[0]
-
-    imgseq = analogsignal_to_imagesequence(asig)
-    asig2 = imagesequence_to_analogsignal(imgseq)
-
-    if asig.shape != asig2.shape:
-        raise ValueError("AnalogSignal doesn't include empty grid sites. "
+  
+    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+        imgseq = analogsignal_to_imagesequence(asig)
+        asig2 = imagesequence_to_analogsignal(imgseq)
+        if asig.shape != asig2.shape:
+            raise ValueError("AnalogSignal doesn't include empty grid sites. "
                       + f"Reshape {asig.shape} to {asig2.shape} according to "
                          "x/y_coords. You may use `add_empty_sites_to_analogsignal` "
                          "from the utils.neo_utils module.")
@@ -44,10 +44,11 @@ if __name__ == '__main__':
     num_channels = np.count_nonzero(~np.isnan(np.sum(asig, axis=0)))
     print('Number of Channels:\t', num_channels)
 
-    x_coords = asig.array_annotations['x_coords']
-    y_coords = asig.array_annotations['y_coords']
+    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+        x_coords = asig.array_annotations['x_coords']
+        y_coords = asig.array_annotations['y_coords']
 
-    dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
+        dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
-    print('Grid Dimensions:\t', f'{dim_x} x {dim_y}')
-    print('Empty Grid Sites:\t', dim_x*dim_y - num_channels)
+        print('Grid Dimensions:\t', f'{dim_x} x {dim_y}')
+        print('Empty Grid Sites:\t', dim_x*dim_y - num_channels)
