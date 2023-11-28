@@ -4,10 +4,10 @@ WORKDIR cobrawap_dir
 
 RUN mkdir ./cobrawap_output
 
-COPY requirements.txt ./
+COPY docker_requirements.txt ./
 
 RUN pip install --no-cache-dir --upgrade pip \
-  && pip install --no-cache-dir -r requirements.txt
+  && pip install --no-cache-dir -r docker_requirements.txt
 
 COPY pipeline ./pipeline
 COPY test_per_Docker ./test_for_Docker/
