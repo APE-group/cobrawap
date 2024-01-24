@@ -53,9 +53,9 @@ def plot_traces(asig, channels):
     ax.text(ax.get_xlim()[1]*1.05, ax.get_ylim()[0], text_string)
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')
-    ax.set_ylabel(f'channels [in {asig.units.dimensionality.string}]')
-    ax.set_yticks([i*offset for i in range(len(channels))])
-    ax.set_yticklabels(channels)
+    #ax.set_ylabel(f'channels [in {asig.units.dimensionality.string}]')
+    #ax.set_yticks([i*offset for i in range(len(channels))])
+    #ax.set_yticklabels(channels)
     return ax
 
 
