@@ -43,6 +43,7 @@ if __name__ == '__main__':
     asig = block.segments[0].analogsignals[0]
     signal = asig.as_array()
     background = np.nanmean(signal, axis=0)
+    sigma = np.nanstd(signal, axis=0)
     signal -= background
 
     if args.output_img or args.output_array is not None:
@@ -59,6 +60,8 @@ if __name__ == '__main__':
 
     new_asig = asig.duplicate_with_new_data(signal)
     new_asig.array_annotations = asig.array_annotations
+    new_asig.array_annotate(mean=background) #parte nuova
+    new_asig.array_annotate(std=sigma) #parte nuova
     new_asig.name += ""
     new_asig.description += "The mean of each channel was subtracted ({})."\
                         .format(os.path.basename(__file__))
