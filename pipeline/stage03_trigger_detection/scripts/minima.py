@@ -177,7 +177,7 @@ def plot_minima(asig, event, channel, maxima_threshold_window, maxima_threshold_
     ax[0].set_xlabel('time [{}]'.format(asig.times.units.dimensionality.string), fontsize = 7.)
     ax[0].legend(fontsize = 7.)
     
-    ax[1].plot(event.times, event.array_annotations['channels'], 'o', color = 'black', fillstyle = 'full', markerfacecolor = 'black',  markersize = .02)
+    ax[1].plot(event.times, event.array_annotations['channels'], 'o', color = 'black', fillstyle = 'full', markerfacecolor = 'black',  markersize = .5)
     ax[1].set_ylabel('channel id', fontsize = 7.)
     ax[1].set_xlabel('time (s)', fontsize = 7.)
     plt.tight_layout()
@@ -222,6 +222,9 @@ if __name__ == '__main__':
     args = CLI.parse_args()
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
+
+    if args.maxima_threshold_window == -1:
+        args.maxima_threshold_window = (asig.t_stop - asig.t_start) #(Recording Time)	
 
     transition_event, maxima_event = detect_minima(asig,
                                      interpolation_points=args.num_interpolation_points,
