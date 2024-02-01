@@ -1,12 +1,9 @@
 import numpy as np
 import warnings
-import random
 import re
 from pathlib import Path
 import sys
-utils_path = str((Path(__file__).parent / '..').resolve())
-sys.path.append(utils_path)
-from utils.io import load_neo
+from .io_utils import load_neo
 
 
 def get_base_type(datatype):
@@ -29,9 +26,14 @@ def get_base_type(datatype):
     elif np.issubdtype(datatype, bool):
         return 'bool'
     else:
-        warnings.warn(f"Did not recognize type {datatype}!")
-    return None
+        warnings.warn(f"Did not recognize type {datatype}! returning 'object'")
+    return 'object'
 
+nan_values = {'int': -1, 'float': np.nan, 'bool': False, 'a5': 'None',
+              'str': 'None', 'complex': np.nan+1j*np.nan, 'object': None}
+
+def get_nan_value(type_string):
+    return nan_values[type_string]
 
 def guess_type(string):
     try:
@@ -106,17 +108,20 @@ def parse_string2dict(kwargs_str, **kwargs):
     return my_dict
 
 
-def ordereddict_to_dict(input_dict):
-    if isinstance(input_dict, dict):
-        for k, v in input_dict.items():
-            if isinstance(v, dict):
-                input_dict[k] = ordereddict_to_dict(v)
-        return dict(input_dict)
-    else:
-        return input_dict
+# def ordereddict_to_dict(input_dict):
+#     if isinstance(input_dict, dict):
+#         for k, v in input_dict.items():
+#             if isinstance(v, dict):
+#                 input_dict[k] = ordereddict_to_dict(v)
+#         return dict(input_dict)
+#     else:
+#         return input_dict
 
 
 def none_or_X(value, dtype):
+    # if value is None or not bool(value) or value == 'None':
+    # I would not use value=0 as a synonim of 'None'
+    # as it can be a meaningful value assigned to a variable
     if value is None or value == 'None':
         return None
     try:
@@ -127,7 +132,7 @@ def none_or_X(value, dtype):
 none_or_int = lambda v: none_or_X(v, int)
 none_or_float = lambda v: none_or_X(v, float)
 none_or_str = lambda v: none_or_X(v, str)
-str_list = lambda v: s.split(',')
+str_list = lambda v: v.split(',')
 
 
 def parse_plot_channels(channels, input_file):
@@ -141,7 +146,7 @@ def parse_plot_channels(channels, input_file):
                                       lazy=True).shape
         for i, channel in enumerate(channels):
             if channel is None or channel >= channel_num:
-                channels[i] = random.randint(0,channel_num)
+                channels[i] = np.random.randint(0,channel_num)
     return channels
 
 
@@ -152,22 +157,14 @@ def determine_spatial_scale(coords):
     return np.min(dists)
 
 
-def determine_dims(coords):
-    # spatial_scale = determine_spatial_scale(coords)
-    # int_coords = np.round(np.array(coords)/spatial_scale).astype(int)
-    int_coords = np.round(np.array(coords)).astype(int)
-    dim_x, dim_y = np.max(int_coords[:,0])+1, np.max(int_coords[:,1])+1
-    return dim_x, dim_y
-
-
 def check_plot_boundaries(input_file, t_value, t_name):
-    
+
     t_value = none_or_float(t_value)
     asig = load_neo(input_file, object='analogsignal', lazy=True)
     t_start = asig.t_start.rescale('s').magnitude
     t_stop = asig.t_stop.rescale('s').magnitude
-    
+
     if t_value is None or not (t_start <= t_value <= t_stop):
         t_value = getattr(asig, t_name).rescale('s').magnitude
-    
+
     return t_value

@@ -3,11 +3,11 @@ import neo
 import warnings
 from itertools import product
 import sys
+from copy import copy
 import quantities as pq
 from pathlib import Path
-utils_path = str((Path(__file__).parent / '..').resolve())
-sys.path.append(utils_path)
-from utils.parse import determine_dims, get_base_type
+from snakemake.logging import logger
+from .parse import get_base_type, get_nan_value
 
 
 def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
@@ -21,7 +21,7 @@ def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
                 del objects[i].array_annotations[k]
     return None
 
-def merge_analogsingals(asigs):
+def merge_analogsignals(asigs):
     # ToDo: to be replaced by neo utils functions
     if len(asigs) == 1:
         return asigs[0]
@@ -38,7 +38,7 @@ def merge_analogsingals(asigs):
         raise ValueError('The AnalogSignal objects have different '\
                        + 'sampling rates!')
 
-    asig_array = np.zeros((min_length, len(asigs)))
+    asig_array = np.empty((min_length, len(asigs)), dtype=float) * np.nan
 
     for channel_number, asig in enumerate(asigs):
         asig_array[:, channel_number] = np.squeeze(asig.as_array()[:min_length])
@@ -46,6 +46,14 @@ def merge_analogsingals(asigs):
     merged_asig = neo.AnalogSignal(asig_array*asigs[0].units,
                                    sampling_rate=asigs[0].sampling_rate,
                                    t_start=asigs[0].t_start)
+
+    for asig in asigs:
+        for key, value in asig.array_annotations.items():
+            if len(value) > 1:
+                warnings.warn('Unexpected length of array annotations!')
+                continue
+            asig.annotations[key] = value[0]
+
     for key in asigs[0].annotations.keys():
         annotation_values = np.array([a.annotations[key] for a in asigs])
         try:
@@ -54,13 +62,13 @@ def merge_analogsingals(asigs):
             else:
                 merged_asig.array_annotations[key] = annotation_values
         except:
-            print('Can not merge annotation ', key)
+            warnings.warn(f'Can not merge annotation {key}!')
     return merged_asig
 
 
 def flip_image(imgseq, axis=-1):
     # spatial axis 0 (~ 1) -> vertical
-    # spatial axis 1 (~ 2)-> horizontal
+    # spatial axis 1 (~ 2) -> horizontal
     if len(imgseq.shape)==3 and axis==0:
         warnings.warn("Can not flip along time axis!"
                       "Interpreting axis=0 as first spatial axis (i.e. axis=1).")
@@ -68,7 +76,17 @@ def flip_image(imgseq, axis=-1):
 
     flipped = np.flip(imgseq.as_array(), axis=axis)
 
-    return imgseq.duplicate_with_new_data(flipped)
+    flipped_imgseq = imgseq.duplicate_with_new_data(flipped)
+
+    if 'array_annotations' in imgseq.annotations.keys():
+        flipped_imgseq.annotations['array_annotations'] = {}
+        for key, value in imgseq.annotations['array_annotations'].items():
+            flipped_imgseq.annotations['array_annotations'][key] \
+                        = np.flip(value, axis=axis)
+        flipped_imgseq.annotations['array_annotations']['y_coords'] \
+                    = imgseq.annotations['array_annotations']['y_coords']
+
+    return flipped_imgseq
 
 
 def rotate_image(imgseq, rotation=0):
@@ -91,7 +109,20 @@ def rotate_image(imgseq, rotation=0):
                        k=nbr_of_rot90,
                        axes=(-2,-1))
 
-    return imgseq.duplicate_with_new_data(rotated)
+    rotated_imgseq = imgseq.duplicate_with_new_data(rotated)
+    dim_t, dim_y, dim_x = rotated_imgseq.shape
+
+    if 'array_annotations' in imgseq.annotations.keys():
+        rotated_imgseq.annotations['array_annotations'] = {}
+        for key, value in imgseq.annotations['array_annotations'].items():
+            rotated_imgseq.annotations['array_annotations'][key] \
+                    = np.rot90(value, k=nbr_of_rot90, axes=(-2,-1))
+
+        y_coords, x_coords = np.meshgrid(range(dim_y),range(dim_x), indexing='ij')
+        rotated_imgseq.annotations['array_annotations']['y_coords'] = y_coords
+        rotated_imgseq.annotations['array_annotations']['x_coords'] = x_coords
+
+    return rotated_imgseq
 
 
 def robust_t(neo_obj, t_value=None, t_name='t_start', unit='s'):
@@ -99,7 +130,7 @@ def robust_t(neo_obj, t_value=None, t_name='t_start', unit='s'):
         if hasattr(neo_obj, t_name):
             t_value = getattr(neo_obj, t_name).rescale('s').magnitude
         else:
-            raise Warning("%s is not defined by the input or the object!" % t_name)
+            raise Warning("t_start is not defined by the input or the object!")
     else:
         if isinstance(t_value, pq.Quantity):
             t_value = t_value.rescale('s').magnitude
@@ -133,142 +164,135 @@ def time_slice(neo_obj, t_start=None, t_stop=None,
         return neo_obj.time_slice(t_start, t_stop)
 
 
-def imagesequences_to_analogsignals(block):
-    # ToDo: map potentially 2D array annotations to 1D and update
-    for seg_count, segment in enumerate(block.segments):
-        for imgseq in segment.imagesequences:
-            dim_t, dim_x, dim_y = imgseq.as_array().shape
+def imagesequence_to_analogsignal(imgseq):
+    dim_t, dim_y, dim_x = imgseq.as_array().shape
 
-            coords = np.array(list(product(np.arange(dim_x),
-                                                     np.arange(dim_y))))
+    y_coords, x_coords = np.meshgrid(range(dim_y),range(dim_x), indexing='ij')
+    x_coords = x_coords.reshape(dim_x * dim_y)
+    y_coords = y_coords.reshape(dim_x * dim_y)
 
-            imgseq_flat = imgseq.as_array().reshape((dim_t, dim_x * dim_y))
-            asig = neo.AnalogSignal(signal=imgseq_flat,
-                                    units=imgseq.units,
-                                    dtype=imgseq.dtype,
-                                    t_start=imgseq.t_start,
-                                    sampling_rate=imgseq.sampling_rate,
-                                    file_origin=imgseq.file_origin,
-                                    description=imgseq.description,
-                                    name=imgseq.name,
-                                    array_annotations={'x_coords': coords[:,0],
-                                                       'y_coords': coords[:,1]},
-                                    spatial_scale=imgseq.spatial_scale,
-                                    )
+    imgseq_flat = imgseq.as_array().reshape((dim_t, dim_x * dim_y))
 
-            # chidx = neo.ChannelIndex(name=asig.name,
-            #                          channel_ids=np.arange(dim_x * dim_y),
-            #                          index=np.arange(dim_x * dim_y),
-            #                          coordinates=coords*imgseq.spatial_scale)
+    asig = neo.AnalogSignal(signal=imgseq_flat,
+                            units=imgseq.units,
+                            dtype=imgseq.dtype,
+                            t_start=imgseq.t_start,
+                            sampling_rate=imgseq.sampling_rate,
+                            file_origin=imgseq.file_origin,
+                            description=imgseq.description,
+                            name=imgseq.name,
+                            array_annotations={'x_coords': x_coords,
+                                               'y_coords': y_coords},
+                            spatial_scale=imgseq.spatial_scale)
 
-            # chidx.annotations.update(asig.array_annotations)
-            # asig.channel_index = chidx
-            # chidx.analogsignals = [asig] + chidx.analogsignals
-            # block.channel_indexes.append(chidx)
-            if 'array_annotations' in imgseq.annotations.keys():
-                try:
-                    asig.array_annotations.update(imgseq.annotations['array_annotations'])
-                except ValueError:
-                    warnings.warn("ImageSequence <-> AnalogSignal transformation " \
-                                + "changed the signal shape!")
-                del imgseq.annotations['array_annotations']
+    remove_annotations(imgseq, del_keys=['nix_name', 'neo_name'])
+    annotations = copy(imgseq.annotations)
 
+    if 'array_annotations' in annotations.keys():
+        try:
+            for key, value in annotations['array_annotations'].items():
+                asig.array_annotations[key] = value.reshape(dim_x*dim_y)
 
-            remove_annotations(imgseq, del_keys=['nix_name', 'neo_name'])
-            asig.annotations.update(imgseq.annotations)
-            block.segments[seg_count].analogsignals.append(asig)
-    return block
+            if not (x_coords == asig.array_annotations['x_coords']).all() \
+            or not (y_coords == asig.array_annotations['y_coords']).all():
+                raise IndexError("Transformation of array_annotations for the " 
+                               + "AnalogSignal went wrong!")
+        except ValueError:
+            warnings.warn("ImageSequence <-> AnalogSignal transformation "
+                        + "changed the signal shape!")
+        del annotations['array_annotations']
+
+    asig.annotations.update(annotations)
+
+    return asig
 
 
-def analogsignals_to_imagesequences(block):
-    # ToDo: map 1D array annotations to 2D and update
-    for seg_count, segment in enumerate(block.segments):
-        for asig_count, asig in enumerate(segment.analogsignals):
-            asig_array = asig.as_array()
-            dim_t, dim_channels = asig_array.shape
-            # coords = asig.channel_index.coordinates
-            # temporary replacement
-            if 'x_coords' not in asig.array_annotations\
-                or 'y_coords' not in asig.array_annotations:
-                print('AnalogSignal {} in Segment {} has no spatial Information '\
-                      .format(asig_count, seg_count)\
-                    + ' as array_annotations "x_coords" "y_coords", skip.')
-                continue
+def analogsignal_to_imagesequence(asig):
+    asig_array = asig.as_array()
+    dim_t, dim_channels = asig_array.shape
 
-            coords = np.array([(x,y) for x,y in zip(asig.array_annotations['x_coords'],
-                                                    asig.array_annotations['y_coords'])],
-                              dtype=float)
-            #
-            # spatial_scale = asig.annotations['spatial_scale']
-            # int_coords = np.round(np.array(coords)/spatial_scale).astype(int)
-            # print(int_coords)
+    if 'x_coords' not in asig.array_annotations \
+    or 'y_coords' not in asig.array_annotations:
+        logger.error('AnalogSignal has no spatial information '
+                   + 'as array_annotations "x_coords" "y_coords"!')
 
-            if len(coords) != dim_channels:
-                raise IndexError("Number of channels doesn't agree with "\
-                               + "number of coordinates!")
+    x_coords = asig.array_annotations['x_coords'].astype(int)
+    y_coords = asig.array_annotations['y_coords'].astype(int)
 
-            dim_x, dim_y = determine_dims(coords)
+    if len(x_coords) != dim_channels or len(y_coords) != dim_channels:
+        logger.error("Number of channels doesn't fit number of coordinates!")
 
-            image_data = np.empty((dim_t, dim_x, dim_y), dtype=asig.dtype)
-            image_data[:] = np.nan
+    dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
-            for channel in range(dim_channels):
-                x, y = coords[channel]
-                x, y = int(x), int(y)
-                image_data[:, x, y] = asig_array[:, channel]
+    image_data = np.empty((dim_t, dim_y, dim_x), dtype=asig.dtype) * np.nan
 
-            # spatial_scale = determine_spatial_scale(coords)*coords.units
-            spatial_scale = asig.annotations['spatial_scale']
+    for channel, (x,y) in enumerate(zip(x_coords, y_coords)):
+        image_data[:, y, x] = asig_array[:, channel]
 
-            # array_annotations = {}
-            # for k, v in asig.array_annotations.items():
-            #     array_annotations[k] = v.reshape((dim_x, dim_y))
-            imgseq = neo.ImageSequence(image_data=image_data,
-                                       units=asig.units,
-                                       dtype=asig.dtype,
-                                       t_start=asig.t_start,
-                                       sampling_rate=asig.sampling_rate,
-                                       name=asig.name,
-                                       description=asig.description,
-                                       file_origin=asig.file_origin,
-                                       # array_annotations=array_annotations,
-                                       **asig.annotations)
+    imgseq = neo.ImageSequence(image_data=image_data,
+                               units=asig.units,
+                               dtype=asig.dtype,
+                               t_start=asig.t_start,
+                               sampling_rate=asig.sampling_rate,
+                               name=asig.name,
+                               description=asig.description,
+                               file_origin=asig.file_origin,
+                               **asig.annotations)
 
-            imgseq.annotate(array_annotations=asig.array_annotations)
+    # add dict of array_annotations mapped to the 2D grid
+    grid_array_annotations = {}
+    for key, value in asig.array_annotations.items():
+        dtype = get_base_type(value[0])
+        nan_value = get_nan_value(dtype)
 
-            remove_annotations(imgseq, del_keys=['nix_name', 'neo_name'])
-            block.segments[seg_count].imagesequences.append(imgseq)
-    return block
+        grid_value = np.empty((dim_y, dim_x), dtype=value.dtype)
+        grid_value.fill(nan_value)
+
+        for channel, (x,y) in enumerate(zip(x_coords, y_coords)):
+            grid_value[y, x] = value[channel]
+
+        grid_array_annotations[key] = grid_value
+
+    ys, xs = np.meshgrid(range(dim_y),range(dim_x), indexing='ij')
+    # check if -1 in xy_coords
+    if not (xs == grid_array_annotations['x_coords']).all() \
+    or not (ys == grid_array_annotations['y_coords']).all():
+        raise ValueError("Transformation of array_annotations for the "
+                       + "imagesequence went wrong!")
+
+    imgseq.annotate(array_annotations=grid_array_annotations)
+    remove_annotations(imgseq, del_keys=['nix_name', 'neo_name'])
+    return imgseq
 
 
 def add_empty_sites_to_analogsignal(asig):
     x_coords = asig.array_annotations['x_coords']
     y_coords = asig.array_annotations['y_coords']
-    coords = list(zip(x_coords, y_coords))
+    dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
+    yx_coords = list(zip(y_coords, x_coords))
 
     asig_array = asig.as_array()
     dim_t, dim_channels = asig_array.shape
-    dim_x, dim_y = determine_dims(coords)
     num_grid_channels = dim_x * dim_y
     num_nan_channels = num_grid_channels - dim_channels
+
+    if num_nan_channels == 0:
+        return asig
 
     nan_signals = np.empty((dim_t, num_nan_channels)) * np.nan
     new_asig_array = np.append(asig_array, nan_signals, axis=1)
 
-    grid_coords = list(product(range(dim_x), range(dim_y)))
-    nan_coords = list(set(grid_coords).difference(coords))
-    x_nan_coords = np.array(nan_coords)[:,0]
-    y_nan_coords = np.array(nan_coords)[:,1]
+    grid_coords = list(product(range(dim_y), range(dim_x)))
+    nan_coords = list(set(grid_coords).difference(yx_coords))
+    y_nan_coords = np.array(nan_coords)[:,0]
+    x_nan_coords = np.array(nan_coords)[:,1]
     num_nans = len(nan_coords)
 
     new_asig = asig.duplicate_with_new_data(new_asig_array)
 
     # add nans into array_annotations for empty sites
-    nan_values = {'int': -1, 'float': np.nan, 'bool': False,
-                  'str': 'None', 'complex': np.nan+1j*np.nan}
-
     for key, values in asig.array_annotations.items():
-        nan_value = np.array([nan_values[get_base_type(values)]])
+        nan_value = np.array([get_nan_value(get_base_type(values))])
         new_values = np.append(values, np.repeat(nan_value, num_nans))
         if type(values) == pq.Quantity:
             new_values = new_values.magnitude * values.units
