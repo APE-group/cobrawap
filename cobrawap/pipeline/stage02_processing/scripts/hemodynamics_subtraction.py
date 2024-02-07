@@ -1,20 +1,25 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""
 
-# In[ ]:
-
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+from pathlib import Path
 import os
 import neo
 import quantities as pq
 from skimage import data, io, filters, measure
 from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
-from utils.neo import imagesequences_to_analogsignals, analogsignals_to_imagesequences, flip_image, rotate_image, time_slice
-from utils.io import load_neo, write_neo
+from utils.neo_utils import imagesequence_to_analogsignal, analogsignal_to_imagesequence, flip_image, rotate_image, time_slice
+from utils.io_utils import load_neo, write_neo
 import scipy
+
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
 
 def hemodyn_correction(imgseq_fluo, imgseq_refl):
 
@@ -70,22 +75,17 @@ def hemodyn_correction(imgseq_fluo, imgseq_refl):
     imgseq_corrected.annotations.update(imgseq_fluo.annotations)
 
     imgseq_corrected.name = imgseq_fluo.name + " "
-    imgseq_corrected.description = imgseq_fluo.description +                  "hemodynamic correction ({}).".format(os.path.basename(__file__))
+    imgseq_corrected.description = imgseq_fluo.description + \
+                                   "hemodynamic correction ({}).".format(os.path.basename(__file__))
 
     return imgseq_corrected
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
+
     block = load_neo(args.data)
-    block = analogsignals_to_imagesequences(block)
+    block = analogsignal_to_imagesequence(block)
     imgseq_fluo = block.segments[0].imagesequences[0]
     imgseq_refl = block.segments[0].imagesequences[1]
     
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     new_segment = neo.Segment()
     new_block.segments.append(new_segment)
     new_block.segments[0].imagesequences.append(imgseq_corrected)
-    new_block = imagesequences_to_analogsignals(new_block)
+    new_block = imagesequence_to_analogsignal(new_block)
 
     block.segments[0].analogsignals[0] = new_block.segments[0].analogsignals[0]
 

@@ -1,37 +1,33 @@
-# Stage 2 - Processing
-This stage prepares the data for analysis. The user can select the required processing steps depending on the data and analysis objectives.
+=====================
+Stage 02 - Processing
+=====================
+**This stage prepares the data for analysis. The user can select the required processing steps depending on the data and analysis objectives.**
 
-[config template](configs/config_template.yaml)
-<!-- |
-[example report](../../examples/reports/report_stage02-preprocessing.html) -->
+`config template <https://github.com/INM-6/cobrawap/blob/master/pipeline/stage02_processing/configs/config_template.yaml>`_
 
-#### Input
-Simultaneous neural activity recordings from spatially arranged (on a grid) electrodes/pixels
+Input
+=====
+Simultaneous neural activity recordings from electrodes/pixels, spatially arranged on a grid.
 
-* A neo.Block object containing
-an AnalogSignal with all signal channels (additional AnalogSignal objects are ignored) with
-    * array_annotations: _'x_coords'_ and _'y_coords'_ specifying the integer position on the electrode/pixel grid of the channels
-    * annotation: _'spatial_scale'_ specifying the distance between electrodes/pixels as quantities.Quantity object
+A ``neo.Block`` and ``Segment`` object containing an ``AnalogSignal`` object containing all signal channels (additional ``AnalogSignal`` objects are ignored) with
 
-#### Output
-Activity signals, cleaned and pre-processed to user specifications
+* *array_annotations*: ``x_coords`` and ``y_coords`` specifying the integer position on the channel grid;
+* *annotations*: ``spatial_scale`` specifying the distance between electrodes/pixels as ``quantities.Quantity`` object.
 
-* Format and shape is identical to the input. AnalogSignal.description contains a summary of the preformed processing steps
+*should pass* |check_input|_
 
-## Usage
-In this stage all blocks can be selected and arranged in arbitrary order. The execution order is specified by the config parameter `BLOCK_ORDER`.
+.. |check_input| replace:: *check_input.py*
+.. _check_input: https://github.com/INM-6/cobrawap/blob/master/pipeline/stage02_processing/scripts/check_input.py
 
-Other as in other stages, in this stage, all blocks are re-executed with every snakemake call. Because, the execution order of the blocks is completely modular and might change in-between runs, rerunning all blocks with the latest execution order ensures that no intermediate file with a contradicting origination confounds the results.
+Output
+======
+* The same structured ``neo.Block`` object containing an ``AnalogSignal`` object. The channel signals in ``AnalogSignal`` are processed by the specified blocks and parameters.
+* The respective block parameters are added as metadata to the annotations of the ``AnalogSignal``.
+* The output ``neo.Block`` is stored in ``{output_path}/{profile}/stage02_processing/processed_data.{NEO_FORMAT}``
+* The intermediate results and plots of each processing block are stored in the ``{output_path}/{profile}/stage02_processing/{block_name}/``
 
-## Blocks
-|Name | Description | Parameters |
-|:----|:------------|:-----------|
-|__frequency_filter__|low/high/bandpass filters signal|`HIGHPASS_FREQ`, `LOWPASS_FREQ`, `FILTER_ORDER`, `FILTER_FUNCTION`, _`PSD_FREQ_RES`_, _`PSD_OVERLAP`_|
-|__background_subtraction__|subtracts average of each channel| |
-|__spatial_downsampling__|spatial smoothing by factor|`MACRO_PIXEL_DIM`|
-|__normalization__|divides signals by factor|`NORMALIZE_BY`|
-|__roi_selection__|masks area of low signal intensity|`INTENSITY_THRESHOLD`|
-|__detrending__|removes (linear, quadratic, ..) trends in signals|`DETRENDING_ORDER`|
-|__hierarchical_spatial_downsampling__|non homogeneous spatial smoothing according to macro pixels sigma to noise ratio|`EXIT_CONDITION`, `SIGNAL_EVALUATION_METHOD`, `N_BAD_NODES`, `VOTING_THRESHOLD`|
+Usage
+=====
+In this stage, all blocks can be selected and arranged in arbitrary order (*choose any*). The execution order is specified by the config parameter ``BLOCK_ORDER``. All blocks, generally, have the same output data representation as their input, just transforming the ``AnalogSignal`` and adding metadata, without adding data objects.
 
-(_plotting parameters in italic_)
+When the block order is changed in-between runs, it may happen that not all the necessary blocks are re-executed correctly, because of Snakemake's time-stamp-based re-execution mechanism. Therefore, to be sure all blocks are re-executed, you can set ``RERUN_MODE`` is set to ``True``. However, when you are not changing the block order, setting it to ``False`` prevents unnecessary reruns.

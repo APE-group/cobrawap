@@ -1,14 +1,23 @@
 """
-Divides all signals by their max/mean/median value.
+Divide the signal in each channel by their max/mean/median value.
 """
+
 import numpy as np
 import argparse
+from pathlib import Path
 import neo
 import quantities as pq
 import os
 import sys
-from utils.io import write_neo, load_neo
+from utils.io_utils import write_neo, load_neo
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--normalize_by", nargs='?', type=str, default='mean',
+                    help="division factor: 'max', 'mean', or 'median'")
 
 def normalize(asig, normalize_by):
     if normalize_by == 'median':
@@ -18,7 +27,7 @@ def normalize(asig, normalize_by):
     elif normalize_by == 'mean':
         norm_function = np.mean
     else:
-        raise InputError("The method to normalize by is not recognized. "\
+        raise ValueError("The method to normalize by is not recognized. "\
                        + "Please choose either 'mean', 'median', or 'max'.")
 
     dim_t, num_channels = asig.shape
@@ -37,15 +46,7 @@ def normalize(asig, normalize_by):
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--normalize_by", nargs='?', type=str, default='mean',
-                     help="division factor: 'max', 'mean', or 'median'")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
 

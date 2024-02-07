@@ -1,12 +1,34 @@
+"""
+Performs a dynamical downsampling, based on a (customizable) 'quality' evaluation for each channel.
+"""
+
 import neo
 import numpy as np
 from scipy.stats import shapiro
 import matplotlib.pyplot as plt
 import argparse
-from utils.io import load_neo, write_neo, save_plot
+from pathlib import Path
+from utils.io_utils import load_neo, write_neo, save_plot
 from utils.parse import none_or_float, none_or_int, none_or_str
-from utils.neo_utils import analogsignals_to_imagesequences, imagesequences_to_analogsignals
+from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+                    help="path of output image", default=None)
+CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
+                    help="number of non informative macro-pixel to prune branch", default=2)
+CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
+                    help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
+CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
+                    help="signal to noise ratio evalutaion method", default='shapiro')
+CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
+                    help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+CLI.add_argument("--output_array", nargs='?', type=none_or_str,
+                    help="path of output numpy array", default=None)
 
 def next_power_of_2(n):
     if n == 0:
@@ -136,29 +158,11 @@ def plot_masked_image(original_img, MacroPixelCoords):
     return axs
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
-                     help="path of output image", default=None)
-    CLI.add_argument("--n_bad_nodes",  nargs='?', type=none_or_int,
-                     help="number of non informative macro-pixel to prune branch", default=2)
-    CLI.add_argument("--exit_condition",  nargs='?', type=none_or_str,
-                     help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
-    CLI.add_argument("--signal_eval_method",  nargs='?', type=none_or_str,
-                     help="signal to noise ratio evalutaion method", default='shapiro')
-    CLI.add_argument("--voting_threshold",  nargs='?', type=none_or_float,
-                     help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
-    CLI.add_argument("--output_array",  nargs='?', type=none_or_str,
-                      help="path of output numpy array", default=None)
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-    block = analogsignals_to_imagesequences(block)
+    block = analogsignal_to_imagesequence(block)
     
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
@@ -219,6 +223,3 @@ if __name__ == '__main__':
     block.segments[0].analogsignals[0] = new_asig
 
     write_neo(args.output, block)
-
-
-

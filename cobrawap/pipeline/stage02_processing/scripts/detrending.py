@@ -1,62 +1,37 @@
 """
-ToDo
+Detrend the signal in each channel by order 0 (constant) or 1 (linear).
 """
+
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
-import neo
 import argparse
 import os
-from copy import copy
 import warnings
-from utils.io import load_neo, write_neo, save_plot
+from utils.io_utils import load_neo, write_neo, save_plot
+from utils.parse import none_or_int
 
-## REPLACED BY SCIPY FUNCTION
-# def detrending(signal, order):
-#     if isinstance(signal, neo.AnalogSignal):
-#         X = signal.as_array()
-#     elif isinstance(signal, pq.quantity.Quantity):
-#         X = copy(signal.magnitude)
-#     elif isinstance(signal, np.ndarray):
-#         X = copy(signal)
-#     else:
-#         raise TypeError('Input signal must be either an AnalogSignal,'
-#                       + 'a quantity array, or a numpy array.')
-#     if not type(order) == int:
-#         raise TypeError("Detrending order needs to be int.")
-#     if order < 0 or order > 4:
-#         raise InputError("Detrending order must be between 0 and 4!")
-#
-#     dim_t, num_channels = signal.shape
-#     window_size = len(signal)
-#
-#     if order > 0:
-#         X = X - np.mean(X, axis=0)
-#     if order > 1:
-#         factor = [1, 1/2., 1/6.]
-#         for i in np.arange(2, order):
-#             detrend = np.zeros_like(X)
-#             for channel, x in enumerate(X.T):
-#                 detrend[:,channel] =\
-#                     np.linspace(-window_size/2., window_size/2., window_size)**i \
-#                     * np.mean(np.diff(x, n=i)) * factor[i-2]
-#             X = X - detrend
-#
-#     if isinstance(signal, neo.AnalogSignal):
-#         signal_out = signal.duplicate_with_new_data(X)
-#         signal_out.array_annotate(**signal.array_annotations)
-#         return signal_out
-#     elif isinstance(signal, pq.quantity.Quantity):
-#         return X * signal.units
-#     elif isinstance(signal, np.ndarray):
-#         return X
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data",    nargs='?', type=str, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output",  nargs='?', type=str, required=True,
+                    help="path of output file")
+CLI.add_argument("--order", nargs='?', type=int, default=1,
+                    help="detrending order")
+CLI.add_argument("--img_dir",  nargs='?', type=str, required=True,
+                    help="path of output figure directory")
+CLI.add_argument("--img_name", nargs='?', type=str,
+                    default='processed_trace_channel0.png',
+                    help='example filename for channel 0')
+CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=None,
+                    help="list of channels to plot")
 
 def detrend(asig, order):
-    if (args.order != 0) and (args.order != 1):
+    if (order != 0) and (order != 1):
         warnings.warn("Detrending order must be either 0 (constant) or 1 (linear)! Skip.")
         return asig
 
-    dtrend = 'linear' if args.order else 'constant'
+    dtrend = 'linear' if order else 'constant'
     detrended_signals = np.empty(asig.shape)
     detrended_signals.fill(np.nan)
 
@@ -86,33 +61,19 @@ def plot_detrend(asig, detrend_asig, channel):
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--order", nargs='?', type=int, default=1,
-                     help="detrending order")
-    CLI.add_argument("--img_dir",  nargs='?', type=str, required=True,
-                     help="path of output figure directory")
-    CLI.add_argument("--img_name", nargs='?', type=str,
-                     default='processed_trace_channel0.png',
-                     help='example filename for channel 0')
-    CLI.add_argument("--channels", nargs='+', type=int, default=0,
-                     help="channel to plot")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
 
     detrend_asig = detrend(asig, args.order)
 
-    for channel in args.channels:
-        plot_detrend(asig, detrend_asig, channel)
-        output_path = os.path.join(args.img_dir,
-                                   args.img_name.replace('_channel0', f'_channel{channel}'))
-        save_plot(output_path)
+    if args.plot_channels[0] is not None:
+        for channel in args.plot_channels:
+            plot_detrend(asig, detrend_asig, channel)
+            output_path = os.path.join(args.img_dir,
+                                       args.img_name.replace('_channel0', f'_channel{channel}'))
+            save_plot(output_path)
 
     detrend_asig.name += ""
     detrend_asig.description += "Detrended by order {} ({}). "\
