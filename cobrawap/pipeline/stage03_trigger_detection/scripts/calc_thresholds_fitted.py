@@ -1,13 +1,36 @@
-import neo
+"""
+Determine the threshold between Up and Down states for each channel
+by fitting the respective amplitude distributions.
+"""
+
 import numpy as np
 import argparse
+from pathlib import Path
 import os
 import scipy as sc
 import warnings
 from scipy.optimize import OptimizeWarning
 import matplotlib.pyplot as plt
-from utils.io import load_neo, save_plot
+from utils.io_utils import load_neo, save_plot
 from utils.parse import none_or_int
+
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output thresholds (numpy array)")
+CLI.add_argument("--img_dir", nargs='?', type=Path, default=None,
+                    help="path of output figure directory")
+CLI.add_argument("--img_name", nargs='?', type=str, default=None,
+                    help="example name of output figure for channel 0")
+CLI.add_argument("--fit_function", nargs='?', type=str, default='Gaussian',
+                    help="function to fit the amplitude distribution")
+CLI.add_argument("--sigma_factor", nargs='?', type=float, default=3,
+                    help="sigma_factor x standard deviation = threshold")
+CLI.add_argument("--bin_num", nargs='?', type=int, default=100,
+                    help='number of bins for the amplitude histogram')
+CLI.add_argument("--plot_channels", nargs='+', type=none_or_int,
+                    default=None, help="list of channels to plot")
 
 warnings.simplefilter("error", OptimizeWarning)
 
@@ -51,7 +74,7 @@ def fit_amplitude_distribution(signal, sigma_factor, fit_function,
 
         # Second fit -> determine spread s0
         try:
-            (_, s0), _ = sc.optimize.curve_fit(fit_func, xvalues2, peakhist, p0=(0, np.std(peakhist)))
+            (_, s0), _ = sc.optimize.curve_fit(fit_function, xvalues2, peakhist, p0=(0, np.std(peakhist)))
         except OptimizeWarning:
             print('Could not perform second fit. Using std to determine spread of downstate signal amplitudes.')
             s0 = np.std(peakhist)
@@ -63,7 +86,7 @@ def fit_amplitude_distribution(signal, sigma_factor, fit_function,
             fig, ax = plt.subplots(figsize=(7, 7))
             ax.bar(xvalues, hist, width=np.diff(xvalues)[0], color='r')
             left_right_ratio = len(signal_leftpeak) * 2. / len(signal)
-            ax.plot(xvalues, [left_right_ratio * fit_func(x, 0, s0) for x in xvalues], c='k')
+            ax.plot(xvalues, [left_right_ratio * fit_function(x, 0, s0) for x in xvalues], c='k')
             ax.set_xlabel('signal')
             ax.set_ylabel('sample density')
             ax.set_title('Amplitude distribution (channel {})'.format(plot_channel))
@@ -106,24 +129,6 @@ def fit_amplitude_distribution(signal, sigma_factor, fit_function,
                                   .format(fit_function))
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output thresholds (numpy array)")
-    CLI.add_argument("--img_dir", nargs='?', type=str, default=None,
-                     help="path of output figure directory")
-    CLI.add_argument("--img_name", nargs='?', type=str, default=None,
-                     help="example name of output figure for channel 0")
-    CLI.add_argument("--fit_function", nargs='?', type=str, default='Gaussian',
-                     help="function to fit the amplitude distribution")
-    CLI.add_argument("--sigma_factor", nargs='?', type=float, default=3,
-                     help="sigma_factor x standard deviation = threshold")
-    CLI.add_argument("--bin_num", nargs='?', type=int, default=100,
-                     help='number of bins for the amplitude histogram')
-    CLI.add_argument("--plot_channels", nargs='+', type=none_or_int,
-                     default=None, help="list of channels to plot")
     args, unknown = CLI.parse_known_args()
     
     asig = load_neo(args.data, 'analogsignal')

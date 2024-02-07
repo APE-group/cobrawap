@@ -1,31 +1,36 @@
-# Stage 03 - Trigger Detection
-This stage detects the transitions from DOWN to UP states (and back, if applicable) as trigger times.
+============================
+Stage 03 - Trigger Detection
+============================
 
-[config template](configs/config_template.yaml)
+**This stage detects the potential passing of wavefronts on each channel (for example, transitions between Down and Up states) as trigger times.**
 
-#### Input
-Signals containing distinguishable states of low and high activity
+`config template <https://github.com/INM-6/cobrawap/blob/master/pipeline/stage03_trigger_detection/configs/config_template.yaml>`_
 
-* A neo.Block object containing an AnalogSignal with all signal channels
+Input
+=====
 
-#### Output
-Input signals + the Up (and Down) trigger times in for each channel as an Event object in the same neo.Block
+A ``neo.Block`` and ``Segment`` object containing an ``AnalogSignal`` object containing all signal channels (additional ``AnalogSignal`` objects are ignored).
 
-* AnalogSignal is identical to the input
-* neo.Event object named _'transitions'_
-    * labels: either _'UP'_ or _'DOWN'_
-    * annotations: information about the detection methods, copy of AnalogSignal.annotations
-    * array_annotations: _'channels'_, AnalogSignal.array_annotations of the respective channel
+*should pass* |check_input|_
 
-## Usage
-In this stage offers alternative trigger detection methods, from which one can be selected via the `DETECTION_BLOCK` parameter.
-There are additional filter blocks to post-process the detected triggers, they can be selected via the `TRIGGER_FILTER` parameter.
+.. |check_input| replace:: *check_input.py*
+.. _check_input: https://github.com/INM-6/cobrawap/blob/master/pipeline/stage03_trigger_detection/scripts/check_input.py
 
-|Name | Description | Parameters |
-|:----|:------------|:-----------|
-|__threshold__|thresholds UP states in channels|`THRESHOLD_METHOD`|
-|__calc_threshold_fixed__|calculates values for threshold block|`FIXED_THRESHOLD`|
-|__calc_threshold_fitted__|calculates values for threshold block|`FIT_FUNCTION`, `BIN_NUM`, `SIGMA_FACTOR`|
-|__minima__|detects UP transitions as local minima. |`NUM_INTERPOLATION_POINTS`, `USE_QUADRATIC_INTERPOLATION`, `MIN_PEAK_DISTANCE`, `MINIMA_PERSISTENCE`, `MAXIMA_THRESHOLD_FRACTION`,  `MAXIMA_THRESHOLD_WINDOW`|
-|__hilbert_phase__|detects UP transitions as phase transitions|`TRANSITION_PHASE`|
-|__remove_short_states__|removes short UP and/or DOWN states|`MIN_UP_DURATION`, `MIN_DOWN_DURATION`, `REMOVE_DOWN_FIRST`|
+Output
+======
+
+The same input data object, but extended with a ``neo.Event`` object named *'transitions'*, containing
+
+* *times*: time stamps where a potential wavefront, i.e., state transition, was detected,
+* *labels*: either ``UP`` or ``DOWN``,
+* *annotations*: information about the detection methods and copy of ``AnalogSignal.annotations``,
+* *array_annotations*: ``channels`` and the ``array_annotations`` of the ``AnalogSignal`` object that correspond to the respective channels.
+
+The output ``neo.Block`` is stored in ``{output_path}/{profile}/stage03_trigger_detection/trigger_times.{NEO_FORMAT}``.
+
+The intermediate results and plots of each processing block are stored in the ``{output_path}/{profile}/stage03_trigger_detection/{block_name}/``.
+
+Usage
+=====
+In this stage offers alternative trigger detection methods (*choose one*), which can be selected via the ``DETECTION_BLOCK`` parameter.
+There are additional filter blocks to post-process the detected triggers, they can be selected (*choose any*) via the ``TRIGGER_FILTER`` parameter.
