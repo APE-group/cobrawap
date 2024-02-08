@@ -1,21 +1,24 @@
-import argparse
-import numpy as np
-import neo
-from utils.io import load_neo, write_neo
+"""
+Combine the AnalogSignal and Event objects from different wave analysis blocks
+into the same Neo Block.
+"""
 
+import argparse
+from pathlib import Path
+from utils.io_utils import load_neo, write_neo
+
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--properties", nargs='*', type=Path, default=[],
+                    help="paths to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--waves", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--properties", nargs='?', type=lambda v: v.split(','), default=[''],
-                     help="paths to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
+    args, unknown = CLI.parse_known_args()
 
-    args = CLI.parse_args()
-    waves_block = load_neo(args.waves)
+    waves_block = load_neo(args.data)
 
     asig_names = [asig.name for asig in waves_block.segments[0].analogsignals]
     event_names = [event.name for event in waves_block.segments[0].events]

@@ -1,11 +1,25 @@
+"""
+Plot snapshots of the input data showing the detected waves.
+"""
+
 import os
 import numpy as np
 import quantities as pq
 import argparse
+from pathlib import Path
 import matplotlib.pyplot as plt
-from utils.io import load_neo, save_plot
-from utils.neo_utils import analogsignals_to_imagesequences
+from utils.io_utils import load_neo, save_plot
+from utils.neo_utils import analogsignal_to_imagesequence
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output_dir", nargs='?', type=Path, required=True,
+                    help="path to output directory")
+CLI.add_argument("--img_name", nargs='?', type=str)
+CLI.add_argument("--time_window", nargs='?', type=float, default=0.4,
+                    help="size of the plotted window (s).")
+CLI.add_argument("--colormap", nargs='?', type=str, default='viridis')
 
 def plot_wave(wave_id, waves_event, asig, frames, vec_frames,
               time_window=0.4*pq.s, cmap='virids'):
@@ -16,8 +30,8 @@ def plot_wave(wave_id, waves_event, asig, frames, vec_frames,
     t = waves_event.times[idx]
     time_steps = np.unique(t)
 
-    dim_t, dim_x, dim_y = frames.shape
-    x_idx, y_idx = np.meshgrid(np.arange(dim_y), np.arange(dim_x), indexing='xy')
+    dim_t, dim_y, dim_x = frames.shape
+    y_idx, x_idx = np.meshgrid(np.arange(dim_y), np.arange(dim_x), indexing='ij')
     markersize = 50 / max([dim_x, dim_y])
     skip_step = int(min([dim_x, dim_y]) / 50) + 1
 
@@ -34,7 +48,7 @@ def plot_wave(wave_id, waves_event, asig, frames, vec_frames,
     axes[0][0].set_ylabel(f"Wave {wave_id}", fontsize=20)
 
     for i, ax in enumerate(axes[0]):
-        ax.set_title('{:.3f} '.format(time_steps[i]) + f'{t.dimensionality}')
+        ax.set_title('{:.3f} '.format(time_steps[i].magnitude) + f'{time_steps[i].dimensionality}')
 
     for i in idx:
         x = waves_event.array_annotations['x_coords'][i]
@@ -52,7 +66,7 @@ def plot_wave(wave_id, waves_event, asig, frames, vec_frames,
 
         axes[1][ax_i].imshow(frames[t_i], origin='lower', cmap=cmap,
                              vmin=vmin, vmax=vmax)
-        axes[1][ax_i].plot(y, x, linestyle='None', marker='D',
+        axes[1][ax_i].plot(x, y, linestyle='None', marker='D',
                            markersize=markersize, color='r')
         axes[1][ax_i].set_axis_off()
 
@@ -65,25 +79,17 @@ def plot_wave(wave_id, waves_event, asig, frames, vec_frames,
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser()
-    CLI.add_argument("--data",      nargs='?', type=str)
-    CLI.add_argument("--output_dir", nargs='?', type=str)
-    CLI.add_argument("--img_name",    nargs='?', type=str)
-    CLI.add_argument("--time_window", nargs='?', type=float, default=0.4,
-                     help="size of the ploted windown in seconds.")
-    CLI.add_argument("--colormap",    nargs='?', type=str, default='viridis')
-
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
-    block = analogsignals_to_imagesequences(block)
-
-    waves_event = block.filter(name='wavefronts', objects="Event")[0]
 
     asig = block.segments[0].analogsignals[0]
-    frames = block.segments[0].imagesequences[0].as_array()
-    vec_frames = [imgseq for imgseq in block.segments[0].imagesequences
-                                    if imgseq.name=='optical_flow'][0].as_array()
+    vec_asig = block.filter(name='optical_flow', objects="AnalogSignal")[0]
+
+    frames = analogsignal_to_imagesequence(asig).as_array()
+    vec_frames = analogsignal_to_imagesequence(vec_asig).as_array()
+
+    waves_event = block.filter(name='wavefronts', objects="Event")[0]
 
     cmap = plt.get_cmap(args.colormap)
 

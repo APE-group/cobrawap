@@ -1,36 +1,48 @@
-# Stage 04 - Wavefront Detection
-This stage detects individual propagating waves based on either the detected transition times (or the input signals directly).
+=========================
+Stage 04 - Wave Detection
+=========================
 
-[config template](configs/config_template.yaml)
+**This stage detects individual propagating waves based on the local transition times and optionally complements the wave description with additionally derived properties.**
 
-#### Input
-Simultaneous neural activity recordings from spatially arranged (on a grid) electrodes/pixels
+`config template <https://github.com/INM-6/cobrawap/blob/master/pipeline/stage04_wave_detection/configs/config_template.yaml>`_
 
-A neo.Block object containing
-* an AnalogSignal with all signal channels with
-    * array_annotations: _'x_coords'_ and _'y_coords'_ specifying the integer position on the electrode/pixel grid of the channels
-    * annotation: _'spatial_scale'_ specifying the distance between electrodes/pixels as quantities.Quantity object
-* an Event object named _'transitions'_ with
-    * labels: _'UP'_
-    * array_annotations: _'x_coords'_ and _'y_coords'_
+Input
+=====
+A ``neo.Block`` and ``Segment`` object containing 
 
-#### Output
-Input signals and transition event + wavefronts as collections of transitions times as an Event object in the same neo.Block
+an ``AnalogSignal`` object with all signal channels with
 
-* AnalogSignal is identical to the input
-* (additional AnalogSignal _'optical_flow'_ containing the velocity vector field as complex valued signals)
-* neo.Event object named _'wavefronts'_
-    * labels: wavefront id
-    * annotations: parameters of clustering algorithm, copy of transitions event annotations
-    * array_annotations: _'channels'_, _'x_coords'_, _'y_coords'_
+* ``array_annotations``: ``x_coords`` and ``y_coords`` specifying the integer position on the channel grid;
 
-## Usage
-..
+an ``Event`` object named *'transitions'* with
 
-## Blocks
-|Name | Description | Parameters |
-|:----|:------------|:-----------|
-|__clustering__|groups trigger events by spatial and temporal distance|`METRIC`, `NEIGHBOUR_DISTANCE`, `MIN_SAMPLES_PER_WAVE`, `TIME_SPACE_RATIO`|
-|__(optical_flow)__|calculates vector velocity field with Horn-Schunck algorithm|`ALPHA`, `MAX_NITER`, `CONVERGENCE_LIMIT`, `GAUSSIAN_SIGMA`, `DERIVATIVE_FILTER`|
-|__(critical_points)__|..|..|
-|__WaveHunt_Cropped__|groups trigger events by unicity and globallity principles|`OPTIMAL_MAX_ABS_TIMELAG`, `ACCEPTABLE_REJECTION_RATE`, `MIN_CH_NUM`, `N_TRANS_TH_FRACTION`|
+* *times*: time stamps where a potential wavefront, i.e., state transition, was detected,
+* *labels*: ``UP`` (``DOWN`` or other are ignored),
+* *array_annotations*: ``channels``, ``x_coords``, ``y_coords``
+
+*should pass* |check_input|_
+
+.. |check_input| replace:: *check_input.py*
+.. _check_input: https://github.com/INM-6/cobrawap/blob/master/pipeline/stage04_wave_detection/scripts/check_input.py
+
+Output
+======
+The same input data object, but extended with a ``neo.Event`` object named *'wavefronts'*, containing
+
+* *times*: ``UP`` transitions times from 'transitions' event,
+* *labels*: wave ids,
+* *annotations*: parameters of clustering algorithm, copy of transitions event annotations,
+* *array_annotations*: ``channels``, ``x_coords``, ``y_coords``
+
+eventually additional ``AnalogSignal`` and ``Event`` objects from the blocks specified as ``ADDITIONAL_PROPERTIES``
+
+* such as an ``AnalogSignal`` object called *'optical_flow'* equivalent to the primary ``AnalogSignal`` object, but containing the complex-valued optical flow values.
+
+The output ``neo.Block`` is stored in ``{output_path}/{profile}/stage04_wave_detection/waves.{NEO_FORMAT}``
+
+The intermediate results and plots of each processing block are stored in the ``{output_path}/{profile}/stage04_wave_detection/{block_name}/``
+
+Usage
+=====
+In this stage offers alternative wave detection methods (*choose one*), which can be selected via the ``DETECTION_BLOCK`` parameter.
+There are blocks to add additional properties, to be selected (*choose any*) via the ``ADDITIONAL_PROPERTIES`` parameter.

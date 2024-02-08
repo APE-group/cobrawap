@@ -1,11 +1,29 @@
+"""
+Detect waves by clustering triggers that are close to each other in time and space.
+"""
+
 import neo
 import numpy as np
 import quantities as pq
 import argparse
+from pathlib import Path
 from sklearn.cluster import DBSCAN
-from utils.io import load_neo, write_neo
+from utils.io_utils import load_neo, write_neo
 from utils.neo_utils import remove_annotations
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--metric", nargs='?', type=str, default='euclidean',
+                    help="parameter for sklearn.cluster.DBSCAN")
+CLI.add_argument("--time_space_ratio", nargs='?', type=float, default=1,
+                    help="factor to apply to time values")
+CLI.add_argument("--neighbour_distance", nargs='?', type=float, default=30,
+                    help="eps parameter in sklearn.cluster.DBSCAN")
+CLI.add_argument("--min_samples", nargs='?', type=int, default=10,
+                    help="minimum number of trigger times to form a wavefront")
 
 def cluster_triggers(event, metric, neighbour_distance, min_samples,
                      time_space_ratio, sampling_rate):
@@ -15,11 +33,11 @@ def cluster_triggers(event, metric, neighbour_distance, min_samples,
     triggers[:,0] = event.array_annotations['x_coords'][up_idx]
     triggers[:,1] = event.array_annotations['y_coords'][up_idx]
     triggers[:,2] = event.times[up_idx].rescale('s') \
-                    * sampling_rate.rescale('Hz') * args.time_space_ratio
+                    * sampling_rate.rescale('Hz') * time_space_ratio
 
-    clustering = DBSCAN(eps=args.neighbour_distance,
-                        min_samples=args.min_samples,
-                        metric=args.metric)
+    clustering = DBSCAN(eps=neighbour_distance,
+                        min_samples=min_samples,
+                        metric=metric)
     clustering.fit(triggers)
 
     if len(np.unique(clustering.labels_)) < 1:
@@ -43,42 +61,33 @@ def cluster_triggers(event, metric, neighbour_distance, min_samples,
                                +'Annotated with the channel id ("channels") and '\
                                +'its position ("x_coords", "y_coords").',
                     cluster_algorithm='sklearn.cluster.DBSCAN',
-                    cluster_eps=args.neighbour_distance,
-                    cluster_metric=args.metric,
-                    cluster_min_samples=args.min_samples)
+                    cluster_eps=neighbour_distance,
+                    cluster_metric=metric,
+                    cluster_min_samples=min_samples)
 
     remove_annotations(event, del_keys=['nix_name', 'neo_name'])
     evt.annotations.update(event.annotations)
     return evt
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--metric", nargs='?', type=str, default='euclidean',
-                     help="parameter for sklearn.cluster.DBSCAN")
-    CLI.add_argument("--time_space_ratio", nargs='?', type=float, default=1,
-                     help="factor to apply to time values")
-    CLI.add_argument("--neighbour_distance", nargs='?', type=float, default=30,
-                     help="eps parameter in sklearn.cluster.DBSCAN")
-    CLI.add_argument("--min_samples", nargs='?', type=int, default=10,
-                     help="minimum number of trigger times to form a wavefront")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
 
     evts = block.filter(name='transitions', objects="Event")[0]
 
-    wave_evt = cluster_triggers(event=evts,
-                                metric=args.metric,
-                                neighbour_distance=args.neighbour_distance,
-                                min_samples=args.min_samples,
-                                time_space_ratio=args.time_space_ratio,
-                                sampling_rate=asig.sampling_rate)
+    if len(evts):
+        wave_evt = cluster_triggers(event=evts,
+                                    metric=args.metric,
+                                    neighbour_distance=args.neighbour_distance,
+                                    min_samples=args.min_samples,
+                                    time_space_ratio=args.time_space_ratio,
+                                    sampling_rate=asig.sampling_rate)
+
+    else:
+        wave_evt = neo.Event(name='wavefronts', 
+                             times=np.array([])*pq.s, labels=[])
 
     block.segments[0].events.append(wave_evt)
 
