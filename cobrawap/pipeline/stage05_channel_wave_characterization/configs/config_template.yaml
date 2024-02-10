@@ -1,13 +1,13 @@
 # Config file for Stage 5 - Channel-wise Wave Characterization
 
 # Name of stage, must be identical with folder name
-STAGE_NAME: 'stage05_channel-wave_characterization'
+STAGE_NAME: 'stage05_channel_wave_characterization'
 
 # The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
 PROFILE: 'dataset_key'
 
 # Name of the output file
-STAGE_OUTPUT: 'channel-wise_measures.csv'
+STAGE_OUTPUT: 'channel_wise_measures.csv'
 
 # Plotting parameters
 PLOT_TSTART: 0  # float (in s) or 'None'.
@@ -26,7 +26,7 @@ MEASURES: ['annotations', 'velocity_local', 'direction_local', 'inter_wave_inter
 # Velocity/Direction Local
 ################
 # simple_3x3, prewitt_3x3, scharr_3x3, sobel_3x3, sobel_5x5, sobel_7x7
-KERNEL: 'sobel_3x3'
+KERNEL: 'scharr_3x3'
 INTERPOLATE: True
 # smoothing factor for the interpolation (0 = no smoothing)
 SMOOTHING: 0

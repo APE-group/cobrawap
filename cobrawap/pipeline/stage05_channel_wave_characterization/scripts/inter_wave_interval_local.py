@@ -1,78 +1,70 @@
 """
+Calculate the period between two consecutive waves for each wave and channel.
 """
 
 import argparse
+from pathlib import Path
 import numpy as np
-import quantities as pq
-import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
-from utils.io import load_neo, save_plot
+from utils.io_utils import load_neo, save_plot
 from utils.parse import none_or_str
-from utils.neo_utils import analogsignals_to_imagesequences
+from utils.neo_utils import analogsignal_to_imagesequence
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                    help="path of output image file")
+CLI.add_argument("--kernel", "--KERNEL", nargs='?', type=none_or_str, default=None,
+                    help="derivative kernel")
+CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                    help="name of neo.Event to analyze (must contain waves)")
 
 def calc_local_wave_intervals(evts):
-    labels = evts.labels.astype(int)
-    dim_x = int(max(evts.array_annotations['x_coords']))+1
-    dim_y = int(max(evts.array_annotations['y_coords']))+1
+    wave_labels = evts.labels.astype(int)
+    unique_labels = np.sort(np.unique(wave_labels))
+    unique_channels = np.sort(np.unique(evts.array_annotations['channels'].astype(int)))
 
-    scale = evts.annotations['spatial_scale'].magnitude
-    unit = evts.times.units
+    channel_idx_map = np.empty(np.max(unique_channels)+1) * np.nan
+    for i, channel in enumerate(unique_channels):
+        channel_idx_map[channel] = i
 
-    intervals_collection = np.array([], dtype=float)
-    wave_ids = np.array([], dtype=int)
-    channel_ids = np.array([], dtype=int)
+    trigger_collection = np.empty((len(unique_labels), len(unique_channels)),
+                                  dtype=float) * np.nan
 
-    for (i, wave_id) in enumerate(np.unique(labels)):
-        wave_trigger_evts = evts[labels == wave_id]
+    for (i, wave_id) in enumerate(unique_labels):
+        wave_trigger_evts = evts[wave_labels == wave_id]
 
-        x_coords = wave_trigger_evts.array_annotations['x_coords'].astype(int)
-        y_coords = wave_trigger_evts.array_annotations['y_coords'].astype(int)
         channels = wave_trigger_evts.array_annotations['channels'].astype(int)
 
-        trigger_collection = np.empty([dim_x, dim_y]) * np.nan
-        trigger_collection[x_coords, y_coords] = wave_trigger_evts.times
+        channel_idx = channel_idx_map[channels].astype(int)
+        trigger_collection[i, channel_idx] = wave_trigger_evts.times
 
-        # if this is not the first wave
-        if i:
-            intervals = trigger_collection - trigger_collection_pre
-            intervals = intervals[x_coords, y_coords]
-            intervals[~np.isfinite(intervals)] = np.nan
+    intervals = np.diff(trigger_collection, axis=0)
+    intervals = intervals.reshape((len(unique_labels)-1)*len(unique_channels))
 
-            intervals_collection = np.append(intervals_collection, intervals)
-            channel_ids = np.append(channel_ids, channels)
-            wave_ids = np.append(wave_ids, np.repeat(wave_id, len(channels)))
+    mask = np.isfinite(intervals)
+    intervals = intervals[mask]
 
-        trigger_collection_pre = trigger_collection.copy()
+    channel_ids = np.tile(unique_channels, len(unique_labels)-1)[mask]
+    wave_ids = np.repeat(unique_labels[:-1], len(unique_channels))[mask]
 
-    return wave_ids, channel_ids, intervals_collection*unit
+    return wave_ids, channel_ids, intervals*evts.times.units
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
-                     help="path of output image file")
-    CLI.add_argument("--kernel", "--KERNEL", nargs='?', type=none_or_str, default=None,
-                     help="derivative kernel")
-    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
-                     help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
-    block = analogsignals_to_imagesequences(block)
-
-    imgseq = block.segments[0].imagesequences[0]
     asig = block.segments[0].analogsignals[0]
+    imgseq = analogsignal_to_imagesequence(asig)
+
     evts = block.filter(name=args.event_name, objects="Event")[0]
     evts = evts[evts.labels != '-1']
 
-    dim_t, dim_x, dim_y = np.shape(imgseq)
     wave_ids, channel_ids, intervals = calc_local_wave_intervals(evts)
 
     # transform to DataFrame
