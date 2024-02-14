@@ -1,14 +1,25 @@
-import neo
+"""
+Calculate the wave propagation velocity for each wave.
+"""
+
 import numpy as np
-import quantities as pq
 import matplotlib.pyplot as plt
-import os
 import argparse
+from pathlib import Path
 import scipy
 import pandas as pd
-from utils.io import load_neo, save_plot
+from utils.io_utils import load_neo, save_plot
 from utils.parse import none_or_str
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                    help="path of output image file")
+CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                    help="name of neo.Event to analyze (must contain waves)")
 
 def center_points(x, y):
     return x - np.mean(x), y - np.mean(y)
@@ -34,11 +45,11 @@ def calc_planar_velocities(evts):
 
     wave_ids = np.unique(evts.labels)
 
-    velocities = np.zeros((len(wave_ids), 2))
+    velocities = np.zeros((len(wave_ids), 2)) * np.nan
 
     ncols = int(np.round(np.sqrt(len(wave_ids)+1)))
     nrows = int(np.ceil((len(wave_ids)+1)/ncols))
-    
+
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols,
                            figsize=(3*nrows, 3*ncols))
 
@@ -92,7 +103,7 @@ def calc_planar_velocities(evts):
     plt.figure()
     plt.hist(velocities[:][0])
     plt.title('velocity planar')
-             
+
     # transform to DataFrame
     df = pd.DataFrame(velocities,
                       columns=['velocity_planar', 'velocity_planar_std'])
@@ -101,16 +112,6 @@ def calc_planar_velocities(evts):
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
-                     help="path of output image file")
-    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
-                     help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)

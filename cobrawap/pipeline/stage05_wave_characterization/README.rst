@@ -1,27 +1,35 @@
-# Stage 05 - Wave Characterization
-This stage evaluates the detected waves by deriving characteristic measures from their dynamics.
+================================
+Stage 05 - Wave Characterization
+================================
 
-[config template](configs/config_template.yaml)
+**This stage evaluates the detected waves by deriving characteristic wave-wise measures.**
 
-#### Input
-Collection of waves in form of groups of trigger times.
-<!-- and/or ii) a vector field signal with identified critical points -->
+`config template <https://github.com/INM-6/cobrawap/blob/master/pipeline/stage05_wave_characterization/configs/config_template.yaml>`_
 
-<!-- i) -->
-neo.Event object named _'wavefronts'_
+Input
+=====
+A ``neo.Block`` and ``Segment`` object containing
 
-    * labels: wavefront id
-    * annotations: _'spatial_scale'_
-    * array_annotations: _'x_coords'_, _'y_coords'_
+a ``neo.Event`` object named _'wavefronts'_, containing
 
-#### Output
-The characteristic measures per wave in table form (pandas.DataFrame) containing the value, unit, and uncertainty. Each measure is represented in an individual dataframe as well as in a combined dataframe of all measures.
+* *labels*: wave ids,
+* *array_annotations*: ``channels``, ``x_coords``, ``y_coords``.
 
-## Usage
-Select which characterization measures should be calculated via the `MEASURES` parameter.
+* Some blocks may require the additional ``AnalogSignal`` object called *'optical_flow'* but containing the complex-valued optical flow values.
 
-## Blocks
-|Name | Description | Parameters |
-|:----|:------------|:-----------|
-|__direction__|interpolates directions of planar waves||
-|__velocity_planar__|interpolates planer propagation velocity||
+*should pass* |check_input|_
+
+.. |check_input| replace:: *check_input.py*
+.. _check_input: https://github.com/INM-6/cobrawap/blob/master/pipeline/stage05_wave_characterization/scripts/check_input.py
+
+Output
+======
+A table (``pandas.DataFrame``), containing
+
+* the wave-wise characteristic measures, their unit, and if applicable their uncertainty as determined by the selected blocks
+* any annotations as selected via ``INCLUDE_KEYS`` or ``IGNORE_KEYS``
+
+Usage
+=====
+In this stage, any number of blocks can be selected via the ``MEASURES`` parameter and are applied on the stage input (*choose any*). 
+To include specific metadata in the output table, select the corresponding annotation keys with ``INCLUDE_KEYS``, or to include all available metadata execept some specifiy only the corresponding annotations keys in ``IGNORE_KEYS``. 

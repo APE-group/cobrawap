@@ -1,17 +1,34 @@
+"""
+Calculate the wave directions by either interpolating trigger times and 
+locations or by averaging the corresponding optical flow values.
+"""
+
 import neo
 import numpy as np
 import quantities as pq
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import os
+import warnings
 import argparse
+from pathlib import Path
 import scipy
 import pandas as pd
 import seaborn as sns
-import warnings
-from utils.io import load_neo, save_plot
+from utils.io_utils import load_neo, save_plot
 from utils.parse import none_or_str
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                    help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                    help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                    help="path of output image file")
+CLI.add_argument("--method", "--DIRECTION_METHOD", nargs='?', type=str, default='trigger_interpolation',
+                    help="'tigger_interpolation' or 'optical_flow'")
+CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                    help="name of neo.Event to analyze (must contain waves)")
 
 def calc_displacement(times, locations):
     slope, offset, _, _, stderr = scipy.stats.linregress(times, locations)
@@ -121,18 +138,6 @@ def plot_directions(dataframe, wave_ids,
     return ax
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
-                     help="path of output image file")
-    CLI.add_argument("--method", "--DIRECTION_METHOD", nargs='?', type=str, default='trigger_interpolation',
-                     help="'tigger_interpolation' or 'optical_flow'")
-    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
-                     help="name of neo.Event to analyze (must contain waves)")
     args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
@@ -173,7 +178,5 @@ if __name__ == '__main__':
                         orientation_top=evts.annotations['orientation_top'],
                         orientation_right=evts.annotations['orientation_right'])
         save_plot(args.output_img)
-        plt.figure()
-        directions = directions_df.direction
 
     df.to_csv(args.output)
