@@ -71,7 +71,7 @@ def plot_planarity(waves_event, vector_field, times, wave_id, skip_step=1, ax=No
         fig, ax = plt.subplots()
 
     area = copy.copy(np.real(vector_field[0]))
-    area[np.where(np.isfinite(area))] = 0
+    area[np.where(np.isfinite(area))] = -.7
     ax.imshow(area, interpolation='nearest', origin='lower',
               vmin=-1, vmax=1, cmap='Greys')
 
