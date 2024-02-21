@@ -14,21 +14,21 @@ from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_anal
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
-                    help="path to input data in neo format")
+                 help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
-                    help="path of output file")
+                 help="path of output file")
 CLI.add_argument("--output_img", nargs='?', type=none_or_str,
-                    help="path of output image", default=None)
+                 help="path of output image", default=None)
 CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
-                    help="number of non informative macro-pixel to prune branch", default=2)
+                 help="number of non informative macro-pixel to prune branch", default=2)
 CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
-                    help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
+                 help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
 CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
-                    help="signal to noise ratio evalutaion method", default='shapiro')
+                 help="signal to noise ratio evalutaion method", default='shapiro')
 CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
-                    help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+                 help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
 CLI.add_argument("--output_array", nargs='?', type=none_or_str,
-                    help="path of output numpy array", default=None)
+                 help="path of output numpy array", default=None)
 
 def next_power_of_2(n):
     if n == 0:

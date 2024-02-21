@@ -15,35 +15,35 @@ from utils.io_utils import load_neo, write_neo
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
-                    help="path to input data")
+                 help="path to input data")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
-                    help="path of output file")
+                 help="path of output file")
 CLI.add_argument("--data_name", nargs='?', type=str, default='None',
-                    help="chosen name of the dataset")
+                 help="chosen name of the dataset")
 CLI.add_argument("--sampling_rate", nargs='?', type=none_or_float,
-                    default=None, help="sampling rate in Hz")
+                 default=None, help="sampling rate in Hz")
 CLI.add_argument("--spatial_scale", nargs='?', type=float, required=True,
-                    help="distance between electrodes or pixels in mm")
+                 help="distance between electrodes or pixels in mm")
 CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=None,
-                    help="start time, in s, delimits the interval of recordings to be analyzed")
+                 help="start time, in s, delimits the interval of recordings to be analyzed")
 CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=None,
-                    help="stop time, in s, delimits the interval of recordings to be analyzed")
+                 help="stop time, in s, delimits the interval of recordings to be analyzed")
 CLI.add_argument("--trial", nargs='?', type=none_or_int, default=None,
-                    help="int which identifies the trial")
+                 help="int which identifies the trial")
 CLI.add_argument("--orientation_top", nargs='?', type=str, required=True,
-                    help="upward orientation of the recorded cortical region")
+                 help="upward orientation of the recorded cortical region")
 CLI.add_argument("--orientation_right", nargs='?', type=str, required=True,
-                    help="right-facing orientation of the recorded cortical region")
+                 help="right-facing orientation of the recorded cortical region")
 CLI.add_argument("--annotations", nargs='+', type=none_or_str, default=None,
-                    help="metadata of the dataset")
+                 help="metadata of the dataset")
 CLI.add_argument("--array_annotations", nargs='+', type=none_or_str,
-                    default=None, help="channel-wise metadata")
+                 default=None, help="channel-wise metadata")
 CLI.add_argument("--kwargs", nargs='+', type=none_or_str, default=None,
-                    help="additional optional arguments")
+                 help="additional optional arguments")
 CLI.add_argument("--hemodynamics_correction", nargs='?', type=lambda x:bool(strtobool(x)), const=True, default=False,
-                     help="whether hemodynamics correction is applicable")
+                 help="whether hemodynamics correction is applicable")
 CLI.add_argument("--data_sets_reflectance", nargs='?', type=str, default=None,
-                     help="path to reflectance data")
+                 help="path to reflectance data")
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()

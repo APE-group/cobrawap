@@ -2,44 +2,33 @@ import numpy as np
 import quantities as pq
 import argparse
 import matplotlib.pyplot as plt
-
+import neo
 from utils.io import load_neo, write_neo, save_plot
 from utils.neo import remove_annotations, analogsignals_to_imagesequences
 from utils.parse import none_or_str, none_or_float
-
-import neo
 
 from WaveHuntUtils import (timelag_optimization, iwi_optimization,
                            RemoveSmallWaves, CleanWave, Neighbourhood_Search,
                            PlotDetectedWaves, CropDetectedWaves, GetRidOfSlowTransition)
 
-# =======================================================================================#
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=str, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=str, required=True,
+                 help="path of output file")
+CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
+                 help="path of output image", default=None)
+CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8, #units: [s]
+                 help="Max. reasonable timelag among channels (electrodes/pixels)")
+CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1, #10%
+                 help="acceptable rejection rate when optimizing iwi parameter")
+CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=0.5,
+                 help="minimum percentage of active channels involved in a wave")
+CLI.add_argument("--n_trans_th_fraction", nargs='?', type=float, default=0.05,
+                 help="maximum percentage of active channels performing a transition to detect a stationarity")
 
 if __name__ == '__main__':
-#--- Parse CLI (input parameters) -------------------------------------------------------- 
-    CLI = argparse.ArgumentParser(description=__doc__,
-                      formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    #--- Input & Output
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                        help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                        help="path of output file")
-    CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
-                        help="path of output image", default=None)
-
-    #--- Algorythm Parameters 
-    CLI.add_argument("--max_abs_timelag", nargs='?', type=float, default=0.8, #units: [s]
-                        help="Max. reasonable timelag among channels (electrodes/pixels)")
-    CLI.add_argument("--acceptable_rejection_rate", nargs='?', type=float, default=0.1, #10%
-                        help="acceptable rejection rate when optimizing iwi parameter")
-    # N.B. parameter should be anchored to physiology inputs and/or inputs from data 
-    CLI.add_argument("--min_ch_fraction", nargs='?', type=float, default=0.5,
-                        help="minimum percentage of active channels involved in a wave")
-    CLI.add_argument("--n_trans_th_fraction", nargs='?', type=float, default=0.05,
-                        help="maximum percentage of active channels performing a transition to detect a stationarity")
-
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
 #--- Load Input Data 
 #    Collect Geometry Information from data ----------------------------------------------

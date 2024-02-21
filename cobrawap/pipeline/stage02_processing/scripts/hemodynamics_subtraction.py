@@ -17,9 +17,9 @@ import scipy
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
-                    help="path to input data in neo format")
+                 help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
-                    help="path of output file")
+                 help="path of output file")
 
 def hemodyn_correction(imgseq_fluo, imgseq_refl):
 
