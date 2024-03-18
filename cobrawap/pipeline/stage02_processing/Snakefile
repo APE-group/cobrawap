@@ -61,6 +61,17 @@ use rule template as plot_power_spectrum with:
                 config=config)
 
 #### PROCESSING BLOCKS (choose any)####
+use rule template as channel_stats with:
+    input:
+        is_clear = is_clear,
+        data = input_file,
+        script = SCRIPTS / 'channel_stats.py'
+    params:
+        params()
+    output:
+        Path('{dir}') / 'channel_stats' / f'{{rule_name}}.{config.NEO_FORMAT}',
+        output_array = Path('{dir}') / '{rule_name}' / 'channel_stats.npy'
+
 
 use rule template as background_subtraction with:
     input:
@@ -185,3 +196,15 @@ use rule template as subsampling with:
         params(target_rate = config.TARGET_RATE)
     output:
         Path('{dir}') / '{rule_name}' / f'subsampling.{config.NEO_FORMAT}'
+
+
+use rule template as plot_hist with:
+    input:
+        is_clear = is_clear,
+        data = input_file,
+        script = SCRIPTS / 'plot_hist.py'
+    params:
+        params(channels=config.PLOT_CHANNELS)
+    output:
+        Path('{dir}') / '{rule_name}' / 'hist',
+        output_img = Path('{dir}') / ('{rule_name}') / f'hist_.{config.PLOT_FORMAT}'
