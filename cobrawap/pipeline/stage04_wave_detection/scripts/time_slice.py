@@ -8,6 +8,7 @@ import quantities as pq
 from utils.parse import none_or_float
 from utils.io_utils import load_neo, write_neo
 from utils.neo_utils import time_slice
+from utils.parse import none_or_float
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,

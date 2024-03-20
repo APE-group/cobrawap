@@ -9,6 +9,7 @@ from pathlib import Path
 import os
 from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import time_slice
+from utils.parse import none_or_float
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--original_data", nargs='?', type=Path, required=True,
@@ -20,9 +21,9 @@ CLI.add_argument("--img_dir", nargs='?', type=Path, required=True,
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='processed_trace_channel0.png',
                  help='example filename for channel 0')
-CLI.add_argument("--t_start", nargs='?', type=float, default=0,
+CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
-CLI.add_argument("--t_stop",  nargs='?', type=float, default=10,
+CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
 CLI.add_argument("--channels", nargs='+', type=int, default=0,
                  help="channel to plot")

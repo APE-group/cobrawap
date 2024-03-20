@@ -10,8 +10,8 @@ PROFILE: 'dataset_key'
 STAGE_OUTPUT: 'channel-wise_measures.csv'
 
 # Plotting parameters
-PLOT_TSTART: 0  # float (in s) or 'None'.
-PLOT_TSTOP: 10  # float (in s) or 'None'.
+PLOT_TSTART: 0  # float (in s) or 'None' -> starting time of the input signal is used
+PLOT_TSTOP: 10  # float (in s) or 'None' -> stopping time of the input signal is used
 PLOT_CHANNELS: 'None'  # int or None. default 'None' -> randomly selected
 PLOT_FORMAT: 'png'
 
