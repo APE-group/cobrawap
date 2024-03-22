@@ -155,16 +155,3 @@ def determine_spatial_scale(coords):
     dists = np.diff(coords[:,0])
     dists = dists[np.nonzero(dists)]
     return np.min(dists)
-
-
-def check_plot_boundaries(input_file, t_value, t_name):
-
-    t_value = none_or_float(t_value)
-    asig = load_neo(input_file, object='analogsignal', lazy=True)
-    t_start = asig.t_start.rescale('s').magnitude
-    t_stop = asig.t_stop.rescale('s').magnitude
-
-    if t_value is None or not (t_start <= t_value <= t_stop):
-        t_value = getattr(asig, t_name).rescale('s').magnitude
-
-    return t_value
