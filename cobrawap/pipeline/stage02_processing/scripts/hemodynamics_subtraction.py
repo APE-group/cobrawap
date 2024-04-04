@@ -24,31 +24,25 @@ CLI.add_argument("--output", nargs='?', type=Path, required=True,
 def hemodyn_correction(imgseq_fluo, imgseq_refl):
 
     # Applies the hemodynamic correction on the fluorescence data
-   
-    
-    I = np.array(imgseq_fluo) 
-    R = np.array(imgseq_refl)  
 
-    ############  FLUORESCENCE  ############  
-    
+    I = np.array(imgseq_fluo)
+    R = np.array(imgseq_refl)
+
+    ############  FLUORESCENCE  ############
+
     I_mean = np.zeros((I.shape[1],I.shape[2]))
     I_over_I0 = np.zeros((I.shape[0],I.shape[1],I.shape[2]))
-
-    
 
     I_mean = np.nanmean(I, axis = 0)
     #idx = np.where(I_mean == 0)
     #I_mean[idx] = np.nan
     I_over_I0 = I/I_mean[None,:,:]
 
+    ############  REFLECTANCE  ############
 
-    ############  REFLECTANCE  ############   
-    
     R_mean = np.zeros((R.shape[1],R.shape[2]))
     F_over_F0 = np.zeros((I.shape[0],I.shape[1],I.shape[2]))
     dF_over_F0 = F_over_F0
-    
-    
 
     R_mean = np.nanmean(R, axis = 0)
     #idxR = np.where(R_mean == 0)
@@ -56,12 +50,12 @@ def hemodyn_correction(imgseq_fluo, imgseq_refl):
 
     F_over_F0 = (I/I_mean[None,:,:])/(R/R_mean[None,:,:])
     dF_over_F0 = (F_over_F0-1)*100
-          
+
     imgseq_corrected = neo.ImageSequence(dF_over_F0,
                                    #units=images.units,
                                    #spatial_scale=images.spatial_scale * macro_pixel_dim,
                                    #sampling_rate=images.sampling_rate,
-                                   #file_origin=images.file_origin)#,
+                                   #file_origin=images.file_origin),
                                    #**imgseq.annotations)
                                    units=imgseq_fluo.units,
                                    spatial_scale=imgseq_fluo.spatial_scale,
@@ -100,4 +94,3 @@ if __name__ == '__main__':
     block.segments[0].analogsignals[0] = new_block.segments[0].analogsignals[0]
 
     write_neo(args.output, block)
-
