@@ -188,6 +188,13 @@ def plot_minima(asig, event, threshold_asig, channel, min_peak_distance):
             signal[((event.times[idx_ch]-asig.times[0])*sampling_rate).astype(int)],
             'x', color='g', label='selected minima')
 
+            # TO BE DONE
+            # If wanting to interpolate linearly the height of minima, add something like
+            #     np.interp(event.times[idx_ch], times, signal)
+            # and remember to the take into account also the initial offset, asig.times[0]
+            # Also, decide if use higher-order interpolation also for plot
+            # (same order actually used in the computation)
+
     ax.set_title(f'channel {channel}')
     ax.set_xlabel('time [s]')
     ax.legend()
