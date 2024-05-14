@@ -1,5 +1,5 @@
 """
-Calculate the spatial derivative on the time-delays of the wave triggers 
+Calculate the spatial derivative on the time-delays of the wave triggers
 in each channel.
 
 The derivative is calculated using a kernel convolution.
@@ -55,9 +55,9 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
     labels = evts.labels.astype(int)
 
     try:
-        dim_x = int(max(evts.array_annotations['x_coords']+evts.array_annotations['size']))
-        dim_y = int(max(evts.array_annotations['y_coords']+evts.array_annotations['size']))
-    except ValueError:
+        dim_x = int(max(evts.array_annotations['x_coords']+evts.array_annotations['pixel_coordinates_L']))
+        dim_y = int(max(evts.array_annotations['y_coords']+evts.array_annotations['pixel_coordinates_L']))
+    except KeyError:
         dim_x = int(max(evts.array_annotations['x_coords']))+1
         dim_y = int(max(evts.array_annotations['y_coords']))+1
 
@@ -66,13 +66,12 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
     for wave_id in np.unique(labels):
         wave_trigger_evts = evts[labels == wave_id]
 
-
         x_coords = wave_trigger_evts.array_annotations['x_coords'].astype(int)
         y_coords = wave_trigger_evts.array_annotations['y_coords'].astype(int)
         try:
-            sizes = wave_trigger_evts.array_annotations['size'].astype(int)
-        except ValueError:
-            sizes= np.ones(len(x_coords))
+            sizes = wave_trigger_evts.array_annotations['pixel_coordinates_L'].astype(int)
+        except KeyError:
+            sizes = np.ones(len(x_coords))
 
         channels = wave_trigger_evts.array_annotations['channels'].astype(int)
 
@@ -93,7 +92,6 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
         kernel = get_kernel(kernel_name)
         d_vertical = -1 * nan_conv2d(trigger_collection, kernel.x)
         d_horizont = -1 * nan_conv2d(trigger_collection, kernel.y)
-
 
         dt_x = d_vertical[x_coords, y_coords]
         dt_y = d_horizont[x_coords, y_coords]
