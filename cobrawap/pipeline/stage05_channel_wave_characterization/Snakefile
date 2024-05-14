@@ -52,7 +52,7 @@ use rule template as compute_measure with:
         output_img = Path('{dir}') / '{measure}'
                       / f'{config.EVENT_NAME}_{{measure}}.{config.PLOT_FORMAT}'
 
-use rule template as spatial_derivative with:
+use rule compute_measure as spatial_derivative with:
     input:
         data = config.STAGE_INPUT,
         script = SCRIPTS / 'spatial_derivative.py'
