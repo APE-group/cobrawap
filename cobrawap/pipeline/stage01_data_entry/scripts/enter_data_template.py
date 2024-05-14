@@ -5,9 +5,8 @@ Loads a dataset and brings it into the required data representation (using Neo).
 import argparse
 import quantities as pq
 from pathlib import Path
-from distutils.util import strtobool
 import neo
-from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
+from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str, str_to_bool
 from utils.neo_utils import imagesequence_to_analogsignal, merge_analogsignals
 from utils.neo_utils import flip_image, rotate_image, time_slice
 from utils.io_utils import load_neo, write_neo
@@ -40,7 +39,7 @@ CLI.add_argument("--array_annotations", nargs='+', type=none_or_str,
                  default=None, help="channel-wise metadata")
 CLI.add_argument("--kwargs", nargs='+', type=none_or_str, default=None,
                  help="additional optional arguments")
-CLI.add_argument("--hemodynamics_correction", nargs='?', type=lambda x:bool(strtobool(x)), const=True, default=False,
+CLI.add_argument("--hemodynamics_correction", nargs='?', type=str_to_bool, const=True, default=False,
                  help="whether hemodynamics correction is applicable")
 CLI.add_argument("--data_sets_reflectance", nargs='?', type=str, default=None,
                  help="path to reflectance data")
