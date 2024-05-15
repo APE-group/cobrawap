@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from warnings import warn
 from scipy.interpolate import RBFInterpolator
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_str, str_to_bool
 from utils.convolve import nan_conv2d, get_kernel
 
 CLI = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ CLI.add_argument("--kernel", "--KERNEL", nargs='?', type=none_or_str, default=No
                  help="derivative kernel")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
                  help="name of neo.Event to analyze (must contain waves)")
-CLI.add_argument("--interpolate", "--INTERPOLATE", nargs='?', type=bool, default=False,
+CLI.add_argument("--interpolate", "--INTERPOLATE", nargs='?', type=str_to_bool, default=False,
                  help="whether to thin-plate-spline interpolate the wave patterns before derivation")
 CLI.add_argument("--smoothing", "--SMOOTHING", nargs='?', type=float, default=0,
                  help="smoothing factor for the interpolation")
