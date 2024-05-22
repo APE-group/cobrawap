@@ -218,7 +218,6 @@ if __name__ == '__main__':
     new_asig = asig.duplicate_with_new_data(signal.T)
     #new_asig.array_annotations = asig.array_annotations
     new_asig.array_annotations.update(new_evt_ann)
-    new_asig.name += ""
     new_asig.description += "Non homogeneous downsampling obtained by cheching the signal to noise ratio of macropixels ad different size."
     block.segments[0].analogsignals[0] = new_asig
 

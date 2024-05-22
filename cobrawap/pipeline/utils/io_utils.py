@@ -8,7 +8,7 @@ from pathlib import Path
 def load_neo(filename, object='block', lazy=False, *args, **kwargs):
     try:
         filename = Path(filename)
-        if filename.suffix == '.nix':
+        if filename.suffix in ('.nix', '.pkl', '.pickle'):
             kwargs.update(mode='ro')
 
         nio = neo.io.get_io(str(filename), *args, **kwargs)
@@ -50,7 +50,8 @@ def write_neo(filename, block, *args, **kwargs):
     except Exception as e:
         warnings.warn(str(e))
     finally:
-        nio.close()
+        if hasattr(nio, 'close'):
+            nio.close()
     return True
 
 
