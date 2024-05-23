@@ -42,7 +42,8 @@ def spatial_smoothing(imgseq, macro_pixel_dim):
 
     imgseq_reduced.annotations.update(imgseq.annotations)
 
-    imgseq_reduced.name = imgseq.name + " "
+    if imgseq.name:
+        imgseq_reduced.name = imgseq.name
     imgseq_reduced.annotations.update(macro_pixel_dim=macro_pixel_dim)
     imgseq_reduced.description = imgseq.description +  \
                 "spatially downsampled ({}).".format(os.path.basename(__file__))
