@@ -23,8 +23,8 @@ CLI.add_argument("--output_img", nargs='?', type=none_or_str,
                  help="path of output image", default=None)
 CLI.add_argument("--intensity_threshold", nargs='?', type=float,
                  help="threshold for mask [0,1]", default=0.5)
-CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True, default=False,
-                 help="discard frame outside of ROI")
+CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True,
+                 help="discard frame outside of ROI", default=False,)
 
 def calculate_contour(img, contour_limit):
     # Computing the contour lines...
@@ -153,7 +153,6 @@ if __name__ == '__main__':
 
     # apply mask
     imgseq_array[:, np.bitwise_not(mask)] = np.nan
-    print('crop to selection:', args.crop_to_selection)
     if args.crop_to_selection:
         imgseq_array = crop_to_selection(imgseq_array)
 

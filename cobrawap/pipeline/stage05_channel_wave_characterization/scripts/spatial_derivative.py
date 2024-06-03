@@ -33,9 +33,9 @@ CLI.add_argument("--smoothing", "--SMOOTHING", nargs='?', type=float, default=0,
                  help="smoothing factor for the interpolation")
 
 def interpolate_grid(grid, smoothing):
-    x, y = np.where(np.isfinite(grid))
-    rbf_func = RBFInterpolator(np.stack((x,y), axis=-1),
-                               grid[x,y],
+    y, x = np.where(np.isfinite(grid))
+    rbf_func = RBFInterpolator(np.stack((y,x), axis=-1),
+                               grid[y,x],
                                neighbors=None,
                                smoothing=smoothing,
                                kernel='thin_plate_spline',
@@ -44,12 +44,12 @@ def interpolate_grid(grid, smoothing):
     return rbf_func
 
 def sample_wave_pattern(pattern_func, dim_x, dim_y):
-    fx, fy = np.meshgrid(np.arange(0, dim_x),
-                         np.arange(0, dim_y),
+    fy, fx = np.meshgrid(np.arange(0, dim_y),
+                         np.arange(0, dim_x),
                          indexing='ij')
-    fcoords = np.stack((fx,fy), axis=-1)
+    fcoords = np.stack((fy,fx), axis=-1)
     wave_pattern = pattern_func(fcoords.reshape(-1,2))
-    return wave_pattern.reshape(dim_x, dim_y)
+    return wave_pattern.reshape(dim_y, dim_x)
 
 def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
     labels = evts.labels.astype(int)
@@ -75,10 +75,10 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
 
         channels = wave_trigger_evts.array_annotations['channels'].astype(int)
 
-        trigger_collection = np.empty([dim_x, dim_y]) * np.nan
+        trigger_collection = np.empty([dim_y, dim_x]) * np.nan
 
-        trigger_collection[np.floor(x_coords+sizes/2.).astype(int),
-                           np.floor(y_coords+sizes/2.).astype(int)] = wave_trigger_evts.times
+        trigger_collection[np.floor(y_coords+sizes/2.).astype(int),
+                           np.floor(x_coords+sizes/2.).astype(int)] = wave_trigger_evts.times
 
         if interpolate:
             try:
@@ -90,11 +90,11 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
                 warn('Continuing without interpolation.')
 
         kernel = get_kernel(kernel_name)
-        d_vertical = -1 * nan_conv2d(trigger_collection, kernel.x)
-        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.y)
+        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.x)
+        d_vertical = -1 * nan_conv2d(trigger_collection, kernel.y)
 
-        dt_x = d_vertical[x_coords, y_coords]
-        dt_y = d_horizont[x_coords, y_coords]
+        dt_y = d_vertical[y_coords, x_coords]
+        dt_x = d_horizont[y_coords, x_coords]
 
         df = pd.DataFrame(list(zip(dt_x, dt_y, x_coords, y_coords, channels)),
                           columns=['dt_x', 'dt_y', 'x_coords', 'y_coords', 'channel_id'])
@@ -115,8 +115,8 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
                        vmin=-vminmax, vmax=vminmax)
     plt.colorbar(img, ax=ax[2])
     ax[0].set_title(f'wave {wave_id}')
-    ax[1].set_title('dt X (vertical)')
-    ax[2].set_title('dt Y (horizontal)')
+    ax[1].set_title('dt Y (vertical)')
+    ax[2].set_title('dt X (horizontal)')
     ax[0].set_axis_off()
     ax[1].set_axis_off()
     ax[2].set_axis_off()

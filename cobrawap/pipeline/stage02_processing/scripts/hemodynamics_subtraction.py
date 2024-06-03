@@ -67,8 +67,8 @@ def hemodyn_correction(imgseq_fluo, imgseq_refl):
         del imgseq_fluo.annotations['array_annotations']
 
     imgseq_corrected.annotations.update(imgseq_fluo.annotations)
-
-    imgseq_corrected.name = imgseq_fluo.name + " "
+    if imgseq_fluo.name:
+        imgseq_corrected.name = imgseq_fluo.name
     imgseq_corrected.description = imgseq_fluo.description + \
                                    "hemodynamic correction ({}).".format(os.path.basename(__file__))
 
@@ -79,18 +79,15 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
-    block = analogsignal_to_imagesequence(block)
-    imgseq_fluo = block.segments[0].imagesequences[0]
-    imgseq_refl = block.segments[0].imagesequences[1]
+
+    imgseq_fluo = analogsignal_to_imagesequence(block.segments[0].analogsignals[0])
+    imgseq_refl = analogsignal_to_imagesequence(block.segments[0].analogsignals[1])
     
     imgseq_corrected = hemodyn_correction(imgseq_fluo, imgseq_refl)
 
-    new_block = neo.Block()
-    new_segment = neo.Segment()
-    new_block.segments.append(new_segment)
-    new_block.segments[0].imagesequences.append(imgseq_corrected)
-    new_block = imagesequence_to_analogsignal(new_block)
+    asig_corrected = imagesequence_to_analogsignal(imgseq_corrected)
 
-    block.segments[0].analogsignals[0] = new_block.segments[0].analogsignals[0]
+    block.segments[0].analogsignals[0] = asig_corrected
 
     write_neo(args.output, block)
+
