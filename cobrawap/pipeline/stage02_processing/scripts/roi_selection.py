@@ -156,6 +156,17 @@ if __name__ == '__main__':
     if args.crop_to_selection:
         imgseq_array = crop_to_selection(imgseq_array)
 
+    if len(block.segments[0].analogsignals)>1:
+        asig_one = block.segments[0].analogsignals[1]
+        imgseq_one = analogsignal_to_imagesequence(asig_one)
+        imgseq_array_one = imgseq_one.as_array()
+        imgseq_array_one[:, np.bitwise_not(mask)] = np.nan
+        if args.crop_to_selection:
+            imgseq_array_one = crop_to_selection(imgseq_array_one)
+        imgseq_array_one = imgseq_one.duplicate_with_new_data(imgseq_array_one)
+        new_asig_one = imagesequence_to_analogsignal(imgseq_array_one)
+        block.segments[0].analogsignals[1] = new_asig_one
+
     # replace analogsingal
     tmp_blk = neo.Block()
     tmp_seg = neo.Segment()
