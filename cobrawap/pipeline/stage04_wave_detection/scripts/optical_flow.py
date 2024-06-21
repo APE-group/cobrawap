@@ -11,8 +11,8 @@ import neo
 import numpy as np
 from copy import copy
 import matplotlib.pyplot as plt
-from joblib import Parallel, delayed
 from tqdm import tqdm
+from joblib import Parallel, delayed
 from utils.io_utils import load_neo, write_neo, save_plot
 from utils.parse import none_or_str, str_to_bool
 from utils.neo_utils import imagesequence_to_analogsignal, analogsignal_to_imagesequence
@@ -37,10 +37,14 @@ CLI.add_argument("--derivative_filter", nargs='?', type=none_or_str, default=Non
                  help='Filter kernel to use for calculating spatial derivatives')
 CLI.add_argument("--use_phases", nargs='?', type=str_to_bool, default=False,
                  help='whether to use signal phase instead of amplitude')
+CLI.add_argument("--padding", nargs='?', type=str, default='skip',
+                 choices=['skip', 'zero', 'interpolation'],
+                 help='Padding logic before launching the horn schunck algorithm.')
 CLI.add_argument("--max_padding_iterations", nargs='?', type=int, default=1000,
                  help='maximum number of padding interpolation iterations')
 CLI.add_argument("--n_jobs", nargs='?', type=int, default=1,
                  help='number of parallel horn_schunck_step executions')
+
 
 def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
                       kernelHS, kernelT, kernelX, kernelY,
@@ -69,6 +73,12 @@ def horn_schunck_step(frame, next_frame, alpha, max_Niter, convergence_limit,
                                        kernelY=kernelY,
                                        kernelT=kernelT,
                                        are_phases=are_phases)
+
+    # replace possible nan values with 0 to not be propagated in the next for loop
+    fx = np.nan_to_num(fx)
+    fy = np.nan_to_num(fy)
+    ft = np.nan_to_num(ft)
+
     # iteration to reduce error
     for i in range(max_Niter):
         # Compute local averages of the flow vectors (smoothness constraint)
@@ -92,9 +102,9 @@ def compute_derivatives(frame, next_frame, kernelX, kernelY,
                         kernelT, are_phases=False):
     if are_phases:
         fx = phase_conv2d(frame, kernelX) \
-           + phase_conv2d(next_frame, kernelX)
+            + phase_conv2d(next_frame, kernelX)
         fy = phase_conv2d(frame, kernelY) \
-           + phase_conv2d(next_frame, kernelY)
+            + phase_conv2d(next_frame, kernelY)
         ft = norm_angle(frame - next_frame)
     else:
         fx = conv(frame, kernelX) + conv(next_frame, kernelX)
@@ -103,19 +113,27 @@ def compute_derivatives(frame, next_frame, kernelX, kernelY,
         ft = frame - next_frame
     return fx, fy, ft
 
-def horn_schunck(frames, alpha, max_Niter, convergence_limit,
-                 kernelHS, kernelT, kernelX, kernelY,
-                 are_phases=False, n_jobs=1, max_padding_iterations=1000):
 
-    nan_channels = np.where(np.bitwise_not(np.isfinite(frames[0])))
-    frames = interpolate_empty_sites(frames, are_phases=are_phases,
-                                     max_iters=max_padding_iterations, n_jobs=n_jobs)
+def horn_schunck(time_frames, alpha, max_Niter, convergence_limit,
+                 kernelHS, kernelT, kernelX, kernelY, n_jobs=1,
+                 are_phases=False, padding='interpolation', max_padding_iterations=1000):
+
+    nan_channels = np.where(np.bitwise_not(np.isfinite(time_frames[0])))
+
+    if padding == 'zero':
+        time_frames = np.nan_to_num(time_frames)
+    elif padding == 'interpolation':
+        time_frames = interpolate_empty_sites(time_frames, are_phases=are_phases, max_iters=max_padding_iterations, n_jobs=n_jobs)
+    elif padding == 'skip':
+        pass
+    else:
+        raise ValueError('Padding not recognised')
 
     print("Calculating horn schunck steps")
-    vector_frames = Parallel(n_jobs=n_jobs)(
+    vec_frames = Parallel(n_jobs=n_jobs)(
                     delayed(horn_schunck_step)
-                    (frames[i],
-                     frames[i+1],
+                    (time_frames[i],
+                     time_frames[i + 1],
                      alpha=alpha,
                      max_Niter=max_Niter,
                      convergence_limit=convergence_limit,
@@ -124,13 +142,12 @@ def horn_schunck(frames, alpha, max_Niter, convergence_limit,
                      kernelX=kernelX,
                      kernelY=kernelY,
                      are_phases=are_phases)
-                    for i in tqdm(range(len(frames[:-1])), ascii=True))
-    
-    vector_frames = np.asarray(vector_frames, dtype=complex)
-    vector_frames[:,nan_channels[0],nan_channels[1]] = np.nan + np.nan*1j
+                    for i in tqdm(range(len(time_frames[:-1])), ascii=True))
 
-    frames[:,nan_channels[0],nan_channels[1]] = np.nan
-    return vector_frames
+    vec_frames = np.asarray(vec_frames)
+    vec_frames[:, nan_channels[0], nan_channels[1]] = np.nan + np.nan * 1j
+    time_frames[:, nan_channels[0], nan_channels[1]] = np.nan
+    return vec_frames
 
 
 def interpolation_step(frame, grid_y, grid_x, are_phases=False, max_iters=1000):
@@ -164,52 +181,52 @@ def interpolation_step(frame, grid_y, grid_x, are_phases=False, max_iters=1000):
         return frame
 
 
-def interpolate_empty_sites(frames, are_phases=False, max_iters=1000, n_jobs=1):
-    if np.isfinite(frames).all():
-        return frames
+def interpolate_empty_sites(time_frames, are_phases=False, max_iters=1000, n_jobs=1):
+    if np.isfinite(time_frames).all():
+        return time_frames
     else:
         grid_y, grid_x = np.meshgrid([-1, 0, 1], [-1, 0, 1], indexing='ij')
         print('Frames interpolation')
-        frames = Parallel(n_jobs=n_jobs)(
+        interpolated_frames = Parallel(n_jobs=n_jobs)(
             delayed(interpolation_step)
-            (frames[i],
+            (time_frames[i],
              grid_y=grid_y,
              grid_x=grid_x,
              are_phases=are_phases,
              max_iters=max_iters)
-            for i in tqdm(range(len(frames)), ascii=True))
-        frames = np.asarray(frames)
-        return frames
+            for i in tqdm(range(len(time_frames)), ascii=True))
+        time_frames = np.asarray(interpolated_frames)
+        return time_frames
 
 
-def smooth_frames(frames, sigma):
+def smooth_frames(time_frames, sigma):
     # replace nan sites by median
-    if np.isfinite(frames).any():
+    if np.isfinite(time_frames).any():
         # assume constant nan sites over time
-        nan_sites = np.where(np.bitwise_not(np.isfinite(frames[0])))
-        if np.iscomplexobj(frames):
-            frames[:,nan_sites[0],nan_sites[1]] = np.nanmedian(np.real(frames)) \
-                                                + np.nanmedian(np.imag(frames))*1j
+        nan_sites = np.where(np.bitwise_not(np.isfinite(time_frames[0])))
+        if np.iscomplexobj(time_frames):
+            time_frames[:, nan_sites[0], nan_sites[1]] = np.nanmedian(np.real(time_frames)) \
+                                                         + np.nanmedian(np.imag(time_frames)) * 1j
         else:
-            frames[:,nan_sites[0],nan_sites[1]] = np.nanmedian(frames)
+            time_frames[:, nan_sites[0], nan_sites[1]] = np.nanmedian(time_frames)
     else:
         nan_sites = None
 
     # apply gaussian filter
-    if np.iscomplexobj(frames):
-        frames = gaussian_filter(np.real(frames), sigma=sigma, mode='nearest') \
-               + gaussian_filter(np.imag(frames), sigma=sigma, mode='nearest')*1j
+    if np.iscomplexobj(time_frames):
+        time_frames = gaussian_filter(np.real(time_frames), sigma=sigma, mode='nearest') \
+                      + gaussian_filter(np.imag(time_frames), sigma=sigma, mode='nearest') * 1j
     else:
-        frames = gaussian_filter(frames, sigma=sigma, mode='nearest')
+        time_frames = gaussian_filter(time_frames, sigma=sigma, mode='nearest')
 
     # set nan sites back to nan
     if nan_sites is not None:
-        if np.iscomplexobj(frames):
-            frames[:,nan_sites[0],nan_sites[1]] = np.nan + np.nan*1j
+        if np.iscomplexobj(time_frames):
+            time_frames[:, nan_sites[0], nan_sites[1]] = np.nan + np.nan * 1j
         else:
-            frames[:,nan_sites[0],nan_sites[1]] = np.nan
+            time_frames[:, nan_sites[0], nan_sites[1]] = np.nan
 
-    return frames
+    return time_frames
 
 
 def plot_opticalflow(frame, vec_frame, skip_step=None, are_phases=False):
@@ -237,6 +254,7 @@ def plot_opticalflow(frame, vec_frame, skip_step=None, are_phases=False):
     ax.set_xticks([])
     ax.set_yticks([])
     return ax
+
 
 def is_phase_signal(signal, use_phases):
     vmin = np.nanmin(signal)
@@ -279,7 +297,7 @@ if __name__ == '__main__':
     kernelT = np.ones_like(kernel.x, dtype=float)
     kernelT /= np.sum(kernelT)
 
-    vector_frames = horn_schunck(frames=frames,
+    vector_frames = horn_schunck(time_frames=frames,
                                  alpha=args.alpha,
                                  max_Niter=args.max_Niter,
                                  convergence_limit=args.convergence_limit,
@@ -288,9 +306,9 @@ if __name__ == '__main__':
                                  kernelT=kernelT,
                                  kernelHS=kernelHS,
                                  are_phases=args.use_phases,
+                                 padding=args.padding,
                                  n_jobs=args.n_jobs,
                                  max_padding_iterations=args.max_padding_iterations)
-
 
     if np.sum(args.gaussian_sigma):
         vector_frames = smooth_frames(vector_frames, sigma=args.gaussian_sigma)
@@ -320,3 +338,4 @@ if __name__ == '__main__':
     block.segments[0].analogsignals.append(vec_asig)
 
     write_neo(args.output, block)
+

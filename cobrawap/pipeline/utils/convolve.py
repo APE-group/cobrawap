@@ -108,6 +108,7 @@ def norm_angle(p):
 
 
 def phase_conv2d(image, kernel):
+    nans = np.isnan(image)
     mask = 1 - np.isnan(image)
     image = np.nan_to_num(image)
     filters = []
@@ -131,4 +132,5 @@ def phase_conv2d(image, kernel):
     conv = np.sum(conv, axis=0)
     quot = np.sum(abs(kernel)) * np.pi
     out = conv / quot
-    return out * mask
+    out[nans] = np.nan
+    return out
