@@ -1,16 +1,8 @@
 # workflow folder
-*/.snakemake
-pipeline/.snakemake
-pipeline/*/.snakemake
-pipeline/*/*/.snakemake
+.snakemake/
 temp*
-*/temp*
-pipeline/*/config.yaml
-pipeline/config.yaml
-pipeline/settings.py
+temp*/
 .idea/
-
-PostPipelineAnalysis/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -76,7 +68,10 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/build/
+doc/index.html
+doc/source/_toctree/
 
 # PyBuilder
 target/

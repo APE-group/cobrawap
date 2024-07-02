@@ -1,0 +1,44 @@
+"""
+# Stage 05 Wave Characterization
+"""
+
+from pathlib import Path
+configfile: Path('configs') / 'config_template.yaml'
+include: Path() / '..' / 'utils' / 'Snakefile'
+
+#### Housekeeping ####
+
+def measures_output(wildcards):
+    return [OUTPUT_DIR / measure / f'{config.EVENT_NAME}_{measure}.csv'
+            for measure in config.MEASURES]
+
+if config.EVENT_NAME == 'wavemodes':
+    config.MEASURES = [m for m in config.MEASURES if m not in
+                       ['label_planar', 'time_stamp', 'inter_wave_interval']]
+
+#### UTILITY BLOCKS ####
+
+use rule template as all with:
+    input:
+        check = OUTPUT_DIR / 'input.check',
+        data = measures_output,
+        script = SCRIPTS / 'merge_dataframes.py',
+        # configfile = Path('configs') / f'config_{config.PROFILE}.yaml'
+    params:
+        params()
+    output:
+        OUTPUT_DIR / config.STAGE_OUTPUT,
+        output_img = OUTPUT_DIR / 'overview_measures.html'
+
+#### CHARACTERIZATION BLOCKS ####
+
+use rule template as compute_measure with:
+    input:
+        data = config.STAGE_INPUT,
+        script = SCRIPTS / '{measure}.py'
+    params:
+        params(config.__dict__)
+    output:
+        Path('{dir}') / '{measure}' / f'{config.EVENT_NAME}_{{measure}}.csv',
+        output_img = Path('{dir}') / '{measure}'
+                      / f'{config.EVENT_NAME}_{{measure}}.{config.PLOT_FORMAT}'
