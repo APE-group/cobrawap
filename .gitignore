@@ -112,9 +112,16 @@ ENV/
 # MacOS
 ./.DS_Store
 */.DS_Store
-cobrawap/pipeline/.DS_Store
-cobrawap/pipeline/*/.DS_Store
-cobrawap/pipeline/*/*/.DS_Store
+*/*/.DS_Store
+*/*/*/.DS_Store
+*/*/*/*/.DS_Store
+
+# __pycache__
+./__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*/*/*/*/__pycache__/
 
 # Config and curate files
 cobrawap/pipeline/*/configs/config_LENS*
