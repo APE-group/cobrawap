@@ -112,10 +112,10 @@ ENV/
 # MacOS
 ./.DS_Store
 */.DS_Store
-pipeline/.DS_Store
-pipeline/*/.DS_Store
-pipeline/*/*/.DS_Store
+cobrawap/pipeline/.DS_Store
+cobrawap/pipeline/*/.DS_Store
+cobrawap/pipeline/*/*/.DS_Store
 
 # Config and curate files
-pipeline/*/configs/config_LENS*
-pipeline/stage01_data_entry/scripts/curate_LENS*
+cobrawap/pipeline/*/configs/config_LENS*
+cobrawap/pipeline/stage01_data_entry/scripts/curate_LENS*
