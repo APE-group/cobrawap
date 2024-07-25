@@ -38,74 +38,7 @@ def read_args_from_yaml(yaml_file):
       arg['required'] = False
   return yaml_config['args']
 
-def parse_CLI_args(script):
-  raw_arg_lines = []
-  with open(script, 'r') as f:
-    whole_line = ''
-    N_active_parenthesis = 0
-    for l,line in enumerate(f):
-
-      line = line.strip() # removes leading and trailing spaces
-      line = line.partition('#')[0] # removes comments, if any
-                                    # (also applies to comments added on the right,
-                                    # just like these ones!)
-
-      if "CLI.add_argument" in line:
-        whole_line = line.partition('CLI.add_argument')[2]
-        N_active_parenthesis = line.count('(') - line.count(')')
-        if N_active_parenthesis == 0:
-          raw_arg_lines.append(whole_line)
-          whole_line = ''
-      else:
-        if whole_line != '':
-          N_active_parenthesis += line.count('(') - line.count(')')
-          if N_active_parenthesis > 0:
-            whole_line += line
-          elif N_active_parenthesis == 0:
-            whole_line += line
-            raw_arg_lines.append(whole_line)
-            whole_line = ''
-            N_active_parenthesis = 0
-
-      if "CLI.parse_args()" in line:
-        break
-
-  args = []
-
-  for raw_arg_line in raw_arg_lines:
-
-    raw_arg = raw_arg_line.strip()
-    #raw_arg = raw_arg.partition("CLI.add_argument(")[2]
-    while raw_arg[0]=='(':
-      raw_arg = raw_arg[1:]
-    while raw_arg[-1]==')':
-      raw_arg = raw_arg[:-1]
-    #print('\nraw_arg:', raw_arg)
-    arg_req = False
-    for _ in raw_arg.split(','):
-      _ = _.strip()
-      if (_.startswith('"') and _.endswith('"')) or (_.startswith('\'') and _.endswith('\'')):
-        _ = _[1:-1]
-      if _[0:2]=='--':
-        arg_name = _[2:]
-      elif _.split('=')[0]=='type':
-        arg_type = _.split('=')[1]
-      elif _.split('=')[0]=='help':
-        arg_help = _.split('=')[1]
-        if (arg_help.startswith('"') and arg_help.endswith('"')) or (arg_help.startswith('\'') and arg_help.endswith('\'')):
-          arg_help = arg_help[1:-1]
-      elif _.split('=')[0]=='required' and _.split('=')[1]=='True':
-        arg_req = True
-
-    # mapping Python types into CWL types
-    # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
-    arg_type = pythontype_to_cwltype(arg_type) if arg_name!='data' else 'Any'
-
-    args.append({'name': arg_name, 'type': arg_type, 'required': arg_req, 'help': arg_help})
-
-  return args
-
-def parse_CLI_args_v2(block_path):
+def parse_CLI_args(block_path):
     block_name = block_path.stem
     #block_CLI = __import__(str(Path(block_name).expanduser().stem)).CLI
     #block_CLI = importlib.import_module(str(Path(block_name).expanduser().stem)).CLI
@@ -245,36 +178,17 @@ if __name__ == '__main__':
 
       block_name = block_path.stem
       block_yaml = Path(str(block_path.parent) + '/' + block_name + '.yaml').resolve()
-      print()
-      print('block_path: ', block_path)
-      print('block_name: ', block_name)
-      print('block_parentpath: ', block_path.parent)
-      print('block_yaml: ', block_yaml)
 
       cwl_path = Path(str(block_path.parent) + '/../cwl_steps').resolve()
-      print('cwl_path: ', cwl_path)
       if not os.path.isdir(cwl_path):
         os.mkdir(cwl_path)
       cwl_file = Path(str(cwl_path) + '/' + block_name + '.cwl').resolve()
-      print('cwl_file: ', cwl_file)
 
-      args_1 = parse_CLI_args(block_path)
-      args_2 = parse_CLI_args_v2(block_path)
-      print('\nfrom naive parsing:')
-      for i,_ in enumerate(args_1):
-          print(i, _)
+      args = parse_CLI_args(block_path)
       print('\nfrom clever parsing:')
-      for i,_ in enumerate(args_2):
+      for i,_ in enumerate(args):
           print(i, _)
-      """
-      if not os.path.isfile(block_yaml):
-        print(' > There is no \'.yaml\' file for block script \'' + block_name + '\'.')
-      else:
-        args_2 = read_args_from_yaml(block_yaml)
-        #print('from yaml', args_2)
-        #print('parse == yaml?', args_1 == args_2)
-      """
 
-      write_clt_file(cwl_file, args_2)
+      write_clt_file(cwl_file, args)
 
 print('')
