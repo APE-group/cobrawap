@@ -427,12 +427,14 @@ def run_block(block=None, workflow_manager='snakemake', block_args=None,
         # execute block
         snakemake_cl = ['python', str(block_dir / f'{block}.py')]
         snakemake_cl += block_args
+        log.info(f'Executing `{" ".join(snakemake_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(snakemake_cl, env=myenv)
     elif workflow_manager=='cwl':
         # build the cwl step
         cwl_cl = ['python3', 'utils/cwl_clt_parser.py', \
                   '--block', str(block_dir / f'{block}.py')]
+        log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
         # build the yaml file from block_args
@@ -442,6 +444,7 @@ def run_block(block=None, workflow_manager='snakemake', block_args=None,
         # execute the block
         cwl_cl = ['cwltool', str(cwl_step_dir / f'{block}.cwl'), \
                   str(cwl_step_dir / f'{block}.yaml')]
+        log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
 

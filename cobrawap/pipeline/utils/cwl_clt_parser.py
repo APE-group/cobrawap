@@ -169,14 +169,14 @@ def write_clt_file(file_path, args):
             f_out.write('      position: ' + str(a+1) + '\n')
             f_out.write('      prefix: --' + arg['name'] + '\n')
         f_out.write('\n')
-        f_out.write('outputs:\n')
-        f_out.write('  ' + block_name + '_output:\n')
         if 'output' in [_['name'] for _ in args]:
+            f_out.write('outputs:\n')
+            f_out.write('  ' + block_name + '_output:\n')
             f_out.write('    type: File\n')
             f_out.write('    outputBinding:\n')
             f_out.write('      glob: $(inputs.output)\n')
         else:
-            f_out.write('    type: stdout\n')
+            f_out.write('outputs: []\n')
 
 def write_block_yaml(file_path, block_args):
     print('block_args BEFORE:', block_args)
@@ -203,9 +203,10 @@ def write_block_yaml(file_path, block_args):
     with open(file_path, "w+") as f_out:
         for key in arg_dict.keys():
             if key=='data':
+                data_path = Path(arg_dict['data']).expanduser().resolve()
                 f_out.write('data:\n')
                 f_out.write('  class: File\n')
-                f_out.write('  location: %s\n' % arg_dict['data'])
+                f_out.write('  location: %s\n' % data_path)
             elif isinstance(arg_dict[key],list):
                 f_out.write('%s:\n' % key)
                 for val in arg_dict[key]:
