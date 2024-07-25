@@ -21,6 +21,7 @@ from cmd_utils import is_profile_name_valid, create_new_configfile
 from cmd_utils import input_profile, get_profile, setup_entry_stage
 from cmd_utils import working_directory, load_config_file, get_config
 from cmd_utils import locate_str_in_list, read_stage_output
+from utils.cwl_clt_parser import write_block_yaml
 log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
@@ -103,6 +104,9 @@ CLI_run = subparsers.add_parser('run',
 CLI_run.set_defaults(command='run')
 CLI_run.add_argument("--profile", type=str, nargs='?', default=None,
                      help="name of the config profile to be analyzed")
+CLI_run.add_argument("--workflow_manager", type=str, nargs='?',
+                     choices=['snakemake','cwl'], default='snakemake',
+                     help="name of the workflow manager to use")
 
 # Stage
 CLI_stage = subparsers.add_parser('run_stage',
@@ -113,16 +117,21 @@ CLI_stage.add_argument("--profile", type=str, nargs='?', default=None,
 CLI_stage.add_argument("--stage", type=str, nargs='?', default=None,
                        choices=list(STAGES.keys()),
                        help="select individual stage to execute")
+CLI_stage.add_argument("--workflow_manager", type=str, nargs='?',
+                       choices=['snakemake','cwl'], default='snakemake',
+                       help="name of the workflow manager to use")
 
 # Block
 CLI_block = subparsers.add_parser('run_block',
                         help='execute an individual block method on some input')
 CLI_block.set_defaults(command='run_block')
-CLI_block.add_argument("block", type=str, nargs='?', default=None,
+CLI_block.add_argument("--block", type=str, nargs='?', default=None,
                        help="block specified as <stage_name>.<block_name>")
-CLI_block.add_argument("block_help", action='store_true',
+CLI_block.add_argument("--block_help", action='store_true',
                        help="display the help text of the block script")
-
+CLI_block.add_argument("--workflow_manager", type=str, nargs='?',
+                       choices=['snakemake','cwl'], default='snakemake',
+                       help="name of the workflow manager to use")
 
 def main():
     'Start main CLI entry point.'
@@ -286,24 +295,32 @@ def add_profile(profile=None, parent_profile=None, stages=None,
     return None
 
 
-def run(profile=None, extra_args=None, **kwargs):
+def run(profile=None, workflow_manager='snakemake', extra_args=None, **kwargs):
     # select profile
     profile = input_profile(profile=profile)
 
     # set runtime config
     pipeline_path = Path(get_setting('pipeline_path'))
 
-    # execute snakemake
-    snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
-    log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
+    if workflow_manager=='snakemake':
 
-    with working_directory(pipeline_path):
-        subprocess.run(snakemake_args + extra_args)
+        # execute snakemake
+        snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
+        log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
+
+        with working_directory(pipeline_path):
+            subprocess.run(snakemake_args + extra_args)
+
+    elif workflow_manager=='cwl':
+
+        # execute cwl
+        print('executing cwl')
 
     return None
 
 
-def run_stage(profile=None, stage=None, extra_args=None, **kwargs):
+def run_stage(profile=None, stage=None, workflow_manager='snakemake',
+              extra_args=None, **kwargs):
     # select profile
     profile = input_profile(profile=profile)
 
@@ -346,36 +363,55 @@ def run_stage(profile=None, stage=None, extra_args=None, **kwargs):
         extra_args = [f'STAGE_INPUT={stage_input}'] + extra_args
 
     # descend into stage folder
-    pipeline_path = pipeline_path / stage
+    stage_path = pipeline_path / stage
 
     # append stage specific arguments
     extra_args = extra_args + ['--configfile', f'{stage_config_path}']
 
-    # execute snakemake
-    snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
-    log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
+    if workflow_manager not in ['snakemake','cwl']:
+        raise IndexError("Make sure to select a workflow manager system "\
+                         "among `snakemake` and `cwl`. "\
+                         "Other systems are not yet currently supported")
 
-    with working_directory(pipeline_path):
-        subprocess.run(snakemake_args + extra_args)
+    if workflow_manager=='snakemake':
+
+        # execute snakemake
+        snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
+        log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
+
+        with working_directory(stage_path):
+            subprocess.run(snakemake_args + extra_args)
+
+    elif workflow_manager=='cwl':
+
+        # execute cwl
+        print('executing cwl')
 
     return None
 
 
-def run_block(block=None, block_args=None, block_help=False, **kwargs):
+def run_block(block=None, workflow_manager='snakemake', block_args=None,
+              block_help=False, **kwargs):
+
     while not block:
         block = input("Specify a block to execute (<stage_name>.<block_name>):")
 
     stage, block  = re.split("\.|/|\s", block)[:2]
     stages = get_setting('stages')
+    pipeline_path = Path(get_setting('pipeline_path'))
 
     while not stage in stages.values():
         print(f"Stage {stage} not found!\n"\
               f"Available stages are: {', '.join(list(stages.values()))}.")
         stage = input("Specify stage:")
 
-    block_dir = Path(get_setting('pipeline_path')) / stage / 'scripts'
-    available_blocks = [str(script.stem) for script in block_dir.iterdir()
-                        if not str(script.stem).startswith('_')]
+    block_dir = pipeline_path / stage / 'scripts'
+    available_blocks = [str(script.stem) for script in block_dir.iterdir() \
+                        if (os.path.isfile(script) and script.suffix=='.py' and \
+                            not str(script.stem).startswith('_') and \
+                            'template' not in script.stem
+                           )
+                       ]
 
     while not block in available_blocks:
         print(f"Block {block} is not found in {stage}!\n"\
@@ -385,12 +421,30 @@ def run_block(block=None, block_args=None, block_help=False, **kwargs):
     if block_help:
         block_args += ['--help']
 
-    # execute block
     myenv = os.environ.copy()
     myenv['PYTHONPATH'] = ':'.join(sys.path)
-    subprocess.run(['python', str(block_dir / f'{block}.py')]
-                    + block_args,
-                    env=myenv)
+    if workflow_manager=='snakemake':
+        # execute block
+        snakemake_cl = ['python', str(block_dir / f'{block}.py')]
+        snakemake_cl += block_args
+        with working_directory(pipeline_path):
+            subprocess.run(snakemake_cl, env=myenv)
+    elif workflow_manager=='cwl':
+        # build the cwl step
+        cwl_cl = ['python3', 'utils/cwl_clt_parser.py', \
+                  '--block', str(block_dir / f'{block}.py')]
+        with working_directory(pipeline_path):
+            subprocess.run(cwl_cl, env=myenv)
+        # build the yaml file from block_args
+        block_args += ['--pipeline_path', pipeline_path]
+        cwl_step_dir = pipeline_path / stage / 'cwl_steps'
+        write_block_yaml(str(cwl_step_dir / f'{block}.yaml'), block_args)
+        # execute the block
+        cwl_cl = ['cwltool', str(cwl_step_dir / f'{block}.cwl'), \
+                  str(cwl_step_dir / f'{block}.yaml')]
+        with working_directory(pipeline_path):
+            subprocess.run(cwl_cl, env=myenv)
+
     return None
 
 

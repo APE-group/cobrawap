@@ -178,6 +178,42 @@ def write_clt_file(file_path, args):
         else:
             f_out.write('    type: stdout\n')
 
+def write_block_yaml(file_path, block_args):
+    print('block_args BEFORE:', block_args)
+    block_args = [[_] if '=' not in str(_) else str(_).split('=') for _ in block_args]
+    block_args = [arg for _ in block_args for arg in _]
+    print('block_args AFTER:', block_args)
+    #block_name = file_path.stem
+    arg_dict = {}
+    key = None
+    for i,arg in enumerate(block_args):
+        if str(arg).startswith('--'):
+            key = arg[2:]
+            key_count = 0
+        else:
+            if key and key_count == 0:
+                arg_dict[key] = arg
+                key_count += 1
+            elif key and key_count == 1:
+                arg_dict[key] = [arg_dict[key], arg]
+                key_count += 1
+            elif key and key_count > 1:
+                arg_dict[key].append(arg)
+                key_count += 1
+    with open(file_path, "w+") as f_out:
+        for key in arg_dict.keys():
+            if key=='data':
+                f_out.write('data:\n')
+                f_out.write('  class: File\n')
+                f_out.write('  location: %s\n' % arg_dict['data'])
+            elif isinstance(arg_dict[key],list):
+                f_out.write('%s:\n' % key)
+                for val in arg_dict[key]:
+                    f_out.write('  - %s\n' % val)
+            else:
+                f_out.write('%s: %s\n' % (key, arg_dict[key]))
+        f_out.write('\n')
+
 if __name__ == '__main__':
 
     args, unknown = CLI.parse_known_args()
@@ -192,10 +228,10 @@ if __name__ == '__main__':
     for i,_ in enumerate(block_lists):
         print(i, _)
 
-    block_lists = [_ for _ in block_lists if os.path.isfile(_)]
-    block_lists = [_ for _ in block_lists if _.suffix=='.py']
-    block_lists = [_ for _ in block_lists if '__' not in _.stem]
-    block_lists = [_ for _ in block_lists if 'template' not in _.stem]
+    block_lists = [_ for _ in block_lists
+                   if (os.path.isfile(_) and _.suffix=='.py' and \
+                       not str(_.stem).startswith('_') and 'template' not in _.stem)
+                  ]
 
     print('block_lists:')
     for i,_ in enumerate(block_lists):
