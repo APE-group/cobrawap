@@ -21,30 +21,30 @@ inputs:
     inputBinding:
       position: 0
   data:
-    type: File
+    type: Any
     inputBinding:
       position: 1
       prefix: --data
   output:
-    type: string
+    type: Any
     inputBinding:
       position: 2
       prefix: --output
-  highpass_freq:
+  highpass_frequency:
     type: Any?
     inputBinding:
       position: 3
-      prefix: --highpass_freq
-  lowpass_freq:
+      prefix: --highpass_frequency
+  lowpass_frequency:
     type: Any?
     inputBinding:
       position: 4
-      prefix: --lowpass_freq
-  psd_freq_res:
+      prefix: --lowpass_frequency
+  psd_frequency_resolution:
     type: float?
     inputBinding:
       position: 5
-      prefix: --psd_freq_res
+      prefix: --psd_frequency_resolution
   psd_overlap:
     type: float?
     inputBinding:

@@ -188,7 +188,7 @@ if __name__ == '__main__':
         for b,block in enumerate(block_list):
             print(block)
             # write the clt file
-            block_path = stage_path / 'scripts' / Path(block + '.py')
+            block_path = stage_path / 'scripts' / f'{block}.py'
             cwl_args = ['python3', 'utils/cwl_clt_parser.py', '--block', str(block_path)]
             myenv = os.environ.copy()
             myenv['PYTHONPATH'] = ':'.join(sys.path)
@@ -197,7 +197,7 @@ if __name__ == '__main__':
 
             # use the clt file
             detailed_input[block] = []
-            cwl_step = stage_path / 'cwl_steps' / Path(block + '.cwl')
+            cwl_step = stage_path / 'cwl_steps' / f'{block}.cwl'
             with open(cwl_step, "r") as f:
                 try:
                     y = yaml.safe_load(f)

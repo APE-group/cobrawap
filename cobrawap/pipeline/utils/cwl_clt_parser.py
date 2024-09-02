@@ -25,19 +25,6 @@ def pythontype_to_cwltype(python_type):
         cwl_type = 'Any'
     return cwl_type
 
-def read_args_from_yaml(yaml_file):
-  with open(yaml_file, "r") as f:
-    try:
-      yaml_config = yaml.safe_load(f)
-    except yaml.YAMLError as exc:
-      print(exc)
-  for arg in yaml_config['args']:
-    if arg['required'] == 'True':
-      arg['required'] = True
-    elif arg['required'] == 'False':
-      arg['required'] = False
-  return yaml_config['args']
-
 def parse_CLI_args(block_path):
     block_name = block_path.stem
     #block_CLI = __import__(str(Path(block_name).expanduser().stem)).CLI
@@ -62,10 +49,11 @@ def parse_CLI_args(block_path):
         # mapping Python types into CWL types
         # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
         arg['type'] = pythontype_to_cwltype(arg['type']) if arg['dest']!='data' else 'Any'
+        # shouldn't be 'File' for 'data' ?
         #args.append({'name': arg_name, 'type': arg_type, 'required': arg_req, 'help': arg_help})
     return args
 
-def write_clt_file(file_path, args):
+def write_block_clt(file_path, args):
     block_name = file_path.stem
     with open(file_path, "w+") as f_out:
         f_out.write('#!/usr/bin/env cwltool\n')
@@ -152,24 +140,17 @@ if __name__ == '__main__':
 
     args, unknown = CLI.parse_known_args()
 
-    print('args.block:')
-    for i,_ in enumerate(args.block):
-        print(i, _)
     #block_lists = [Path(_).expanduser().absolute() for _ in args.block]
     block_lists = [_.resolve() for _ in args.block]
     #block_lists = glob.glob(args.block)
-    print('block_lists:')
-    for i,_ in enumerate(block_lists):
-        print(i, _)
 
     block_lists = [_ for _ in block_lists
-                   if (os.path.isfile(_) and _.suffix=='.py' and \
-                       not str(_.stem).startswith('_') and 'template' not in _.stem)
+                   if (os.path.isfile(_)
+                       and _.suffix=='.py'
+                       and not str(_.stem).startswith('_')
+                       and 'template' not in _.stem
+                      )
                   ]
-
-    print('block_lists:')
-    for i,_ in enumerate(block_lists):
-        print(i, _)
 
     if len(block_lists)==0:
       raise Exception(' > There are no python scripts in the provided path.')
@@ -177,18 +158,16 @@ if __name__ == '__main__':
     for block_path in block_lists:
 
       block_name = block_path.stem
-      block_yaml = Path(str(block_path.parent) + '/' + block_name + '.yaml').resolve()
+      block_yaml = Path(block_path.parent / f'{block_name}.yaml').resolve()
 
-      cwl_path = Path(str(block_path.parent) + '/../cwl_steps').resolve()
+      cwl_path = Path(block_path.parents[1] / 'cwl_steps').resolve()
+      print(cwl_path)
       if not os.path.isdir(cwl_path):
         os.mkdir(cwl_path)
-      cwl_file = Path(str(cwl_path) + '/' + block_name + '.cwl').resolve()
+      cwl_file = Path(cwl_path / f'{block_name}.cwl').resolve()
 
       args = parse_CLI_args(block_path)
-      print('\nfrom clever parsing:')
-      for i,_ in enumerate(args):
-          print(i, _)
 
-      write_clt_file(cwl_file, args)
+      write_block_clt(cwl_file, args)
 
 print('')

@@ -340,9 +340,9 @@ def run_stage(profile=None, stage=None, workflow_manager='snakemake',
     # lookup stage input file
     pipeline_config_path = config_path / 'configs' / 'config.yaml'
     config_dict = load_config_file(pipeline_config_path)
-    stage_idx_local = locate_str_in_list(config_dict['STAGES'], stage)
+    stage_idx = locate_str_in_list(config_dict['STAGES'], stage)
     # stage_idx_global = locate_str_in_list([v for k,v in stages.items()], stage)
-    if stage_idx_local is None:
+    if stage_idx is None:
         raise IndexError("Make sure that the selected stage is also specified "\
                          "in your top-level config in the list `STAGES`!")
 
@@ -350,8 +350,8 @@ def run_stage(profile=None, stage=None, workflow_manager='snakemake',
                                    config_name=f'config_{profile}.yaml',
                                    get_path_instead=True)
 
-    if stage_idx_local>0:
-        prev_stage = config_dict['STAGES'][stage_idx_local-1]
+    if stage_idx>0:
+        prev_stage = config_dict['STAGES'][stage_idx-1]
         prev_stage_config_path = get_config(config_dir=config_path / prev_stage,
                                             config_name=f'config_{profile}.yaml',
                                             get_path_instead=True)
@@ -368,24 +368,31 @@ def run_stage(profile=None, stage=None, workflow_manager='snakemake',
     # append stage specific arguments
     extra_args = extra_args + ['--configfile', f'{stage_config_path}']
 
-    if workflow_manager not in ['snakemake','cwl']:
-        raise IndexError("Make sure to select a workflow manager system "\
-                         "among `snakemake` and `cwl`. "\
-                         "Other systems are not yet currently supported")
-
     if workflow_manager=='snakemake':
 
         # execute snakemake
-        snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
-        log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
+        snakemake_cl = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
+        snakemake_cl += extra_args
+        log.info(f'Executing `{" ".join(snakemake_cl)}`')
 
         with working_directory(stage_path):
-            subprocess.run(snakemake_args + extra_args)
+            subprocess.run(snakemake_cl)
 
     elif workflow_manager=='cwl':
 
-        # execute cwl
-        print('executing cwl')
+        # write the cwl workflow file
+        cwl_cl = ['python3', 'utils/cwl_wf_parser.py', '--stage', stage, \
+                    '--configfile', f'{stage_config_path}']
+        if stage_idx>0:
+            cwl_cl += ['--stage_input', stage_input]
+        log.info(f'Executing `{" ".join(cwl_cl)}`')
+        myenv = os.environ.copy()
+        myenv['PYTHONPATH'] = ':'.join(sys.path)
+        with working_directory(pipeline_path):
+            subprocess.run(cwl_cl, env=myenv)
+
+        # execute the cwl workflow files
+        # TBD...
 
     return None
 

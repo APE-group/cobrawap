@@ -21,17 +21,17 @@ inputs:
     inputBinding:
       position: 0
   original_data:
-    type: string
+    type: Any
     inputBinding:
       position: 1
       prefix: --original_data
-  processed_data:
-    type: string
+  data:
+    type: Any
     inputBinding:
       position: 2
-      prefix: --processed_data
+      prefix: --data
   img_dir:
-    type: string
+    type: Any
     inputBinding:
       position: 3
       prefix: --img_dir
@@ -41,12 +41,12 @@ inputs:
       position: 4
       prefix: --img_name
   t_start:
-    type: float?
+    type: Any?
     inputBinding:
       position: 5
       prefix: --t_start
   t_stop:
-    type: float?
+    type: Any?
     inputBinding:
       position: 6
       prefix: --t_stop
