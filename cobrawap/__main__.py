@@ -19,7 +19,6 @@ sys.path.append(str(Path(inspect.getfile(lambda: None)).parent))
 sys.path.append(str(Path(inspect.getfile(lambda: None)).parent / "pipeline"))
 from cmd_utils import (
     create_new_configfile,
-    get_available_blocks,
     get_config,
     get_initial_available_stages,
     get_profile,
@@ -36,7 +35,7 @@ from cmd_utils import (
     setup_entry_stage,
     working_directory
 )
-from utils.cwl_clt_parser import write_block_yaml
+from utils.cwl_utils import write_block_yaml
 log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
@@ -185,9 +184,9 @@ CLI_run.add_argument(
 CLI_run.add_argument(
     "--workflow_manager",
     type=str,
-    nargs='?',
-    choices=['snakemake','cwl'],
-    default='snakemake',
+    nargs="?",
+    choices=["snakemake","cwl"],
+    default="snakemake",
     help="name of the workflow manager to use"
 )
 
@@ -215,9 +214,9 @@ CLI_stage.add_argument(
 CLI_stage.add_argument(
     "--workflow_manager",
     type=str,
-    nargs='?',
-    choices=['snakemake','cwl'],
-    default='snakemake',
+    nargs="?",
+    choices=["snakemake","cwl"],
+    default="snakemake",
     help="name of the workflow manager to use"
 )
 
@@ -250,9 +249,9 @@ CLI_block.add_argument(
 CLI_block.add_argument(
     "--workflow_manager",
     type=str,
-    nargs='?',
-    choices=['snakemake','cwl'],
-    default='snakemake',
+    nargs="?",
+    choices=["snakemake","cwl"],
+    default="snakemake",
     help="name of the workflow manager to use"
 )
 
@@ -454,7 +453,7 @@ def add_profile(
     return None
 
 
-def run(profile=None, workflow_manager='snakemake', extra_args=None, **kwargs):
+def run(profile=None, workflow_manager="snakemake", extra_args=None, **kwargs):
     # # allow for positional profile argument
     # if profile is None and extra_args and extra_args[0][0] != "-":
     #     profile = extra_args.pop(0)
@@ -465,24 +464,24 @@ def run(profile=None, workflow_manager='snakemake', extra_args=None, **kwargs):
     # set runtime config
     pipeline_path = Path(get_setting("pipeline_path"))
 
-    if workflow_manager=='snakemake':
+    if workflow_manager=="snakemake":
 
         # execute snakemake
-        snakemake_args = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
+        snakemake_args = ["snakemake", "-c1", "--config", f"PROFILE={profile}"]
         log.info(f'Executing `{" ".join(snakemake_args+extra_args)}`')
 
         with working_directory(pipeline_path):
             subprocess.run(snakemake_args + extra_args)
 
-    elif workflow_manager=='cwl':
+    elif workflow_manager=="cwl":
 
         # execute cwl
-        print('executing cwl')
+        print("executing cwl")
 
     return None
 
 
-def run_stage(stage=None, profile=None, workflow_manager='snakemake',
+def run_stage(stage=None, profile=None, workflow_manager="snakemake",
               extra_args=None, **kwargs):
     # # allow for positional stage argument
     # if stage is None and extra_args and extra_args[0][0] != "-":
@@ -535,26 +534,26 @@ def run_stage(stage=None, profile=None, workflow_manager='snakemake',
     # append stage specific arguments
     extra_args = extra_args + ["--configfile", f"{stage_config_path}"]
 
-    if workflow_manager=='snakemake':
+    if workflow_manager=="snakemake":
 
         # execute snakemake
-        snakemake_cl = ['snakemake', '-c1', '--config', f'PROFILE={profile}']
+        snakemake_cl = ["snakemake", "-c1", "--config", f"PROFILE={profile}"]
         snakemake_cl += extra_args
         log.info(f'Executing `{" ".join(snakemake_cl)}`')
 
         with working_directory(stage_path):
             subprocess.run(snakemake_cl)
 
-    elif workflow_manager=='cwl':
+    elif workflow_manager=="cwl":
 
         # write the cwl workflow file
-        cwl_cl = ['python3', 'utils/cwl_wf_parser.py', '--stage', stage, \
-                    '--configfile', f'{stage_config_path}']
+        cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
+                    "--configfile", f"{stage_config_path}"]
         if stage_idx>0:
-            cwl_cl += ['--stage_input', stage_input]
+            cwl_cl += ["--stage_input", stage_input]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         myenv = os.environ.copy()
-        myenv['PYTHONPATH'] = ':'.join(sys.path)
+        myenv["PYTHONPATH"] = ":".join(sys.path)
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
 
@@ -563,7 +562,7 @@ def run_stage(stage=None, profile=None, workflow_manager='snakemake',
 
     return None
 
-def run_block(stage=None, block=None, workflow_manager='snakemake',
+def run_block(stage=None, block=None, workflow_manager="snakemake",
               block_args=None, block_help=False, **kwargs):
     # # allow for positional block argument
     # if block is None and block_args and block_args[0][0] != "-":
@@ -580,7 +579,7 @@ def run_block(stage=None, block=None, workflow_manager='snakemake',
     myenv = os.environ.copy()
     myenv["PYTHONPATH"] = ":".join(sys.path)
 
-    if workflow_manager=='snakemake':
+    if workflow_manager=="snakemake":
         # execute block
         snakemake_cl = ["python", str(block_dir / f"{block}.py")]
         snakemake_cl += block_args
@@ -588,7 +587,7 @@ def run_block(stage=None, block=None, workflow_manager='snakemake',
         with working_directory(pipeline_path):
             subprocess.run(snakemake_cl, env=myenv)
 
-    elif workflow_manager=='cwl':
+    elif workflow_manager=="cwl":
         # build the cwl step
         cwl_cl = ["python3", "utils/cwl_clt_parser.py", \
                   "--block", str(block_dir / f"{block}.py")]
@@ -596,12 +595,12 @@ def run_block(stage=None, block=None, workflow_manager='snakemake',
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
         # build the yaml file from block_args
-        block_args += ['--pipeline_path', pipeline_path]
-        cwl_step_dir = pipeline_path / stage / 'cwl_steps'
-        write_block_yaml(str(cwl_step_dir / f'{block}.yaml'), block_args)
+        block_args += ["--pipeline_path", pipeline_path]
+        cwl_step_dir = pipeline_path / stage / "cwl_steps"
+        write_block_yaml(str(cwl_step_dir / f"{block}.yaml"), block_args)
         # execute the block
-        cwl_cl = ['cwltool', str(cwl_step_dir / f'{block}.cwl'), \
-                  str(cwl_step_dir / f'{block}.yaml')]
+        cwl_cl = ["cwltool", str(cwl_step_dir / f"{block}.cwl"), \
+                  str(cwl_step_dir / f"{block}.yaml")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
