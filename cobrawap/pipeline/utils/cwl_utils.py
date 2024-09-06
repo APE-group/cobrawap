@@ -25,6 +25,8 @@ def pythontype_to_cwltype(python_type):
         cwl_type = 'int'
     elif python_type is float:
         cwl_type = 'float'
+    elif python_type is Path:
+        cwl_type = 'File'
     else:
         cwl_type = 'Any'
     return cwl_type
@@ -52,9 +54,9 @@ def parse_CLI_args(block_path):
     for arg in args:
         # mapping Python types into CWL types
         # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
-        arg['type'] = pythontype_to_cwltype(arg['type']) if arg['dest']!='data' else 'Any'
-        # shouldn't be 'File' for 'data' ?
-        #args.append({'name': arg_name, 'type': arg_type, 'required': arg_req, 'help': arg_help})
+        # Be careful with typing of 'data' and 'output'; are they Any, string, or File?
+        # arg['type'] = pythontype_to_cwltype(arg['type']) if arg['dest']!='data' else 'Any'
+        arg['type'] = pythontype_to_cwltype(arg['type'])
     return args
 
 def write_block_yaml(file_path, block_args):
@@ -133,13 +135,13 @@ def write_block_clt(file_path, args):
             f_out.write('      prefix: --' + arg['name'] + '\n')
         f_out.write('\n')
         if 'output' in [_['name'] for _ in args]:
-            f_out.write('outputs:\n')
-            f_out.write('  ' + block_name + '_output:\n')
-            f_out.write('    type: File\n')
-            f_out.write('    outputBinding:\n')
-            f_out.write('      glob: $(inputs.output)\n')
+            f_out.write("outputs:\n")
+            f_out.write(f"  {block_name}.output:\n")
+            f_out.write("    type: File\n")
+            f_out.write("    outputBinding:\n")
+            f_out.write("      glob: $(inputs.output)\n")
         else:
-            f_out.write('outputs: []\n')
+            f_out.write("outputs: []\n")
 
 # Stage level
 
@@ -151,7 +153,7 @@ def stage_block_list(stage, yaml_config):
     match stage:
 
         case "stage01_data_entry":
-            curate_block = yaml_config["CURATION_SCRIPT"].split(".")[0]
+            curate_block = Path(yaml_config["CURATION_SCRIPT"]).stem
             block_list = [{"name": curate_block,
                            "depends_on": "STAGE_INPUT"},
                           {"name": "check_input",
