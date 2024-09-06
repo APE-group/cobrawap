@@ -1,5 +1,6 @@
 """
-This is a parser for stage-specific config files, to produce the corresponding CWL WorkFlow file
+This is a parser for stage-specific config files,
+to produce the corresponding CWL WorkFlow file
 """
 
 import argparse
@@ -54,15 +55,19 @@ if __name__ == '__main__':
             {'block_name': '', 'input_name': 'data', 'input_name_with_prefix': 'data', 'input_type': 'Any'},
             {'block_name': '', 'input_name': 'pipeline_path', 'input_name_with_prefix': 'pipeline_path', 'input_type': 'string'}
         ]
-        for b,block in enumerate(block_list):
-            print(block)
+
+        myenv = os.environ.copy()
+        myenv["PYTHONPATH"] = ":".join(sys.path)
+        
+        for b,blk in enumerate(block_list):
+
             # write the clt file
+            print(blk)
+            block = blk["name"]
             block_path = stage_path / "scripts" / f"{block}.py"
-            cwl_args = ["python3", "utils/cwl_clt_parser.py", "--block", str(block_path)]
-            myenv = os.environ.copy()
-            myenv["PYTHONPATH"] = ":".join(sys.path)
+            cwl_cl = ["python3", "utils/cwl_clt_parser.py", "--block", str(block_path)]
             with working_directory(pipeline_path):
-                subprocess.run(cwl_args, env=myenv)
+                subprocess.run(cwl_cl, env=myenv)
 
             # use the clt file
             detailed_input[block] = []
@@ -79,7 +84,11 @@ if __name__ == '__main__':
 
                 for inp in z:
                     detailed_input[block].append(inp)
-                    global_input_list.append({'block_name': block, 'input_name': inp, 'input_name_with_prefix': block+'_'+inp, 'input_type': y['inputs'][inp]['type']})
+                    global_input_list.append({'block_name': block,
+                                              'input_name': inp,
+                                              'input_name_with_prefix': block+'_'+inp,
+                                              'input_type': y['inputs'][inp]['type']
+                                             })
 
         print('\nglobal_list:\n', global_input_list, '\n')
         print('detailed_list:\n', detailed_input, '\n')

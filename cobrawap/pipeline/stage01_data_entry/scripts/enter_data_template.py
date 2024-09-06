@@ -6,10 +6,25 @@ import argparse
 import quantities as pq
 from pathlib import Path
 import neo
-from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str, str_to_bool
-from utils.neo_utils import imagesequence_to_analogsignal, merge_analogsignals
-from utils.neo_utils import flip_image, rotate_image, time_slice
-from utils.io_utils import load_neo, write_neo
+from utils.io_utils import (
+    load_neo,
+    write_neo
+)
+from utils.neo_utils import (
+    flip_image,
+    imagesequence_to_analogsignal,
+    merge_analogsignals,
+    rotate_image,
+    time_slice
+)
+from utils.parse import (
+    none_or_float,
+    none_or_int,
+    none_or_str,
+    parse_string2dict,
+    str_to_bool
+)
+
 
 
 CLI = argparse.ArgumentParser()

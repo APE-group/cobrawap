@@ -7,9 +7,16 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.io_utils import load_neo, save_plot
+from utils.io_utils import (
+    load_neo,
+    save_plot
+)
 from utils.neo_utils import time_slice
-from utils.parse import parse_plot_channels, none_or_int, none_or_float
+from utils.parse import (
+    none_or_float,
+    none_or_int,
+    parse_plot_channels,
+)
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,

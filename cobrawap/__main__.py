@@ -534,6 +534,9 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
     # append stage specific arguments
     extra_args = extra_args + ["--configfile", f"{stage_config_path}"]
 
+    myenv = os.environ.copy()
+    myenv["PYTHONPATH"] = ":".join(sys.path)
+
     if workflow_manager=="snakemake":
 
         # execute snakemake
@@ -546,14 +549,18 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
 
     elif workflow_manager=="cwl":
 
+        # empty the stage output folder
+        housekeeping_cl = ["rm", "-rf", str(output_path / profile / stage), ";", \
+                           "mkdir", str(output_path / profile / stage)]
+        with working_directory(output_path / profile):
+            subprocess.run(housekeeping_cl)
+
         # write the cwl workflow file
         cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
-                    "--configfile", f"{stage_config_path}"]
+                  "--configfile", f"{stage_config_path}"]
         if stage_idx>0:
             cwl_cl += ["--stage_input", stage_input]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
-        myenv = os.environ.copy()
-        myenv["PYTHONPATH"] = ":".join(sys.path)
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
 
@@ -580,6 +587,7 @@ def run_block(stage=None, block=None, workflow_manager="snakemake",
     myenv["PYTHONPATH"] = ":".join(sys.path)
 
     if workflow_manager=="snakemake":
+
         # execute block
         snakemake_cl = ["python", str(block_dir / f"{block}.py")]
         snakemake_cl += block_args
@@ -588,16 +596,19 @@ def run_block(stage=None, block=None, workflow_manager="snakemake",
             subprocess.run(snakemake_cl, env=myenv)
 
     elif workflow_manager=="cwl":
+
         # build the cwl step
         cwl_cl = ["python3", "utils/cwl_clt_parser.py", \
                   "--block", str(block_dir / f"{block}.py")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
+
         # build the yaml file from block_args
         block_args += ["--pipeline_path", pipeline_path]
         cwl_step_dir = pipeline_path / stage / "cwl_steps"
         write_block_yaml(str(cwl_step_dir / f"{block}.yaml"), block_args)
+
         # execute the block
         cwl_cl = ["cwltool", str(cwl_step_dir / f"{block}.cwl"), \
                   str(cwl_step_dir / f"{block}.yaml")]
