@@ -145,7 +145,13 @@ def write_block_clt(file_path, args):
 
 # Stage level
 
-def stage_block_list(stage, yaml_config):
+def stage_block_list(stage, stage_config_path):
+
+    with open(stage_config_path, "r") as f:
+        try:
+            stage_config = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            raise exc
 
     block_dir = Path(get_setting('pipeline_path')) / stage / "scripts"
     available_blocks = get_available_blocks(block_dir)
@@ -153,7 +159,7 @@ def stage_block_list(stage, yaml_config):
     match stage:
 
         case "stage01_data_entry":
-            curate_block = Path(yaml_config["CURATION_SCRIPT"]).stem
+            curate_block = Path(stage_config["CURATION_SCRIPT"]).stem
             block_list = [{"name": curate_block,
                            "depends_on": "STAGE_INPUT"},
                           {"name": "check_input",
@@ -163,10 +169,10 @@ def stage_block_list(stage, yaml_config):
 
         case "stage02_processing":
             depends_on = "STAGE_INPUT"
-            block_list = [{"name": check_input,
+            block_list = [{"name": "check_input",
                            "depends_on": depends_on}]
-            if "BLOCK_ORDER" in yaml_config.keys():
-                for b,block in enumerate(yaml_config['BLOCK_ORDER']):
+            if "BLOCK_ORDER" in stage_config.keys():
+                for b,block in enumerate(stage_config['BLOCK_ORDER']):
                     block_list.append({"name": block,
                                        "depends_on": depends_on})
                     depends_on = block_list[-1]["name"]
@@ -176,23 +182,23 @@ def stage_block_list(stage, yaml_config):
                                "depends_on": depends_on})
 
         case "stage03_trigger_detection":
-            block_list = [{"name": check_input,
+            block_list = [{"name": "check_input",
                            "depends_on": "STAGE_INPUT"}]
             try:
-                if yaml_config["DETECTION_BLOCK"] in ["hilbert_phase", "minima"]:
-                    detection_block = yaml_config["DETECTION_BLOCK"]
-                elif yaml_config["DETECTION_BLOCK"]=="threshold":
-                    if yaml_config["THRESHOLD_METHOD"] in ["fixed", "fitted"]:
-                        detection_block = f"calc_threshold_{yaml_config['THRESHOLD_METHOD']}"
-                filter_blocks = yaml_config["TRIGGER_FILTER"]
+                if stage_config["DETECTION_BLOCK"] in ["hilbert_phase", "minima"]:
+                    detection_block = stage_config["DETECTION_BLOCK"]
+                elif stage_config["DETECTION_BLOCK"]=="threshold":
+                    if stage_config["THRESHOLD_METHOD"] in ["fixed", "fitted"]:
+                        detection_block = f"calc_threshold_{stage_config['THRESHOLD_METHOD']}"
+                filter_blocks = stage_config["TRIGGER_FILTER"]
                 block_list.append({"name": detection_block,
                                    "depends_on": "STAGE_INPUT"})
                 depends_on = detection_block
             except:
                 raise KeyError('Check \"DETECTION\" fields in config file.')
             try:
-                if "TRIGGER_FILTER" in yaml_config.keys():
-                    for b,block in enumerate(yaml_config["TRIGGER_FILTER"]):
+                if "TRIGGER_FILTER" in stage_config.keys():
+                    for b,block in enumerate(stage_config["TRIGGER_FILTER"]):
                         block_list.append({"name": block,
                                         "depends_on": depends_on})
                         depends_on = block_list[-1]["name"]
@@ -224,15 +230,20 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "class: Workflow\n\n"
 
 #def write_wf_file(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
-def write_wf_file(stage_path, stage_input, block_list, yaml_config):
+def write_wf_file(stage, stage_input, stage_config_path):
 
-    stage_path = Path(stage_path)
+    stage_path = pipeline_path / stage
 
-    with open(yaml_config, "r") as f:
+    block_list = stage_block_list(stage, stage_config_path)
+
+    with open(stage_config_path, "r") as f:
         try:
-            yaml_stage_config = yaml.safe_load(f)
+            stage_config = yaml.safe_load(f)
         except yaml.YAMLError as exc:
             raise exc
+
+    if stage_config["STAGE_NAME"] != stage:
+        raise Exception("The loaded config file is not coherent with the stage specified.")
 
     detailed_input = {}
     global_input_list = [
@@ -339,10 +350,10 @@ def write_wf_file(stage_path, stage_input, block_list, yaml_config):
                 f_out.write('    type: string?\n')
                 if 'plot' not in inp["block_name"]:
                     # NEO OUTPUT
-                    f_out.write(f"    default: \'{inp['block_name']}.{yaml_stage_config['NEO_FORMAT']}\'\n")
+                    f_out.write(f"    default: \'{inp['block_name']}.{stage_config['NEO_FORMAT']}\'\n")
                 else:
                     # PLOT OUTPUT
-                    f_out.write(f"    default: \"plot.{yaml_stage_config['PLOT_FORMAT']}\"\n")
+                    f_out.write(f"    default: \"plot.{stage_config['PLOT_FORMAT']}\"\n")
             else:
                 f_out.write('  %s: %s\n' % (inp['input_name_with_prefix'],inp['input_type']))
         f_out.write('\n')
@@ -391,19 +402,19 @@ def write_wf_file(stage_path, stage_input, block_list, yaml_config):
             block = blk["name"]
             print(block)
             print(detailed_input[block])
-            print(yaml_stage_config.keys(),'\n')
+            print(stage_config.keys(),'\n')
             f_out.write('# block \"%s\"\n' % block)
             for inp in detailed_input[block]:
-                if inp.upper() in yaml_stage_config.keys():
-                    value = yaml_stage_config[inp.upper()]
+                if inp.upper() in stage_config.keys():
+                    value = stage_config[inp.upper()]
                 elif inp=='output':
-                    value = '\"' + block + '.' + yaml_stage_config['NEO_FORMAT'] + '\"'
+                    value = '\"' + block + '.' + stage_config['NEO_FORMAT'] + '\"'
                 elif inp=='t_start':
-                    value = yaml_stage_config['PLOT_TSTART']
+                    value = stage_config['PLOT_TSTART']
                 elif inp=='t_stop':
-                    value = yaml_stage_config['PLOT_TSTOP']
-                elif inp=='channels' and 'PLOT_CHANNELS' in yaml_stage_config.keys():
-                    value = yaml_stage_config['PLOT_CHANNELS']
+                    value = stage_config['PLOT_TSTOP']
+                elif inp=='channels' and 'PLOT_CHANNELS' in stage_config.keys():
+                    value = stage_config['PLOT_CHANNELS']
                 else:
                     value = None
                 f_out.write('%s_%s: %s\n' % (block, inp, value))

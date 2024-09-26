@@ -34,27 +34,32 @@ if __name__ == '__main__':
     pipeline_path = Path(get_setting("pipeline_path"))
     stage_path = pipeline_path / stage
 
+    """
     with open(args.configfile, "r") as f:
         try:
-            yaml_config = yaml.safe_load(f)
+            stage_config = yaml.safe_load(f)
         except yaml.YAMLError as exc:
             raise exc
 
-    if yaml_config["STAGE_NAME"] != stage:
+    if stage_config["STAGE_NAME"] != stage:
         raise Exception("The loaded config file is not coherent with the stage specified.")
 
     myenv = os.environ.copy()
     myenv["PYTHONPATH"] = ":".join(sys.path)
 
+    """
+    
     try:
         # Here the list of blocks is built, ordered according to user directives
-        block_list = stage_block_list(stage, yaml_config)
+        """
+        block_list = stage_block_list(stage, args.configfile)
         for b,block in enumerate(block_list):
             block_path = stage_path / "scripts" / f"{block['name']}.py"
             cwl_cl = ["python3", "utils/cwl_clt_parser.py", "--block", str(block_path)]
             with working_directory(pipeline_path):
                 subprocess.run(cwl_cl, env=myenv)
-        write_wf_file(stage_path, args.stage_input, block_list, args.configfile)
+        """
+        write_wf_file(stage, args.stage_input, args.configfile)
 
     except Exception as exc:
         raise exc
