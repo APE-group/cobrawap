@@ -35,7 +35,10 @@ from cmd_utils import (
     setup_entry_stage,
     working_directory
 )
-from utils.cwl_utils import write_block_yaml
+from utils.cwl_utils import (
+    write_block_yaml,
+    write_wf_file
+)
 log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
@@ -556,6 +559,7 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
             subprocess.run(housekeeping_cl)
 
         # write the cwl workflow file
+        """
         cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
                   "--configfile", f"{stage_config_path}"]
         if stage_idx>0:
@@ -563,7 +567,12 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
-
+        """
+        if stage_idx==0:
+            write_wf_file(stage, stage_config_path)
+        else:
+            write_wf_file(stage, stage_config_path, stage_input=stage_input)
+        
         # execute the cwl workflow files
         # TBD...
 
