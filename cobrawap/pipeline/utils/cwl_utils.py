@@ -60,10 +60,10 @@ def parse_CLI_args(block_path):
     return args
 
 def write_block_yaml(file_path, block_args):
-    print("block_args BEFORE:"", block_args)
+    print(f"block_args BEFORE: {block_args}")
     block_args = [[_] if "=" not in str(_) else str(_).split("=") for _ in block_args]
     block_args = [arg for _ in block_args for arg in _]
-    print("block_args AFTER:", block_args)
+    print(f"block_args AFTER: {block_args}")
     #block_name = file_path.stem
     arg_dict = {}
     key = None
@@ -189,7 +189,7 @@ def stage_block_list(stage, stage_config_path):
                     detection_block = stage_config["DETECTION_BLOCK"]
                 elif stage_config["DETECTION_BLOCK"]=="threshold":
                     if stage_config["THRESHOLD_METHOD"] in ["fixed", "fitted"]:
-                        detection_block = f"calc_threshold_{stage_config["THRESHOLD_METHOD"]}"
+                        detection_block = f"calc_threshold_{stage_config['THRESHOLD_METHOD']}"
                 filter_blocks = stage_config["TRIGGER_FILTER"]
                 block_list.append({"name": detection_block,
                                    "depends_on": "STAGE_INPUT"})
@@ -304,10 +304,11 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             block = blk["name"]
             f_out.write(f"  # Block \'{block}\'\n")
             for input in block_specs[block]["inputs"].keys():
-                f_out.write(f"  {block}.{input}: {block_specs[block]["inputs"][input]["type"]}\n")
+                f_out.write(f"  {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
             f_out.write("\n")
 
         # outputs
+        last_output = None
         f_out.write("outputs:\n\n")
         for b,blk in enumerate(block_list):
             block = blk["name"]
@@ -316,9 +317,11 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                 f_out.write(f"    type: File\n")
                 f_out.write(f"    outputSource: {block}/{block}.output\n")
                 f_out.write("\n")
-        f_out.write("  final_output:\n")
-        f_out.write("    type: File\n")
-        f_out.write(f"    outputSource: {block}/{block}.output\n\n")
+                last_output = f"{block}/{block}.output"
+        if last_output is not None:
+            f_out.write("  final_output:\n")
+            f_out.write("    type: File\n")
+            f_out.write(f"    outputSource: {last_output}\n\n")
 
         # steps
         f_out.write("steps:\n\n")
@@ -330,7 +333,10 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             f_out.write("      pipeline_path: pipeline_path\n")
             for input in block_specs[block]["inputs"].keys():
                 f_out.write(f"      {input}: {block}.{input}\n")
-            f_out.write(f"    out: [{block}.output]\n")
+            if block_specs[block]["has_output"]:
+                f_out.write(f"    out: [{block}.output]\n")
+            else:
+                f_out.write("    out: []\n")
             f_out.write("\n")
 
 

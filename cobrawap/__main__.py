@@ -573,8 +573,12 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         else:
             write_wf_file(stage, stage_config_path, stage_input=stage_input)
         
-        # execute the cwl workflow files
-        # TBD...
+        # execute the cwl workflow file
+        cwl_cl = ["cwltool", str(stage_path / "workflow_NEW.cwl"), \
+                  str(stage_path / "workflow_2.yaml")]
+        log.info(f'Executing `{" ".join(cwl_cl)}`')
+        with working_directory(pipeline_path):
+            subprocess.run(cwl_cl, env=myenv)
 
     return None
 
