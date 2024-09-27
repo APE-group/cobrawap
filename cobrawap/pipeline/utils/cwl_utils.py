@@ -55,8 +55,8 @@ def parse_CLI_args(block_path):
         # mapping Python types into CWL types
         # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
         # Be careful with typing of 'data' and 'output'; are they Any, string, or File?
-        # arg['type'] = pythontype_to_cwltype(arg['type']) if arg['dest']!='data' else 'Any'
-        arg['type'] = pythontype_to_cwltype(arg['type'])
+        arg['type'] = pythontype_to_cwltype(arg['type']) if arg['dest'] not in ["data","output"] else "File"
+        # arg['type'] = pythontype_to_cwltype(arg['type'])
     return args
 
 def write_block_yaml(file_path, block_args):
@@ -86,53 +86,53 @@ def write_block_yaml(file_path, block_args):
         for key in arg_dict.keys():
             if key=='data':
                 data_path = Path(arg_dict['data']).expanduser().resolve()
-                f_out.write('data:\n')
-                f_out.write('  class: File\n')
-                f_out.write('  location: %s\n' % data_path)
+                f_out.write("data:\n")
+                f_out.write("  class: File\n")
+                f_out.write(f"  location: {data_path}\n")
             elif isinstance(arg_dict[key],list):
-                f_out.write('%s:\n' % key)
+                f_out.write(f"{key}:\n")
                 for val in arg_dict[key]:
-                    f_out.write('  - %s\n' % val)
+                    f_out.write(f"  - {val}\n")
             else:
-                f_out.write('%s: %s\n' % (key, arg_dict[key]))
+                f_out.write(f"{key}: {arg_dict[key]}\n")
         f_out.write('\n')
 
 def write_block_clt(file_path, args):
     block_name = file_path.stem
     with open(file_path, "w+") as f_out:
-        f_out.write('#!/usr/bin/env cwltool\n')
-        f_out.write('\n')
-        f_out.write('cwlVersion: v1.2\n')
-        f_out.write('class: CommandLineTool\n')
-        f_out.write('\n')
-        f_out.write('baseCommand: python3\n')
-        f_out.write('\n')
-        f_out.write('requirements:\n')
-        f_out.write('  EnvVarRequirement:\n')
-        f_out.write('    envDef:\n')
-        f_out.write('      PYTHONPATH: $(inputs.pipeline_path)\n')
-        f_out.write('\n')
-        f_out.write('inputs:\n')
-        f_out.write('  pipeline_path:\n')
-        f_out.write('    type: string\n')
-        f_out.write('  step:\n')
-        f_out.write('    type: File?\n')
-        f_out.write('    default:\n')
-        f_out.write('      class: File\n')
-        f_out.write('      location: \"../scripts/' + block_name + '.py\"\n')
-        f_out.write('    inputBinding:\n')
-        f_out.write('      position: 0\n')
+        f_out.write("#!/usr/bin/env cwltool\n")
+        f_out.write("\n")
+        f_out.write("cwlVersion: v1.2\n")
+        f_out.write("class: CommandLineTool\n")
+        f_out.write("\n")
+        f_out.write("baseCommand: python3\n")
+        f_out.write("\n")
+        f_out.write("requirements:\n")
+        f_out.write("  EnvVarRequirement:\n")
+        f_out.write("    envDef:\n")
+        f_out.write("      PYTHONPATH: $(inputs.pipeline_path)\n")
+        f_out.write("\n")
+        f_out.write("inputs:\n")
+        f_out.write("  pipeline_path:\n")
+        f_out.write("    type: string\n")
+        f_out.write("  step:\n")
+        f_out.write("    type: File?\n")
+        f_out.write("    default:\n")
+        f_out.write("      class: File\n")
+        f_out.write(f"      location: \"../scripts/{block_name}.py\"\n")
+        f_out.write("    inputBinding:\n")
+        f_out.write("      position: 0\n")
         for a,arg in enumerate(args):
             if 'name' not in arg.keys():
                 arg['name'] = arg['dest']
-            f_out.write('  ' + arg['name'] + ':\n')
-            f_out.write('    type: ' + arg['type'])
+            f_out.write(f"  {arg['name']}:\n")
+            f_out.write(f"    type: {arg['type']}")
             if not arg['required']:
                 f_out.write('?')
-            f_out.write('\n')
-            f_out.write('    inputBinding:\n')
-            f_out.write('      position: ' + str(a+1) + '\n')
-            f_out.write('      prefix: --' + arg['name'] + '\n')
+            f_out.write("\n")
+            f_out.write("    inputBinding:\n")
+            f_out.write(f"      position: {a+1}\n")
+            f_out.write(f"      prefix: --{arg['name']}\n")
         f_out.write('\n')
         if 'output' in [_['name'] for _ in args]:
             f_out.write("outputs:\n")
@@ -219,9 +219,9 @@ def stage_block_list(stage, stage_config_path):
             block_list = ["check_input"]
             # TBD
 
-    missing_blocks = [block for block in block_list if block["name"] not in available_blocks]
+    missing_blocks = [block["name"] for block in block_list if block["name"] not in available_blocks]
     if len(missing_blocks)>0:
-        raise Exception('The following blocks are not available:', missing_blocks)
+        raise Exception(f"The following blocks are not available: {missing_blocks}")
 
     return block_list
 
@@ -417,7 +417,7 @@ def write_wf_file(stage, stage_input, stage_config_path):
                     value = stage_config['PLOT_CHANNELS']
                 else:
                     value = None
-                f_out.write('%s_%s: %s\n' % (block, inp, value))
+                f_out.write('%s.%s: %s\n' % (block, inp, value))
             f_out.write('\n')
 
     return

@@ -559,7 +559,7 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
                   "--configfile", f"{stage_config_path}"]
         if stage_idx>0:
-            cwl_cl += ["--stage_input", stage_input]
+            cwl_cl += ["--stage_input", str(stage_input)]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
