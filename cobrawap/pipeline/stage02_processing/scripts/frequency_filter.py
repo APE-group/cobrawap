@@ -18,7 +18,7 @@ CLI.add_argument("--highpass_frequency", nargs='?', type=none_or_float,
                  default=None, help="lower bound of frequency band in Hz")
 CLI.add_argument("--lowpass_frequency", nargs='?', type=none_or_float,
                  default=None, help="upper bound of frequency band in Hz")
-CLI.add_argument("--order", nargs='?', type=int, default=2,
+CLI.add_argument("--filter_order", nargs='?', type=int, default=2,
                  help="order of the filter function")
 CLI.add_argument("--filter_function", nargs='?', type=str, default='filtfilt',
                  help="filter function used in the scipy backend")
@@ -31,18 +31,18 @@ if __name__ == '__main__':
     asig = butter(block.segments[0].analogsignals[0],
                   highpass_frequency=args.highpass_frequency*pq.Hz,
                   lowpass_frequency=args.lowpass_frequency*pq.Hz,
-                  order=args.order,
+                  order=args.filter_order,
                   filter_function=args.filter_function)
 
     asig.array_annotations = block.segments[0].analogsignals[0].array_annotations
     asig.annotate(highpass_frequency=args.highpass_frequency*pq.Hz,
                   lowpass_frequency=args.lowpass_frequency*pq.Hz,
-                  filter_order=args.order)
+                  filter_order=args.filter_order)
 
     asig.description += "Frequency filtered with [{}, {}]Hz order {} "\
                         .format(args.highpass_frequency,
                                 args.lowpass_frequency,
-                                args.order)\
+                                args.filter_order)\
                       + " using {} scipy algorithm.({}). "\
                         .format(args.filter_function,
                                 os.path.basename(__file__))

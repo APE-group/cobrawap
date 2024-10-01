@@ -16,7 +16,7 @@ CLI.add_argument("--data",    nargs='?', type=str, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output",  nargs='?', type=str, required=True,
                  help="path of output file")
-CLI.add_argument("--order", nargs='?', type=int, default=1,
+CLI.add_argument("--detrending_order", nargs='?', type=int, default=1,
                  help="detrending order")
 CLI.add_argument("--img_dir",  nargs='?', type=str, required=True,
                  help="path of output figure directory")
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
 
-    detrend_asig = detrend(asig, args.order)
+    detrend_asig = detrend(asig, args.detrending_order)
 
     if args.plot_channels[0] is not None:
         for channel in args.plot_channels:
@@ -76,7 +76,7 @@ if __name__ == '__main__':
             save_plot(output_path)
 
     detrend_asig.description += "Detrended by order {} ({}). "\
-                        .format(args.order, os.path.basename(__file__))
+                        .format(args.detrending_order, os.path.basename(__file__))
     block.segments[0].analogsignals[0] = detrend_asig
 
     write_neo(args.output, block)

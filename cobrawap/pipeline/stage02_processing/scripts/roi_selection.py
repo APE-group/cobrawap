@@ -24,7 +24,7 @@ CLI.add_argument("--output_img", nargs='?', type=none_or_str,
 CLI.add_argument("--intensity_threshold", nargs='?', type=float,
                  help="threshold for mask [0,1]", default=0.5)
 CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True,
-                 help="discard frame outside of ROI", default=False,)
+                 help="discard frame outside of ROI", default=False)
 
 def calculate_contour(img, contour_limit):
     # Computing the contour lines...

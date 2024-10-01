@@ -9,7 +9,7 @@ from pathlib import Path
 import os
 from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import time_slice
-from utils.parse import none_or_float
+from utils.parse import none_or_float, none_or_int
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--original_data", nargs='?', type=Path, required=True,
@@ -25,7 +25,7 @@ CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
 CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
-CLI.add_argument("--channels", nargs='+', type=int, default=0,
+CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
                  help="channel to plot")
 
 def plot_traces(original_asig, processed_asig, channel):

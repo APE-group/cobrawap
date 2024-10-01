@@ -18,17 +18,25 @@ myenv["PYTHONPATH"] = ":".join(sys.path)
 
 # Block level
 
-def pythontype_to_cwltype(python_type):
-    if python_type is str:
+def pythontype_to_cwltype(arg):
+    if arg["type"] is str:
         cwl_type = "string"
-    elif python_type is int:
+    elif arg["type"] is int:
         cwl_type = "int"
-    elif python_type is float:
+    elif arg["type"] is float:
         cwl_type = "float"
-    elif python_type is Path:
+    elif arg["type"] is Path:
         cwl_type = "File"
     else:
         cwl_type = "Any"
+    if arg["dest"] in ["data", "original_data"]:
+        cwl_type = "File"
+    #if arg["dest"] in ["img_dir"]:
+    #    cwl_type = "Directory"
+    if cwl_type!="Any" and arg["nargs"]=="+":
+        cwl_type += "[]"
+    if not arg["required"]:
+        cwl_type += "?"
     return cwl_type
 
 def parse_CLI_args(block_path):
@@ -55,8 +63,8 @@ def parse_CLI_args(block_path):
         # mapping Python types into CWL types
         # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
         # Be careful with typing of "data" and "output"; are they Any, string, or File?
-        arg["type"] = pythontype_to_cwltype(arg["type"]) if arg["dest"] not in ["data","output"] else "File"
-        # arg["type"] = pythontype_to_cwltype(arg["type"])
+        # arg["type"] = pythontype_to_cwltype(arg["dest"], arg["type"], arg["nargs"]) if arg["dest"] not in ["data","output"] else "File"
+        arg["type"] = pythontype_to_cwltype(arg)
     return args
 
 def write_block_yaml(file_path, block_args):
@@ -126,10 +134,10 @@ def write_block_clt(file_path, args):
             if "name" not in arg.keys():
                 arg["name"] = arg["dest"]
             f_out.write(f"  {arg['name']}:\n")
-            f_out.write(f"    type: {arg['type']}")
-            if not arg["required"]:
-                f_out.write("?")
-            f_out.write("\n")
+            f_out.write(f"    type: {arg['type']}\n")
+            #if not arg["required"]:
+            #    f_out.write("?")
+            #f_out.write("\n")
             f_out.write("    inputBinding:\n")
             f_out.write(f"      position: {a+1}\n")
             f_out.write(f"      prefix: --{arg['name']}\n")
@@ -275,6 +283,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
 
             block_inputs = [_ for _ in block_inputs if _ not in ["pipeline_path","step"]]
 
+            block_specs[block]["depends_on"] = [_["depends_on"] for _ in block_list if _["name"]==block][0]
             block_specs[block]["inputs"] = {}
             for input in block_inputs:
                 block_specs[block]["inputs"][input] = yaml_block_file["inputs"][input]
@@ -304,7 +313,8 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             block = blk["name"]
             f_out.write(f"  # Block \'{block}\'\n")
             for input in block_specs[block]["inputs"].keys():
-                f_out.write(f"  {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
+                if input!="data" or (input=="data" and block_specs[block]["depends_on"]=="STAGE_INPUT"):
+                    f_out.write(f"  {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
             f_out.write("\n")
 
         # outputs
@@ -332,7 +342,13 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             f_out.write(f"    in:\n")
             f_out.write("      pipeline_path: pipeline_path\n")
             for input in block_specs[block]["inputs"].keys():
-                f_out.write(f"      {input}: {block}.{input}\n")
+                if input=="data":
+                    if blk["depends_on"]=="STAGE_INPUT":
+                        f_out.write(f"      data: {block}.data\n")
+                    else:
+                        f_out.write(f"      data: {blk['depends_on']}/{blk['depends_on']}.output\n")
+                else:
+                    f_out.write(f"      {input}: {block}.{input}\n")
             if block_specs[block]["has_output"]:
                 f_out.write(f"    out: [{block}.output]\n")
             else:
@@ -412,19 +428,26 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             print(stage_config.keys(), "\n")
             f_out.write(f"# block \"{block}\"\n")
             for inp in detailed_input[block]:
-                if inp.upper() in stage_config.keys():
-                    value = stage_config[inp.upper()]
-                elif inp=="output":
-                    value = f"\"{block}.{stage_config['NEO_FORMAT']}\""
+                write = True
+                if inp=="data":
+                    if blk["depends_on"]=="STAGE_INPUT":
+                        value = f"\n    class: File\n    location: \"{stage_input}\""
+                    else:
+                        write = False
+                elif inp=="original_data":
+                    value = f"\n    class: File\n    location: \"{block}.{stage_config['NEO_FORMAT']}\""
                 elif inp=="t_start":
                     value = stage_config["PLOT_TSTART"]
                 elif inp=="t_stop":
                     value = stage_config["PLOT_TSTOP"]
                 elif inp=="channels" and "PLOT_CHANNELS" in stage_config.keys():
                     value = stage_config["PLOT_CHANNELS"]
+                elif inp.upper() in stage_config.keys():
+                    value = stage_config[inp.upper()]
                 else:
                     value = None
-                f_out.write(f"{block}.{inp}: {value}\n")
+                if write:
+                    f_out.write(f"{block}.{inp}: {value}\n")
             f_out.write("\n")
 
     return
