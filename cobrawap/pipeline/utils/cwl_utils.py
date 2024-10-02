@@ -26,7 +26,7 @@ def pythontype_to_cwltype(arg):
     elif arg["type"] is float:
         cwl_type = "float"
     elif arg["type"] is Path:
-        cwl_type = "File"
+        cwl_type = "string"
     else:
         cwl_type = "Any"
     if arg["dest"] in ["data", "original_data"]:
@@ -420,34 +420,62 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
         f_out.write("# stage input\n")
         f_out.write("data:\n")
         f_out.write("    class: File\n")
-        f_out.write(f"    location: {stage_input}\n\n")
-        for b,blk in enumerate(block_list):
-            block = blk["name"]
-            print(block)
-            print(detailed_input[block])
-            print(stage_config.keys(), "\n")
+        f_out.write(f"    location: \"{stage_input}\"\n\n")
+        for block in block_specs.keys():
+            blk = block_specs[block]
+            #print(detailed_input[block])
+            #print(stage_config.keys(), "\n")
             f_out.write(f"# block \"{block}\"\n")
-            for inp in detailed_input[block]:
+            for key in blk["inputs"].keys():
                 write = True
-                if inp=="data":
+                # General behaviour
+                if key=="data":
                     if blk["depends_on"]=="STAGE_INPUT":
                         value = f"\n    class: File\n    location: \"{stage_input}\""
                     else:
                         write = False
-                elif inp=="original_data":
+                elif key=="original_data":
                     value = f"\n    class: File\n    location: \"{block}.{stage_config['NEO_FORMAT']}\""
-                elif inp=="t_start":
+                elif key=="output":
+                    value = f"\"{block}.{stage_config['NEO_FORMAT']}\""
+                elif key=="output_img":
+                    value = f"\"{block}.{stage_config['PLOT_FORMAT']}\""
+                elif key=="output_array":
+                    value = f"\"{block}.npy\""
+                elif key=="t_start":
                     value = stage_config["PLOT_TSTART"]
-                elif inp=="t_stop":
+                elif key=="t_stop":
                     value = stage_config["PLOT_TSTOP"]
-                elif inp=="channels" and "PLOT_CHANNELS" in stage_config.keys():
+                elif key=="channels" and "PLOT_CHANNELS" in stage_config.keys():
                     value = stage_config["PLOT_CHANNELS"]
-                elif inp.upper() in stage_config.keys():
-                    value = stage_config[inp.upper()]
+                elif key.upper() in stage_config.keys():
+                    value = stage_config[key.upper()]
+                    if blk["inputs"][key]["type"] in ["string","string?"]:
+                        value = "\"" + str(value) + "\""
+                # Block-specific behaviour
+                elif key=="img_dir":
+                    if block=="detrending":
+                        value = f"\"detrending_plots\""
+                    if block=="logMUA_estimation":
+                        value = f"\"logMUA_estimation_plots\""
+                    elif block=="plot_processed_trace":
+                        # TBD: recall t_start and t_stop from stage01 config
+                        # value = f"\"processed_trace_{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
+                        value = f"\"processed_trace\""
+                    else:
+                        value = f"\".\""
+                elif key=="img_name":
+                    if block=="detrending":
+                        value = f"\"detrending_trace_channel0.{stage_config['PLOT_FORMAT']}\""
+                    if block=="logMUA_estimation":
+                        value = f"\"logMUA_trace_channel0.{stage_config['PLOT_FORMAT']}\""
+                    elif block=="plot_processed_trace":
+                        value = f"\"processed_trace_channel0.{stage_config['PLOT_FORMAT']}\""
+                # Final clause
                 else:
                     value = None
                 if write:
-                    f_out.write(f"{block}.{inp}: {value}\n")
+                    f_out.write(f"{block}.{key}: {value}\n")
             f_out.write("\n")
 
     return

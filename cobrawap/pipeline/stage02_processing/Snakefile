@@ -109,7 +109,7 @@ use rule template as detrending with:
     params:
         params(detrending_order = config.DETRENDING_ORDER,
                plot_channels = config.PLOT_CHANNELS,
-               img_name = 'detrending_channel0.'+config.PLOT_FORMAT)
+               img_name = 'detrending_trace_channel0.'+config.PLOT_FORMAT)
     output:
         Path('{dir}') / '{rule_name}' / f'detrending.{config.NEO_FORMAT}',
         img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
@@ -171,7 +171,7 @@ use rule template as z_score with:
     params:
         params()
     output:
-        Path('{dir}') / '{rule_name}' / f'zscore.{config.NEO_FORMAT}'
+        Path('{dir}') / '{rule_name}' / f'z_score.{config.NEO_FORMAT}'
 
 use rule template as subsampling with:
     input:

@@ -21,7 +21,7 @@ CLI.add_argument("--detrending_order", nargs='?', type=int, default=1,
 CLI.add_argument("--img_dir",  nargs='?', type=str, required=True,
                  help="path of output figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
-                 default='processed_trace_channel0.png',
+                 default='detrending_trace_channel0.png',
                  help='example filename for channel 0')
 CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=None,
                  help="list of channels to plot")
