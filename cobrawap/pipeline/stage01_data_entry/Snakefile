@@ -12,9 +12,9 @@ config.DATA_NAME = list(config.DATA_SETS.keys())[0]
 use rule template_all as all with:
     input:
         check = OUTPUT_DIR / f'{config.DATA_NAME}.check',
-        img = OUTPUT_DIR / f'{config.DATA_NAME}' 
+        img = OUTPUT_DIR / f'{config.DATA_NAME}'
                          / f'trace_{config.DATA_NAME}.{config.PLOT_FORMAT}',
-        data = OUTPUT_DIR / f'{config.DATA_NAME}' 
+        data = OUTPUT_DIR / f'{config.DATA_NAME}'
                           / f'{config.DATA_NAME}.{config.NEO_FORMAT}',
         # configfile = Path('configs') / f'config_{config.PROFILE}.yaml'
 
@@ -34,9 +34,9 @@ use rule template as plot_traces with:
     params:
         params(plot_tstart = config.PLOT_TSTART,
                plot_tstop = config.PLOT_TSTOP,
-               channels = config.PLOT_CHANNELS)
+               plot_channels = config.PLOT_CHANNELS)
     output:
-        img = Path('{dir}') / '{data_name}' / f'trace_{{data_name}}.{config.PLOT_FORMAT}'
+        output_img = Path('{dir}') / '{data_name}' / f'trace_{{data_name}}.{config.PLOT_FORMAT}'
 
 
 def curation_script(w):

@@ -15,7 +15,7 @@ from cmd_utils import (
 )
 from cwl_utils import (
     stage_block_list,
-    write_wf_file
+    write_wf_files
 )
 
 CLI = argparse.ArgumentParser()
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     myenv["PYTHONPATH"] = ":".join(sys.path)
 
     """
-    
+
     try:
         # Here the list of blocks is built, ordered according to user directives
         """
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             with working_directory(pipeline_path):
                 subprocess.run(cwl_cl, env=myenv)
         """
-        write_wf_file(stage, args.stage_input, args.configfile)
+        write_wf_files(stage, args.stage_input, args.configfile)
 
     except Exception as exc:
         raise exc

@@ -21,13 +21,13 @@ from utils.parse import (
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output", nargs='?', type=Path, required=True,
-                 help="path of output figure")
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
+                 help="path of output image")
 CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
 CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
-CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
+CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=0,
                  help="list of channels to plot")
 
 def plot_traces(asig, channels):
@@ -73,4 +73,4 @@ if __name__ == '__main__':
                       lazy=True, channel_indexes=channels)
 
     ax = plot_traces(asig, channels)
-    save_plot(args.output)
+    save_plot(args.output_img)

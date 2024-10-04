@@ -95,7 +95,10 @@ def write_block_yaml(file_path, block_args):
             if key=="data":
                 data_path = Path(arg_dict["data"]).expanduser().resolve()
                 f_out.write("data:\n")
-                f_out.write("  class: File\n")
+                if os.path.isfile(data_path):
+                    f_out.write("  class: File\n")
+                elif os.path.isdir(data_path):
+                    f_out.write("  class: Directory\n")
                 f_out.write(f"  location: {data_path}\n")
             elif isinstance(arg_dict[key],list):
                 f_out.write(f"{key}:\n")
@@ -169,7 +172,7 @@ def stage_block_list(stage, stage_config_path):
         case "stage01_data_entry":
             curate_block = Path(stage_config["CURATION_SCRIPT"]).stem
             block_list = [{"name": curate_block,
-                           "depends_on": "STAGE_INPUT"},
+                           "depends_on": "RAW_DATA"},
                           {"name": "check_input",
                            "depends_on": curate_block},
                           {"name": "plot_traces",
@@ -237,8 +240,8 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "cwlVersion: v1.2\n" + \
             "class: Workflow\n\n"
 
-#def write_wf_file(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
-def write_wf_file(stage, stage_config_path, stage_input=None):
+#def write_wf_files(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
+def write_wf_files(stage, stage_config_path, stage_input=None):
 
     stage_path = pipeline_path / stage
 
@@ -314,7 +317,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             block = blk["name"]
             f_out.write(f"  # Block \'{block}\'\n")
             for input in block_specs[block]["inputs"].keys():
-                if input!="data" or (input=="data" and block_specs[block]["depends_on"]=="STAGE_INPUT"):
+                if input!="data" or (input=="data" and block_specs[block]["depends_on"] in ["RAW_DATA","STAGE_INPUT"]):
                     f_out.write(f"  {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
             f_out.write("\n")
 
@@ -344,7 +347,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             f_out.write("      pipeline_path: pipeline_path\n")
             for input in block_specs[block]["inputs"].keys():
                 if input=="data":
-                    if blk["depends_on"]=="STAGE_INPUT":
+                    if blk["depends_on"] in ["RAW_DATA","STAGE_INPUT"]:
                         f_out.write(f"      data: {block}.data\n")
                     else:
                         f_out.write(f"      data: {blk['depends_on']}/{blk['depends_on']}.output\n")
@@ -418,10 +421,11 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
         f_out.write(f"STAGE_NAME: \"{stage_path.stem}\"\n\n")
         f_out.write(f"pipeline_path: \"{Path(get_setting('pipeline_path'))}\"\n\n")
         # TBD: check what happens with stage_input when stage_idx==0
-        f_out.write("# stage input\n")
-        f_out.write("data:\n")
-        f_out.write("    class: File\n")
-        f_out.write(f"    location: \"{stage_input}\"\n\n")
+        if stage_path.stem!="stage01_data_entry":
+            f_out.write("# stage input\n")
+            f_out.write("data:\n")
+            f_out.write("    class: File\n")
+            f_out.write(f"    location: \"{stage_input}\"\n\n")
         for block in block_specs.keys():
             blk = block_specs[block]
             #print(detailed_input[block])
@@ -431,7 +435,12 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                 write = True
                 # General behaviour
                 if key=="data":
-                    if blk["depends_on"]=="STAGE_INPUT":
+                    if blk["depends_on"]=="RAW_DATA":
+                        dataset_name = list(stage_config['DATA_SETS'].keys())[0]
+                        raw_data = stage_config['DATA_SETS'][dataset_name]
+                        raw_data = Path(raw_data).expanduser().resolve()
+                        value = f"\n    class: File\n    location: \"{raw_data}\""
+                    elif blk["depends_on"]=="STAGE_INPUT":
                         value = f"\n    class: File\n    location: \"{stage_input}\""
                     else:
                         write = False
@@ -447,8 +456,13 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                     value = "\"" + str(stage_config["PLOT_CHANNELS"]) + "\""
                 elif key.upper() in stage_config.keys():
                     value = stage_config[key.upper()]
-                    if blk["inputs"][key]["type"] in ["string","string?"] or blk["inputs"][key]["nargs"]=="+":
+                    if blk["inputs"][key]["type"] in ["string","string?"]:
                         value = "\"" + str(value) + "\""
+                    if blk["inputs"][key]["nargs"]=="+":
+                        if value not in [None, 'None', "None"]:
+                            value = str(value).replace(", ", ",")
+                        else:
+                            value = "[]"
                 # Block-specific behaviour
                 elif key=="img_dir":
                     if block=="detrending":
@@ -457,8 +471,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                         value = f"\"logMUA_estimation_plots\""
                     elif block=="plot_processed_trace":
                         # TBD: recall t_start and t_stop from stage01 config
-                        # value = f"\"processed_trace_{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
-                        value = f"\"processed_trace\""
+                        value = f"\"processed_trace_{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
                     else:
                         value = f"\".\""
                 elif key=="img_name":
