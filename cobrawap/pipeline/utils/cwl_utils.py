@@ -33,7 +33,7 @@ def pythontype_to_cwltype(arg):
         cwl_type = "File"
     #if arg["dest"] in ["img_dir"]:
     #    cwl_type = "Directory"
-    if cwl_type!="Any" and arg["nargs"]=="+":
+    if arg["nargs"]=="+":
         cwl_type += "[]"
     if not arg["required"]:
         cwl_type += "?"
@@ -287,6 +287,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
             block_specs[block]["inputs"] = {}
             for input in block_inputs:
                 block_specs[block]["inputs"][input] = yaml_block_file["inputs"][input]
+                block_specs[block]["inputs"][input]["nargs"] = "+" if "[]" in yaml_block_file["inputs"][input]["type"] else "?"
                 detailed_input[block].append(input)
                 global_input_list.append({"block_name": block,
                                           "input_name": input,
@@ -435,28 +436,24 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                     else:
                         write = False
                 elif key=="original_data":
-                    value = f"\n    class: File\n    location: \"{block}.{stage_config['NEO_FORMAT']}\""
+                    value = f"\n    class: File\n    location: \"{stage_input}\""
                 elif key=="output":
                     value = f"\"{block}.{stage_config['NEO_FORMAT']}\""
                 elif key=="output_img":
                     value = f"\"{block}.{stage_config['PLOT_FORMAT']}\""
                 elif key=="output_array":
                     value = f"\"{block}.npy\""
-                elif key=="t_start":
-                    value = stage_config["PLOT_TSTART"]
-                elif key=="t_stop":
-                    value = stage_config["PLOT_TSTOP"]
                 elif key=="channels" and "PLOT_CHANNELS" in stage_config.keys():
-                    value = stage_config["PLOT_CHANNELS"]
+                    value = "\"" + str(stage_config["PLOT_CHANNELS"]) + "\""
                 elif key.upper() in stage_config.keys():
                     value = stage_config[key.upper()]
-                    if blk["inputs"][key]["type"] in ["string","string?"]:
+                    if blk["inputs"][key]["type"] in ["string","string?"] or blk["inputs"][key]["nargs"]=="+":
                         value = "\"" + str(value) + "\""
                 # Block-specific behaviour
                 elif key=="img_dir":
                     if block=="detrending":
                         value = f"\"detrending_plots\""
-                    if block=="logMUA_estimation":
+                    elif block=="logMUA_estimation":
                         value = f"\"logMUA_estimation_plots\""
                     elif block=="plot_processed_trace":
                         # TBD: recall t_start and t_stop from stage01 config
@@ -467,7 +464,7 @@ def write_wf_file(stage, stage_config_path, stage_input=None):
                 elif key=="img_name":
                     if block=="detrending":
                         value = f"\"detrending_trace_channel0.{stage_config['PLOT_FORMAT']}\""
-                    if block=="logMUA_estimation":
+                    elif block=="logMUA_estimation":
                         value = f"\"logMUA_trace_channel0.{stage_config['PLOT_FORMAT']}\""
                     elif block=="plot_processed_trace":
                         value = f"\"processed_trace_channel0.{stage_config['PLOT_FORMAT']}\""

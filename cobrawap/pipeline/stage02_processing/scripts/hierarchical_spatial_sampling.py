@@ -24,9 +24,9 @@ CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
 CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
                  help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
 CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
-                 help="signal to noise ratio evalutaion method", default='shapiro')
+                 help="signal-to-noise ratio evaluation method", default='shapiro')
 CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
-                 help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+                 help="threshold of non-informative nodes percentage if voting method is selected", default=0.5)
 CLI.add_argument("--output_array", nargs='?', type=none_or_str,
                  help="path of output numpy array", default=None)
 
