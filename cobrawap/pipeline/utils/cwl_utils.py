@@ -12,6 +12,8 @@ from cmd_utils import (
 from pathlib import Path
 
 pipeline_path = Path(get_setting("pipeline_path"))
+config_path = Path(get_setting("config_path"))
+output_path = Path(get_setting("output_path"))
 
 myenv = os.environ.copy()
 myenv["PYTHONPATH"] = ":".join(sys.path)
@@ -67,50 +69,91 @@ def parse_CLI_args(block_path):
         arg["type"] = pythontype_to_cwltype(arg)
     return args
 
-def write_block_yaml(file_path, block_args):
-    print(f"block_args BEFORE: {block_args}")
-    block_args = [[_] if "=" not in str(_) else str(_).split("=") for _ in block_args]
-    block_args = [arg for _ in block_args for arg in _]
-    print(f"block_args AFTER: {block_args}")
-    #block_name = file_path.stem
-    arg_dict = {}
-    key = None
-    for i,arg in enumerate(block_args):
-        # loop designed for CLI args
-        if str(arg).startswith("--"):
-            key = arg[2:]
-            key_count = 0
-        else:
-            if key and key_count == 0:
-                arg_dict[key] = arg
-                key_count += 1
-            elif key and key_count == 1:
-                arg_dict[key] = [arg_dict[key], arg]
-                key_count += 1
-            elif key and key_count > 1:
-                arg_dict[key].append(arg)
-                key_count += 1
-    with open(file_path, "w+") as f_out:
-        for key in arg_dict.keys():
-            if key=="data":
-                data_path = Path(arg_dict["data"]).expanduser().resolve()
-                f_out.write("data:\n")
-                if os.path.isfile(data_path):
-                    f_out.write("  class: File\n")
-                elif os.path.isdir(data_path):
-                    f_out.write("  class: Directory\n")
-                f_out.write(f"  location: {data_path}\n")
-            elif isinstance(arg_dict[key],list):
-                f_out.write(f"{key}:\n")
-                for val in arg_dict[key]:
+def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_path=None):
+
+    stage_path = pipeline_path / stage
+
+    print(f"\nWHO: {stage} - {block}\n")
+
+    block_args_from_script = parse_CLI_args(stage_path / "scripts" / f"{block}.py")
+    for arg in block_args_from_script:
+        if "name" not in arg.keys():
+            arg["name"] = arg["dest"]
+        arg["value"] = None
+
+    if block_args_from_CLI:
+        # config parameters are parsed from CLI args
+        block_args_from_CLI = [[_] if "=" not in str(_) else str(_).split("=") for _ in block_args_from_CLI]
+        block_args_from_CLI = [arg for _ in block_args_from_CLI for arg in _]
+        arg_dict = {}
+        key = None
+        for i,arg in enumerate(block_args_from_CLI):
+            if str(arg).startswith("--"):
+                key = arg[2:]
+                key_count = 0
+            else:
+                if key and key_count == 0:
+                    arg_dict[key] = arg
+                    key_count += 1
+                elif key and key_count == 1:
+                    arg_dict[key] = [arg_dict[key], arg]
+                    key_count += 1
+                elif key and key_count > 1:
+                    arg_dict[key].append(arg)
+                    key_count += 1
+        for arg in block_args_from_script:
+            if arg["name"] in arg_dict.keys():
+                arg["value"] = arg_dict[arg["name"]]
+        if "profile" in arg_dict.keys():
+            profile = arg_dict["profile"]
+
+    elif stage_config_path:
+        # config parameters are parsed from stage-level yaml config file
+        with open(stage_config_path, "r") as f:
+            try:
+                stage_config = yaml.safe_load(f)
+            except yaml.YAMLError as exc:
+                raise exc
+        dataset_name = None
+        if "PROFILE" in stage_config.keys():
+            profile = stage_config["PROFILE"]
+        for arg in block_args_from_script:
+            if arg["name"].upper() in stage_config.keys():
+                arg["value"] = stage_config[arg["name"].upper()]
+            if arg["name"]=="raw_data" and "DATA_SETS" in stage_config.keys():
+                if isinstance(stage_config["DATA_SETS"],dict):
+                    dataset_name = list(stage_config["DATA_SETS"].keys())[0]
+                    arg["value"] = stage_config["DATA_SETS"][dataset_name]
+                else:
+                    arg["value"] = stage_config["DATA_SETS"]
+            if arg["name"]=="data_name":
+                arg["value"] = dataset_name
+
+    block_output_path = Path(output_path / profile / stage / block)
+
+    # Filling missing values
+    for arg in block_args_from_script:
+        if arg["name"]=="raw_data":
+            data_path = Path(arg["value"]).expanduser().resolve()
+            if os.path.isfile(data_path):
+                arg["value"] = f"\n    class: File\n    location: \"{data_path}\""
+            elif os.path.isdir(data_path):
+                arg["value"] = f"\n    class: Directory\n    location: \"{data_path}\""
+        elif arg["name"]=="output":
+            # TBD: output has to be reconstructed only when not passed explicitly via CLI
+            arg["value"] = f"\"{block_output_path}/{block}.{stage_config['NEO_FORMAT']}\""
+
+    with open(stage_path / "cwl_steps" / f"{block}.yaml", "w+") as f_out:
+        for arg in block_args_from_script:
+            if isinstance(arg["value"],list):
+                f_out.write(f"{arg['name']}:\n")
+                for val in arg["value"]:
                     f_out.write(f"  - {val}\n")
             else:
-                f_out.write(f"{key}: {arg_dict[key]}\n")
+                f_out.write(f"{arg['name']}: {arg['value']}\n")
         f_out.write("\n")
 
-def write_block_clt(file_path, args):
-    block_name = file_path.stem
-    with open(file_path, "w+") as f_out:
+    with open(stage_path / "cwl_steps" / f"{block}_2.cwl", "w+") as f_out:
         f_out.write("#!/usr/bin/env cwltool\n")
         f_out.write("\n")
         f_out.write("cwlVersion: v1.2\n")
@@ -130,12 +173,10 @@ def write_block_clt(file_path, args):
         f_out.write("    type: File?\n")
         f_out.write("    default:\n")
         f_out.write("      class: File\n")
-        f_out.write(f"      location: \"../scripts/{block_name}.py\"\n")
+        f_out.write(f"      location: \"../scripts/{block}.py\"\n")
         f_out.write("    inputBinding:\n")
         f_out.write("      position: 0\n")
-        for a,arg in enumerate(args):
-            if "name" not in arg.keys():
-                arg["name"] = arg["dest"]
+        for a,arg in enumerate(block_args_from_script):
             f_out.write(f"  {arg['name']}:\n")
             f_out.write(f"    type: {arg['type']}\n")
             #if not arg["required"]:
@@ -145,9 +186,9 @@ def write_block_clt(file_path, args):
             f_out.write(f"      position: {a+1}\n")
             f_out.write(f"      prefix: --{arg['name']}\n")
         f_out.write("\n")
-        if "output" in [_["name"] for _ in args]:
+        if "output" in [_["name"] for _ in block_args_from_script]:
             f_out.write("outputs:\n")
-            f_out.write(f"  {block_name}.output:\n")
+            f_out.write(f"  {block}.output:\n")
             f_out.write("    type: File\n")
             f_out.write("    outputBinding:\n")
             f_out.write("      glob: $(inputs.output)\n")
@@ -240,8 +281,8 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "cwlVersion: v1.2\n" + \
             "class: Workflow\n\n"
 
-#def write_wf_files(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
-def write_wf_files(stage, stage_config_path, stage_input=None):
+#def write_cwl_stage_files(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
+def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
 
     stage_path = pipeline_path / stage
 
@@ -264,19 +305,14 @@ def write_wf_files(stage, stage_config_path, stage_input=None):
     block_specs = {}
     for b,blk in enumerate(block_list):
 
-        # write the clt file
-        print(blk)
         block = blk["name"]
-        block_path = stage_path / "scripts" / f"{block}.py"
-        cwl_cl = ["python3", "utils/cwl_clt_parser.py", "--block", str(block_path)]
-        with working_directory(pipeline_path):
-            subprocess.run(cwl_cl, env=myenv)
+
+        write_cwl_block_files(stage, block, stage_config_path=stage_config_path)
 
         # use the clt file
         block_specs[block] = {}
         detailed_input[block] = []
-        cwl_step = stage_path / "cwl_steps" / f"{block}.cwl"
-        with open(cwl_step, "r") as f:
+        with open(stage_path / "cwl_steps" / f"{block}.cwl", "r") as f:
             try:
                 yaml_block_file = yaml.safe_load(f)
                 block_inputs = list(yaml_block_file["inputs"].keys())

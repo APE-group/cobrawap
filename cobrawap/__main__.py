@@ -36,8 +36,8 @@ from cmd_utils import (
     working_directory
 )
 from utils.cwl_utils import (
-    write_block_yaml,
-    write_wf_files
+    write_cwl_block_files,
+    write_cwl_stage_files
 )
 log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
@@ -560,7 +560,7 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         with working_directory(output_path):
             subprocess.run(housekeeping_cl)
 
-        # write the cwl workflow file
+        # build yaml and cwl workflow files
         """
         cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
                   "--configfile", f"{stage_config_path}"]
@@ -571,11 +571,11 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
             subprocess.run(cwl_cl, env=myenv)
         """
         if stage_idx==0:
-            write_wf_files(stage, stage_config_path)
+            write_cwl_stage_files(stage, stage_config_path)
         else:
-            write_wf_files(stage, stage_config_path, stage_input=stage_input)
+            write_cwl_stage_files(stage, stage_config_path, stage_input=stage_input)
 
-        # execute the cwl workflow file
+        # execute cwl workflow file
         cwl_cl = ["cwltool", str(stage_path / "workflow_NEW.cwl"), \
                   str(stage_path / "workflow_2.yaml")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
@@ -612,19 +612,11 @@ def run_block(stage=None, block=None, workflow_manager="snakemake",
 
     elif workflow_manager=="cwl":
 
-        # build the yaml file from block_args
+        # build yaml and cwl clt files
         block_args += ["--pipeline_path", pipeline_path]
-        cwl_step_dir = pipeline_path / stage / "cwl_steps"
-        write_block_yaml(str(cwl_step_dir / f"{block}.yaml"), block_args)
+        write_cwl_block_files(stage, block, block_args_from_CLI=block_args)
 
-        # build the cwl step
-        cwl_cl = ["python3", "utils/cwl_clt_parser.py", \
-                  "--block", str(block_dir / f"{block}.py")]
-        log.info(f'Executing `{" ".join(cwl_cl)}`')
-        with working_directory(pipeline_path):
-            subprocess.run(cwl_cl, env=myenv)
-
-        # execute the block
+        # execute block
         cwl_cl = ["cwltool", str(cwl_step_dir / f"{block}.cwl"), \
                   str(cwl_step_dir / f"{block}.yaml")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')

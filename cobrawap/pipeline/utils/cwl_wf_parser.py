@@ -15,7 +15,7 @@ from cmd_utils import (
 )
 from cwl_utils import (
     stage_block_list,
-    write_wf_files
+    write_cwl_stage_files
 )
 
 CLI = argparse.ArgumentParser()
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             with working_directory(pipeline_path):
                 subprocess.run(cwl_cl, env=myenv)
         """
-        write_wf_files(stage, args.stage_input, args.configfile)
+        write_cwl_stage_files(stage, args.configfile, args.stage_input)
 
     except Exception as exc:
         raise exc
