@@ -52,7 +52,7 @@ def plot_traces(asig, channels):
             f'ANNOTATIONS FOR CHANNEL(s) {channels} \n'\
           +  '\n ANNOTATIONS:\n' + '\n'.join(annotations) \
           +  '\n\n ARRAY ANNOTATIONS:\n' + '\n'.join(array_annotations) +'\n' \
-          + f' t_start: {asig.plot_tstart}; t_stop: {asig.plot_tstop} \n' \
+          + f' t_start: {asig.t_start}; t_stop: {asig.t_stop} \n' \
           + f' dimensions(x,y): {dim_x}, {dim_y}')
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     asig = load_neo(args.data, 'analogsignal', lazy=True)
 
-    channels = parse_plot_channels(args.channels, args.data)
+    channels = parse_plot_channels(args.plot_channels, args.data)
 
     asig = time_slice(asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
                       lazy=True, channel_indexes=channels)

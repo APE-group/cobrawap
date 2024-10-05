@@ -73,8 +73,6 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
 
     stage_path = pipeline_path / stage
 
-    print(f"\nWHO: {stage} - {block}\n")
-
     block_args_from_script = parse_CLI_args(stage_path / "scripts" / f"{block}.py")
     for arg in block_args_from_script:
         if "name" not in arg.keys():
@@ -136,14 +134,17 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
         if arg["name"]=="raw_data":
             data_path = Path(arg["value"]).expanduser().resolve()
             if os.path.isfile(data_path):
+                arg["type"] = "File"
                 arg["value"] = f"\n    class: File\n    location: \"{data_path}\""
             elif os.path.isdir(data_path):
+                arg["type"] = "Directory"
                 arg["value"] = f"\n    class: Directory\n    location: \"{data_path}\""
         elif arg["name"]=="output":
             # TBD: output has to be reconstructed only when not passed explicitly via CLI
             arg["value"] = f"\"{block_output_path}/{block}.{stage_config['NEO_FORMAT']}\""
 
     with open(stage_path / "cwl_steps" / f"{block}.yaml", "w+") as f_out:
+        f_out.write(f"pipeline_path: \"{pipeline_path}\"\n\n")
         for arg in block_args_from_script:
             if isinstance(arg["value"],list):
                 f_out.write(f"{arg['name']}:\n")
@@ -205,7 +206,7 @@ def stage_block_list(stage, stage_config_path):
         except yaml.YAMLError as exc:
             raise exc
 
-    block_dir = Path(get_setting("pipeline_path")) / stage / "scripts"
+    block_dir = pipeline_path / stage / "scripts"
     available_blocks = get_available_blocks(block_dir)
 
     match stage:
@@ -455,7 +456,7 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
     yaml_path = stage_path / "workflow_2.yaml"
     with open(yaml_path, "w+") as f_out:
         f_out.write(f"STAGE_NAME: \"{stage_path.stem}\"\n\n")
-        f_out.write(f"pipeline_path: \"{Path(get_setting('pipeline_path'))}\"\n\n")
+        f_out.write(f"pipeline_path: \"{pipeline_path}\"\n\n")
         # TBD: check what happens with stage_input when stage_idx==0
         if stage_path.stem!="stage01_data_entry":
             f_out.write("# stage input\n")
@@ -464,19 +465,17 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
             f_out.write(f"    location: \"{stage_input}\"\n\n")
         for block in block_specs.keys():
             blk = block_specs[block]
-            #print(detailed_input[block])
-            #print(stage_config.keys(), "\n")
             f_out.write(f"# block \"{block}\"\n")
             for key in blk["inputs"].keys():
                 write = True
                 # General behaviour
+                if key=="raw_data" and blk["depends_on"]=="RAW_DATA":
+                    dataset_name = list(stage_config['DATA_SETS'].keys())[0]
+                    raw_data = stage_config['DATA_SETS'][dataset_name]
+                    raw_data = Path(raw_data).expanduser().resolve()
+                    value = f"\n    class: File\n    location: \"{raw_data}\""
                 if key=="data":
-                    if blk["depends_on"]=="RAW_DATA":
-                        dataset_name = list(stage_config['DATA_SETS'].keys())[0]
-                        raw_data = stage_config['DATA_SETS'][dataset_name]
-                        raw_data = Path(raw_data).expanduser().resolve()
-                        value = f"\n    class: File\n    location: \"{raw_data}\""
-                    elif blk["depends_on"]=="STAGE_INPUT":
+                    if blk["depends_on"]=="STAGE_INPUT":
                         value = f"\n    class: File\n    location: \"{stage_input}\""
                     else:
                         write = False
