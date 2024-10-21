@@ -487,7 +487,7 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
         if last_output is not None:
             f_out.write("  final_output:\n")
             f_out.write("    type: File\n")
-            f_out.write("    outputSource: {last_output}\n")
+            f_out.write(f"    outputSource: {last_output}\n")
         f_out.write("\n")
         f_out.write("steps:\n")
         f_out.write("\n")
