@@ -36,7 +36,7 @@ use rule template as plot_traces with:
                plot_tstop = config.PLOT_TSTOP,
                plot_channels = config.PLOT_CHANNELS)
     output:
-        img = Path('{dir}') / '{data_name}' / f'trace_{{data_name}}.{config.PLOT_FORMAT}'
+        output_img = Path('{dir}') / '{data_name}' / f'trace_{{data_name}}.{config.PLOT_FORMAT}'
 
 
 def curation_script(w):

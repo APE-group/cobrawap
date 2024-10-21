@@ -18,16 +18,16 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
                  help="path of output image", default=None)
 CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
                  help="number of non informative macro-pixel to prune branch", default=2)
 CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
                  help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
 CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
-                 help="signal to noise ratio evalutaion method", default='shapiro')
+                 help="signal-to-noise ratio evaluation method", default='shapiro')
 CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
-                 help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+                 help="threshold of non-informative nodes percentage if voting method is selected", default=0.5)
 CLI.add_argument("--output_array", nargs='?', type=none_or_str,
                  help="path of output numpy array", default=None)
 
@@ -286,7 +286,8 @@ if __name__ == '__main__':
     y_coord_cm = np.empty([len(MacroPixelCoords)]) # new y coord
 
     for px_idx, px in enumerate(MacroPixelCoords): # for each new pixel
-        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]], axis = (0,1))
+        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2],
+                                       px[1]:px[1]+px[2]], axis = (0,1))
         x_coord_cm[px_idx], y_coord_cm[px_idx] = ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
                                  imgseq.spatial_scale)
 
@@ -306,7 +307,8 @@ if __name__ == '__main__':
     new_asig = asig.duplicate_with_new_data(signal.T)
     #new_asig.array_annotations = asig.array_annotations
     new_asig.array_annotations.update(new_evt_ann)
-    new_asig.description += "Non homogeneous downsampling obtained by cheching the signal to noise ratio of macropixels ad different size."
+    new_asig.description += "Non homogeneous downsampling obtained by checking " +
+                            "the signal-to-noise ratio of macropixels at different sizes."
     block.segments[0].analogsignals[0] = new_asig
 
     write_neo(args.output, block)

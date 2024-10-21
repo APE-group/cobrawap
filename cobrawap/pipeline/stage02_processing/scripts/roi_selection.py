@@ -11,7 +11,7 @@ from pathlib import Path
 import neo
 import os
 from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import none_or_str, str_to_bool
+from utils.parse import str_to_bool
 from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
 CLI = argparse.ArgumentParser()
@@ -19,8 +19,8 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str,
-                 help="path of output image", default=None)
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
+                 help="path of output image")
 CLI.add_argument("--intensity_threshold", nargs='?', type=float,
                  help="threshold for mask [0,1]", default=0.5)
 CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True,

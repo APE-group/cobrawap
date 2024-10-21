@@ -15,7 +15,7 @@ from utils.parse import none_or_float
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output", nargs='?', type=Path, required=True,
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
                  help="path of output figure")
 CLI.add_argument("--highpass_frequency", nargs='?', type=none_or_float,
                  default='None', help="lower bound of frequency band in Hz")
@@ -61,4 +61,4 @@ if __name__ == '__main__':
              highpass_frequency=args.highpass_frequency,
              lowpass_frequency=args.lowpass_frequency)
 
-    save_plot(args.output)
+    save_plot(args.output_img)
