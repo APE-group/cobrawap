@@ -46,7 +46,7 @@ use rule template as plot_processed_traces with:
                img_name='processed_trace_channel0.'+config.PLOT_FORMAT,
                original_data=config.STAGE_INPUT)
     output:
-        img_dir = directory(OUTPUT_DIR / 'processed_traces_{t_start}-{t_stop}s')
+        output_img_dir = directory(OUTPUT_DIR / 'processed_traces_{t_start}-{t_stop}s')
 
 use rule template as plot_power_spectrum with:
     input:
@@ -107,12 +107,12 @@ use rule template as detrending with:
         data = input_file,
         script = SCRIPTS / 'detrending.py'
     params:
-        params(order = config.DETRENDING_ORDER,
+        params(detrending_order = config.DETRENDING_ORDER,
                plot_channels = config.PLOT_CHANNELS,
-               img_name = 'detrending_channel0.'+config.PLOT_FORMAT)
+               img_name = 'detrending_trace_channel0.'+config.PLOT_FORMAT)
     output:
         Path('{dir}') / '{rule_name}' / f'detrending.{config.NEO_FORMAT}',
-        img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
+        output_img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
 
 use rule template as frequency_filter with:
     input:
@@ -151,7 +151,7 @@ use rule template as logMUA_estimation with:
                img_name = 'logMUA_trace_channel0.'+config.PLOT_FORMAT)
     output:
         Path('{dir}') / '{rule_name}' / f'logMUA_estimation.{config.NEO_FORMAT}',
-        img_dir =  directory(Path('{dir}') / '{rule_name}' / 'logMUA_estimation_plots')
+        output_img_dir =  directory(Path('{dir}') / '{rule_name}' / 'logMUA_estimation_plots')
 
 use rule template as phase_transform with:
     input:
@@ -171,7 +171,7 @@ use rule template as z_score with:
     params:
         params()
     output:
-        Path('{dir}') / '{rule_name}' / f'zscore.{config.NEO_FORMAT}'
+        Path('{dir}') / '{rule_name}' / f'z_score.{config.NEO_FORMAT}'
 
 use rule template as subsampling with:
     input:

@@ -53,7 +53,7 @@ use rule template_plus_plot_script as trigger_clustering with:
                min_samples=config.MIN_SAMPLES_PER_WAVE)
     output:
         Path('{dir}') / 'trigger_clustering' / config.STAGE_OUTPUT,
-        img = Path('{dir}') / 'trigger_clustering' 
+        img = Path('{dir}') / 'trigger_clustering'
                             / f'wave_cluster.{config.PLOT_FORMAT}'
 
 #### ADDITIONAL PROPERTIES ####

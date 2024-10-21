@@ -195,7 +195,7 @@ def imagesequence_to_analogsignal(imgseq):
 
             if not (x_coords == asig.array_annotations['x_coords']).all() \
             or not (y_coords == asig.array_annotations['y_coords']).all():
-                raise IndexError("Transformation of array_annotations for the " 
+                raise IndexError("Transformation of array_annotations for the "
                                + "AnalogSignal went wrong!")
         except ValueError:
             warnings.warn("ImageSequence <-> AnalogSignal transformation "
@@ -298,7 +298,7 @@ def add_empty_sites_to_analogsignal(asig):
             new_values = new_values.magnitude * values.units
         new_asig.array_annotations[key] = new_values
 
-    new_asig.array_annotate(x_coords=np.append(x_coords, x_nan_coords), 
+    new_asig.array_annotate(x_coords=np.append(x_coords, x_nan_coords),
                             y_coords=np.append(y_coords, y_nan_coords))
 
     return new_asig

@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     imgseq_fluo = analogsignal_to_imagesequence(block.segments[0].analogsignals[0])
     imgseq_refl = analogsignal_to_imagesequence(block.segments[0].analogsignals[1])
-    
+
     imgseq_corrected = hemodyn_correction(imgseq_fluo, imgseq_refl)
 
     asig_corrected = imagesequence_to_analogsignal(imgseq_corrected)
@@ -90,4 +90,3 @@ if __name__ == '__main__':
     block.segments[0].analogsignals[0] = asig_corrected
 
     write_neo(args.output, block)
-
