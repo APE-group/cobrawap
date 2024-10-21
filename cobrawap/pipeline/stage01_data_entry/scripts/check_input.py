@@ -8,7 +8,10 @@ import numpy as np
 import argparse
 from pathlib import Path
 from utils.io_utils import load_neo
-from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
+from utils.neo_utils import (
+    analogsignal_to_imagesequence,
+    imagesequence_to_analogsignal
+)
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,

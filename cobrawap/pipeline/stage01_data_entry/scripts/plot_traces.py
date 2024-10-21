@@ -7,14 +7,21 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.io_utils import load_neo, save_plot
+from utils.io_utils import (
+    load_neo,
+    save_plot
+)
 from utils.neo_utils import time_slice
-from utils.parse import parse_plot_channels, none_or_int, none_or_float
+from utils.parse import (
+    none_or_float,
+    none_or_int,
+    parse_plot_channels
+)
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output", nargs='?', type=Path, required=True,
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
                  help="path of output figure")
 CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
@@ -66,4 +73,4 @@ if __name__ == '__main__':
                       lazy=True, channel_indexes=channels)
 
     ax = plot_traces(asig, channels)
-    save_plot(args.output)
+    save_plot(args.output_img)

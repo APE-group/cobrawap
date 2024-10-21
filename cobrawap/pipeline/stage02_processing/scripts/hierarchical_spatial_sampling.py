@@ -17,16 +17,16 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
                  help="path of output image", default=None)
 CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
                  help="number of non informative macro-pixel to prune branch", default=2)
 CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
                  help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
 CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
-                 help="signal to noise ratio evalutaion method", default='shapiro')
+                 help="signal-to-noise ratio evaluation method", default='shapiro')
 CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
-                 help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+                 help="threshold of non-informative nodes percentage if voting method is selected", default=0.5)
 CLI.add_argument("--output_array", nargs='?', type=none_or_str,
                  help="path of output numpy array", default=None)
 
@@ -77,11 +77,11 @@ def NewLayer(l, Input_image, evaluation_method):
     # third leaf
     cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, evaluation_method)
     new_list.append([l[0]+l[2]//2, l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
-    
+
     # fourth leaf
     cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, evaluation_method)
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
-    
+
     return(new_list)
 
 def CreateMacroPixel(Input_image, exit_method = 'consecutive', signal_eval_method = 'shapiro', threshold = 0.5, n_bad = 2):
@@ -97,7 +97,7 @@ def CreateMacroPixel(Input_image, exit_method = 'consecutive', signal_eval_metho
         # create node's children
         Children = NewLayer(NodeList[0], Input_image, evaluation_method = signal_eval_method)
         NodeList.pop(0) # delete investigated node
-       
+
         #check wether exit condition is met
         if exit_method == 'voting':
             # check how many of children are "bad"
@@ -163,17 +163,17 @@ if __name__ == '__main__':
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
     block = analogsignal_to_imagesequence(block)
-    
+
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
 
     # pad image sequences with nans to make it divisible by 2
-    N_pad = next_power_of_2(max(dim_x, dim_y)) 
-    padded_image_seq = np.pad(imgseq_array, 
-                         pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2), 
-                                      ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2), 
+    N_pad = next_power_of_2(max(dim_x, dim_y))
+    padded_image_seq = np.pad(imgseq_array,
+                         pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2),
+                                      ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2),
                                       (0,0)], mode = 'constant', constant_values = np.nan)
     # tree search for the best macro-pixel dimension
     # List con x,y,L,flag,x_parent, y_parent, L_parent
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         save_plot(args.output_img)
 
     signal = np.empty([len(MacroPixelCoords), dim_t]) #save data as analogsignal
-    coordinates = np.empty([len(MacroPixelCoords), 3]) #pixel coordinates [x,y,L] to retrieve 
+    coordinates = np.empty([len(MacroPixelCoords), 3]) #pixel coordinates [x,y,L] to retrieve
                                                        # original one
     ch_id = np.empty([len(MacroPixelCoords)]) # new channel id
     x_coord = np.empty([len(MacroPixelCoords)]) # new x coord
@@ -196,8 +196,8 @@ if __name__ == '__main__':
     y_coord_cm = np.empty([len(MacroPixelCoords)]) # new y coord
 
     for px_idx, px in enumerate(MacroPixelCoords): # for each new pixel
-        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2], 
-                                                     px[1]:px[1]+px[2]], 
+        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2],
+                                                     px[1]:px[1]+px[2]],
                                     axis = (0,1))
         x_coord_cm[px_idx], y_coord_cm[px_idx] = ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
                                  imgseq.spatial_scale)

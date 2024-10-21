@@ -298,7 +298,7 @@ def params(*args, config=None, **kwargs):
                                    f"in favor of '{item_dict[key]}'")
 
             param_dict.update(item_dict)
-        return dict_to_cla(param_dict) 
+        return dict_to_cla(param_dict)
 
     return add_output_and_wildcards_to_args
 

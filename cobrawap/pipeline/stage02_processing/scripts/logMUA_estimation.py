@@ -22,10 +22,10 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img_dir", nargs='?', type=Path,
-                 default=None, help="path of figure directory")
+CLI.add_argument("--output_img_dir", nargs='?', type=Path, required=True,
+                 help="path of figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
-                 default='minima_channel0.png',
+                 default='logMUA_trace_channel0.png',
                  help='example image filename for channel 0')
 CLI.add_argument("--highpass_frequency", nargs='?', type=float, default=200,
                  help="lower bound of frequency band in Hz")
@@ -180,7 +180,8 @@ if __name__ == '__main__':
                                    t_start=args.plot_tstart,
                                    t_stop=args.plot_tstop,
                                    channel=channel)
-            output_path = args.output_img_dir / args.img_name.replace('_channel0', f'_channel{channel}')
+            output_path = os.path.join(args.output_img_dir,
+                                       args.img_name.replace('_channel0', f'_channel{channel}'))
             save_plot(output_path)
 
     asig.description += "Estimated logMUA signal [{}, {}] Hz ({}). "\
