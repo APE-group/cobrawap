@@ -1,47 +1,25 @@
+"""
 # Stage 03 Trigger Detection
-import os
+"""
+
 from pathlib import Path
-import sys
-utils_path = str((Path() / '..').resolve())
-sys.path.append(utils_path)
-from utils.parse import check_plot_boundaries, parse_plot_channels
 
 configfile: Path('configs') / 'config_template.yaml'
 include: Path() / '..' / 'utils' / 'Snakefile'
 
-config.PLOT_TSTART = check_plot_boundaries(config.STAGE_INPUT, config.PLOT_TSTART, 't_start')
-config.PLOT_TSTOP = check_plot_boundaries(config.STAGE_INPUT, config.PLOT_TSTOP, 't_stop')
-config.PLOT_CHANNELS = parse_plot_channels(config.PLOT_CHANNELS, config.STAGE_INPUT)
-
 #### Housekeeping ####
 
-def locate(str_list, string):
-    if string in str_list:
-        return [i for i, el in enumerate(str_list) if el == string][0]
-    else:
-        raise ValueError("Can't find rule '{}'! Please check the spelling \
-                          and the config file.".format(string))
-
 def filtered_triggers(wildcards):
-    rule_list = config.TRIGGER_FILTER
     default_input = OUTPUT_DIR / config.DETECTION_BLOCK / config.STAGE_OUTPUT
-    output = lambda i: OUTPUT_DIR / rule_list[i-1] / f'{rule_list[i-1]}.{config.NEO_FORMAT}'
-    if hasattr(wildcards, 'rule_name'):
-        idx = locate(rule_list, wildcards.rule_name)
-        if idx:
-            return output(idx)
-    elif len(rule_list):
-        return output(0)
-    return default_input
-
-localrules: all, check_input
+    return prev_rule_output(wildcards, rule_list=config.TRIGGER_FILTER,
+                            default_input=default_input)
 
 #### UTILITY BLOCKS ####
 
 use rule template_all as all with:
     input:
         check = OUTPUT_DIR / 'input.check',
-        # configfile = os.path.join('configs', f'config_{PROFILE}.yaml'),
+        # configfile = Path('configs') / f'config_{PROFILE}.yaml',
         data = filtered_triggers,
         img = OUTPUT_DIR / 'plot_trigger_times'
 
@@ -49,12 +27,12 @@ use rule template_all as all with:
 use rule template as plot_trigger_times with:
     input:
         data = filtered_triggers,
-        script = Path('scripts') / 'plot_trigger_times.py'
+        script = SCRIPTS / 'plot_trigger_times.py'
     output:
         directory(OUTPUT_DIR / 'plot_trigger_times')
     params:
         params('plot_tstart', 'plot_tstop', 'plot_channels',
-                filename='trigger_times_channel0'+config.PLOT_FORMAT,
+                filename='trigger_times_channel0.'+config.PLOT_FORMAT,
                 config=config)
 
 #### DETECTION BLOCKS (choose one) ####
@@ -63,22 +41,22 @@ rule threshold:
     input:
         data = config.STAGE_INPUT,
         thresholds = Path('{dir}') / 'threshold' / f'{config.THRESHOLD_METHOD}_thresholds.npy',
-        script = Path('scripts') / 'threshold.py'
+        script = SCRIPTS / 'threshold.py'
     output:
         data = Path('{dir}') / 'threshold' / config.STAGE_OUTPUT
     shell:
         """
         {ADD_UTILS}
-        python3 "{input.script}" --data "{input.data}" \
-                                 --output "{output.data}" \
-                                 --thresholds "{input.thresholds}"
+        python3 {input.script:q} --data {input.data:q} \
+                                  --output {output.data:q} \
+                                  --thresholds {input.thresholds:q}
         """
 
 use rule template as calc_threshold_fixed with:
     # subrule of threshold
     input:
         data = config.STAGE_INPUT,
-        script = Path('scripts') / 'calc_thresholds_fixed.py'
+        script = SCRIPTS / 'calc_thresholds_fixed.py'
     output:
         Path('{dir}') / 'threshold' / 'fixed_thresholds.npy',
     params:
@@ -89,34 +67,32 @@ use rule template as calc_threshold_fitted with:
     # subrule of threshold
     input:
         data = config.STAGE_INPUT,
-        script = Path('scripts') / 'calc_thresholds_fitted.py'
+        script = SCRIPTS / 'calc_thresholds_fitted.py'
     output:
         Path('{dir}') / 'threshold' / 'fitted_thresholds.npy',
         img_dir = directory(Path('{dir}') / 'threshold' / 'fitted_thresholds')
     params:
         params('sigma_factor', 'fit_function', 'bin_num', 'plot_channels',
-               img_name='amplitudes_channel0.'+config.PLOT_FORMAT, config=config),
-        additional_outputs
+               img_name='amplitudes_channel0.'+config.PLOT_FORMAT, config=config)
 
 
 use rule template as hilbert_phase with:
     input:
         data = config.STAGE_INPUT,
-        script = Path('scripts') / 'hilbert_phase.py'
+        script = SCRIPTS / 'hilbert_phase.py'
     output:
         Path('{dir}') / 'hilbert_phase' / config.STAGE_OUTPUT,
         img_dir = directory(Path('{dir}') / 'hilbert_phase' / 'hilbert_phase_plots')
     params:
         params('transition_phase', 'plot_channels', 'plot_tstart', 
                'plot_tstop', config=config,
-                img_name='hilbert_phase_channel0.'+config.PLOT_FORMAT),
-        additional_outputs
+                img_name='hilbert_phase_channel0.'+config.PLOT_FORMAT)
 
 
 use rule template as minima with:
     input:
         data = config.STAGE_INPUT,
-        script = Path('scripts') / 'minima.py'
+        script = SCRIPTS / 'minima.py'
     output:
         Path('{dir}') / 'minima' / config.STAGE_OUTPUT,
         img_dir = directory(Path('{dir}') / 'minima' / 'minima_plots')
@@ -124,15 +100,15 @@ use rule template as minima with:
         params('minima_persistence', 'min_peak_distance', 'maxima_threshold_fraction', 
                'maxima_threshold_window', 'num_interpolation_points', 
                'plot_channels', 'plot_tstart', 'plot_tstop',
-                img_name='minima_channel0.'+config.PLOT_FORMAT, config=config),
-        additional_outputs
+                img_name='minima_channel0.'+config.PLOT_FORMAT, config=config)
+
 
 #### FILTER BLOCKS (choose any) ####
 
 use rule template as remove_short_states with:
     input:
-        data = config.STAGE_INPUT,
-        script = Path('scripts') / 'remove_short_states.py'
+        data = filtered_triggers,
+        script = SCRIPTS / 'remove_short_states.py'
     output:
         Path('{dir}') / '{rule_name}' / f'remove_short_states.{config.NEO_FORMAT}'
     params:

@@ -1,12 +1,33 @@
+"""
+Extract the annotations of Neo objects and structure them in a DataFrame
+to complement a wave characterization.
+"""
+
 import argparse
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import quantities as pq
 import re
-from utils.io import load_neo, save_plot
+from utils.io_utils import load_neo, save_plot
 from utils.parse import none_or_str
 from utils.neo_utils import remove_annotations
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                 help="path of output image file")
+CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
+                 help="name of neo.Event to analyze (must contain waves)")
+CLI.add_argument("--ignore_keys", "--IGNORE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
+                 help="neo.Event annotations keys to not include in dataframe")
+CLI.add_argument("--include_keys", "--INCLUDE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
+                 help="neo object annotations keys to include in dataframe")
+CLI.add_argument("--profile", "--PROFILE", nargs='?', type=none_or_str, default=None,
+                 help="profile name")
 
 def add_annotations_to_df(df, annotations, include_keys=[]):
     use_all_keys = not bool(len(include_keys))
@@ -54,22 +75,6 @@ def add_array_annotations_to_df(df, array_annotations, labels, index_name,
     return df
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
-                     help="path of output image file")
-    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
-                     help="name of neo.Event to analyze (must contain waves)")
-    CLI.add_argument("--ignore_keys", "--IGNORE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
-                     help="neo.Event annotations keys to not include in dataframe")
-    CLI.add_argument("--include_keys", "--INCLUDE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
-                     help="neo object annotations keys to include in dataframe")
-    CLI.add_argument("--profile", "--PROFILE", nargs='?', type=none_or_str, default=None,
-                     help="profile name")
     args, unknown = CLI.parse_known_args()
     args.ignore_keys = [re.sub('[\[\],\s]', '', key) for key in args.ignore_keys]
     args.include_keys = [re.sub('[\[\],\s]', '', key) for key in args.include_keys]

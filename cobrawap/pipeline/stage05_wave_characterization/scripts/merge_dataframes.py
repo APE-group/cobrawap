@@ -1,14 +1,22 @@
+"""
+Merge pandas DataFrames based on the values of selected columns.
+"""
+
 import argparse
+from pathlib import Path
 import pandas as pd
 from copy import deepcopy
+from utils.parse import none_or_str
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='+', type=str, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+                 help="path of output image file")
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser()
-    CLI.add_argument("--output",    nargs='?', type=str)
-    CLI.add_argument("--data",      nargs='+', type=str)
-    CLI.add_argument("--output_img",nargs='?', type=str)
-    # CLI.add_argument("--merge_key", nargs='?', type=str)
     args, unknown = CLI.parse_known_args()
 
     for i, datafile in enumerate(args.data):

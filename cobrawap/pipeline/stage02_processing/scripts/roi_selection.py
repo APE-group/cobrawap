@@ -1,18 +1,30 @@
 """
-Selects a region of interest (ROI) by threshold the intensity signal.
+Select a region of interest (ROI) by thresholding the intensity signal.
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import measure
 import shapely.geometry as geo
 import argparse
-from distutils.util import strtobool
+from pathlib import Path
 import neo
 import os
-from utils.io import load_neo, write_neo, save_plot
-from utils.parse import none_or_str
-from utils.neo_utils import analogsignals_to_imagesequences, imagesequences_to_analogsignals
+from utils.io_utils import load_neo, write_neo, save_plot
+from utils.parse import none_or_str, str_to_bool
+from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+                 help="path of output image", default=None)
+CLI.add_argument("--intensity_threshold", nargs='?', type=float,
+                 help="threshold for mask [0,1]", default=0.5)
+CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True,
+                 help="discard frame outside of ROI", default=False,)
 
 def calculate_contour(img, contour_limit):
     # Computing the contour lines...
@@ -24,6 +36,7 @@ def calculate_contour(img, contour_limit):
     max_index = np.argmax([len(c) for c in contour_fake])
 
     contour = contour_fake[max_index]
+    contour = np.flip(contour, 1) # x,y
 
     def border_intercepts(contour):
         intercept_left = False
@@ -34,11 +47,11 @@ def calculate_contour(img, contour_limit):
         if not np.all(contour[:,0]):
             intercept_left = True
         if not np.all(contour[:,1]):
-            intercept_top = True
+            intercept_bot = True
         if not np.all(contour[:,0]-len(img[0])+1):
             intercept_right = True
         if not np.all(contour[:,1]-len(img[1])+1):
-            intercept_bot = True
+            intercept_top = True
         return {'left': intercept_left, 'right': intercept_right,
                 'top': intercept_top, 'bottom' : intercept_bot}
 
@@ -50,19 +63,20 @@ def calculate_contour(img, contour_limit):
         # include secondary connecting contour
         connected = False
         for snd_contour in contour_fake:
+            snd_contour = np.flip(snd_contour, 1) # x,y
             if border_intercepts(snd_contour) == contour_intercepts:
                 contour = np.append(contour, snd_contour, axis=0)
                 connected = True
         # or include corner
         if not connected:
             snd_contour = []
-            if contour_intercepts['left'] and contour_intercepts['top']:
+            if contour_intercepts['left'] and contour_intercepts['bottom']:
                 snd_contour += [0,0]
-            elif contour_intercepts['top'] and contour_intercepts['right']:
+            elif contour_intercepts['bottom'] and contour_intercepts['right']:
                 snd_contour += [len(img[0])-1,0]
             elif contour_intercepts['left'] and contour_intercepts['bottom']:
                 snd_contour += [0,len(img[1]-1)]
-            elif contour_intercepts['bottom'] and contour_intercepts['right']:
+            elif contour_intercepts['top'] and contour_intercepts['right']:
                 snd_contour += [len(img[0])-1,len(img[1])-1]
             else:
                 raise ValueError('The contour is to large, and can not be determined unambigously!')
@@ -88,22 +102,22 @@ def close_contour(contour, num):
 
 
 def contour2mask(contour, dim_x, dim_y):
-    mask = np.zeros((dim_x, dim_y), dtype=bool)
+    mask = np.zeros((dim_y, dim_x), dtype=bool)
     polygon = geo.polygon.Polygon(contour)
     for x in range(dim_x):
         for y in range(dim_y):
             point = geo.Point(x,y)
             if polygon.contains(point):
-                mask[x,y] = 1
+                mask[y,x] = 1
     return mask
 
 
 def crop_to_selection(frames):
     frame = frames[0]
-    x, y = np.where(np.isfinite(frame))
+    y, x = np.where(np.isfinite(frame))
     x0, x1 = np.min(x), np.max(x)
     y0, y1 = np.min(y), np.max(y)
-    return frames[:, x0:x1+1, y0:y1+1]
+    return frames[:, y0:y1+1, x0:x1+1]
 
 
 def plot_roi(img, contour):
@@ -112,33 +126,21 @@ def plot_roi(img, contour):
     ax.axis('image')
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
+    ax.plot(contour[:,0], contour[:,1], linewidth=2)
     plt.draw()
     return ax
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
-                     help="path of output image", default=None)
-    CLI.add_argument("--intensity_threshold", nargs='?', type=float,
-                     help="threshold for mask [0,1]", default=0.5)
-    CLI.add_argument("--crop_to_selection",type=lambda x:bool(strtobool(x)),nargs = '?',const=True,default=False,
-                     help="discard frame outside of ROI")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
-    block = analogsignals_to_imagesequences(block)
+    asig = block.segments[0].analogsignals[0]
+    imgseq = analogsignal_to_imagesequence(asig)
 
     # get average image
-    imgseq = block.segments[0].imagesequences[0]
     imgseq_array = imgseq.as_array()
-    dim_t, dim_x, dim_y = imgseq_array.shape
+    dim_t, dim_y, dim_x = imgseq_array.shape
     avg_img = np.mean(imgseq_array, axis=0)
 
     # calculate mask
@@ -151,33 +153,26 @@ if __name__ == '__main__':
 
     # apply mask
     imgseq_array[:, np.bitwise_not(mask)] = np.nan
-    
-    print('crop to selection ', args.crop_to_selection)
-    if args.crop_to_selection == True:
-        print(args.crop_to_selection)
+    if args.crop_to_selection:
         imgseq_array = crop_to_selection(imgseq_array)
 
     # replace analogsingal
     tmp_blk = neo.Block()
     tmp_seg = neo.Segment()
-    tmp_imgseq = imgseq.duplicate_with_new_data(imgseq_array)
     tmp_blk.segments.append(tmp_seg)
-    tmp_blk.segments[0].imagesequences.append(tmp_imgseq)
-    tmp_blk = imagesequences_to_analogsignals(tmp_blk)
-    new_asig = tmp_blk.segments[0].analogsignals[0]
+    tmp_imgseq = imgseq.duplicate_with_new_data(imgseq_array)
+    new_asig = imagesequence_to_analogsignal(tmp_imgseq)
 
-    asig = block.segments[0].analogsignals[0].duplicate_with_new_data(new_asig.as_array())
     if not args.crop_to_selection:
-        asig.array_annotate(**block.segments[0].analogsignals[0].array_annotations)
+        new_asig.array_annotate(**block.segments[0].analogsignals[0].array_annotations)
     else:
-        asig.array_annotate(**new_asig.array_annotations)
+        new_asig.array_annotate(**new_asig.array_annotations)
 
     # save data and figure
-    asig.name = ""
-    asig.description += "Border regions with mean intensity below "\
-                      + "{args.intensity_threshold} were discarded. "\
-                      + "({})".format(os.path.basename(__file__))
-    block.segments[0].analogsignals[0] = asig
+    new_asig.description += "Border regions with mean intensity below "\
+                         + "{args.intensity_threshold} were discarded. "\
+                         + "({})".format(os.path.basename(__file__))
+    block.segments[0].analogsignals[0] = new_asig
 
     plot_roi(avg_img, contour)
     save_plot(args.output_img)

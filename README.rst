@@ -1,103 +1,148 @@
 =====================================================
-Collaborative Brain Wave Analysis Pipeline (CobraWAP)
+Collaborative Brain Wave Analysis Pipeline (Cobrawap)
 =====================================================
 
-This repository aims at developing reusable and modular pipelines for a multi-scale, multi-methodology analysis of cortical wave activity, brain states and their complexity.
+.. image:: https://readthedocs.org/projects/cobrawap/badge/?version=latest
+   :target: https://cobrawap.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+   :align: left
 
-`Link to introductive video <https://www.youtube.com/watch?v=uuAiY6HScM0>`_ | `Link to Ebrains Collaboratory <https://wiki.ebrains.eu/bin/view/Collabs/slow-wave-analysis-pipeline/>`_ | `Link to pipeline README <https://github.com/INM-6/wavescalephant/tree/master/pipeline>`_
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.10198748.svg
+  :target: https://doi.org/10.5281/zenodo.10198748
+  :alt: DOI Latest Release
+  :align: left
+
+.. image:: https://img.shields.io/badge/slack-join-pink.svg
+   :target: https://join.slack.com/t/cobrawapworkinggroup/shared_invite/zt-1t8fjv447-64MrlHywww97LRC1ZtW0DA
+   :alt: Join our Slack Community
+   :align: left
+
+.. image:: https://raw.githubusercontent.com/NeuralEnsemble/cobrawap/master/doc/images/cobrawap_logo.png
+   :height: 150px
+   :alt: Cobrawap Logo
+   :align: left
+
+Cobrawap is an adaptable and reusable analysis pipeline for the multi-scale, multi-methodology analysis of cortical wave activity. The pipeline ingests data from heterogeneous sources of spatially organized neuronal activity, such as ECoG or calcium imaging recordings, as well as the outcome of numerical simulations. The pipeline returns statistical measures to quantify the dynamic wave-like activity patterns found in the data.
+
+`Documentation <https://cobrawap.readthedocs.io>`_ | `Publication <https://doi.org/10.1016/j.crmeth.2023.100681>`_ | `Introductory video <https://www.youtube.com/watch?v=1Qf4zIzV9ow&list=PLvAS8zldX4Ci5uG9NsWv5Kl4Zx2UtWQPh&index=13>`_ | `Use-case demo on the EBRAINS Collab <https://wiki.ebrains.eu/bin/view/Collabs/slow-wave-analysis-pipeline/>`_
+
 
 Concept
 =======
-For researchers to be able to effectively reproduce results and build on each other's progress, it is important to not only make results openly accessible and to facilitate data sharing but also to build the analysis workflows, to get the former from the latter, in a shareable and reusable manner.
 
-Making analysis scripts available alongside results and datasets is good. What is even better is to design the analysis workflows in a manner that they are general and flexible enough so that they can actually be reused in further research. Within the rich diversity of analyses there is no one-size-fit-all solution for this. However, there is a lot of existing work that can help with the challenges of developing a general, adaptable, reusable analysis pipeline.
+.. image:: https://raw.githubusercontent.com/NeuralEnsemble/cobrawap/master/doc/images/cobrawap_pipeline_approach.png
+   :height: 300px
+   :alt: Schematic Pipeline Approach
+   :align: center
 
-Here, we work to bring together existing analysis methods, tools, and data standards and interfacing them in the shape of a pipeline for the analysis and characterization of wave-like activity and UP/DOWN state detection. This work should serve both as a template for building reusable analysis pipelines in general, as well as a space to gather the various data types exhibiting wave activity and their various analysis approaches into the same pipeline. Besides generating easily reproducible and curated results, such a pipeline promises to facilitate a rigorous comparison between datasets, model validation, and method benchmarking.
+Cobrawap brings together existing analysis methods, tools, and standards, and interfaces them for the analysis and characterization of cortical wave-like activity and UP/DOWN state detections. Cobrawap serves as a space to gather the various data types exhibiting wave-like activity and their various analysis approaches into the same pipeline. Besides generating easily reproducible and curated results, Cobrawap facilitates the rigorous comparison between datasets of different laboratories, studies and measurement modalities. Furthermore, Cobrawap can be used in the context of model validation and benchmarking of analysis methods. Cobrawap may also act as a template for implementing analysis pipelines in other contexts.
 
-The current prototype includes
-------------------------------
-* a hierarchical and modular pipeline framework based on Snakemake_
-* reusable blocks and stages for standalone application or integration into workflows
+**Cobrawap features...**
+
+* a user-friendly command line interface guiding the setup and usage
+* a hierarchical and modular pipeline framework based on the Snakemake_ workflow management tool
+* reusable method implementations (*stages* and *blocks*) for standalone applications or integration into workflows
 * analysis methods for electrophysiological and optical data on the characterization of cortical wave activity and local oscillations
 * visualization of the analysis steps and the intermediate results
-* intermediate results curated with annotated metadata and reports
-* guides for execution locally and on the collab
-.. * showcase Jupyter Notebooks for testbench applications and the visualization of the output
+* intermediate results curated with annotated metadata
 
 .. _Snakemake: https://snakemake.readthedocs.io/en/stable/
 
-For further developments see the Issues.
+For further developments and feature requests refer to the `Github Issues <https://github.com/NeuralEnsemble/cobrawap/issues>`_.
+
+
+Citation
+========
+To refer to the Cobrawap software package in publications, please use:
+
+Cobrawap (`doi:10.5281/zenodo.10198748 <https://doi.org/10.5281/zenodo.10198748>`_;
+`RRID:SCR_022966 <https://scicrunch.org/resolver/RRID:SCR_022966>`_)
+
+To cite a specific version of Cobrawap please see version-specific DOIs at:
+
+ `doi:10.5281/zenodo.10198748 <https://doi.org/10.5281/zenodo.10198748>`_
+
+To cite Cobrawap, please use:
+
+Gutzen, R., De Bonis, G., De Luca, C., Pastorelli, E., Capone, C., Allegra Mascaro, A. L., Resta, F., Manasanch, A., Pavone, F. S., Sanchez-Vives, M. V., Mattia, M., Grün, S., Paolucci, P. S., & Denker, M. (2024). *Using a modular and adaptable analysis pipeline to compare slow cerebral rhythms across heterogeneous datasets*. Cell Reports Methods, 4(1), 100681. `https://doi.org/10.1016/j.crmeth.2023.100681 <https://doi.org/10.1016/j.crmeth.2023.100681>`_
+
+
+License
+=======
+Cobrawap is open-source software and is licensed under the `GNU General Public License v3 <https://github.com/NeuralEnsemble/cobrawap/blob/master/LICENSE>`_.
+
+
+The Cobrawap Community
+======================
+Cobrawap is currently provided as a `tool <https://www.ebrains.eu/tools/cobrawap>`_ of the `EBRAINS <https://www.ebrains.eu>`_ infrastructure and included in the `EBRAINS-Italy <https://www.ebrains-italy.eu/>`_ initiative. Further details on funding and resources are in the `Acknowledgments <https://github.com/NeuralEnsemble/cobrawap/blob/master/doc/source/acknowledgments.rst>`_ file in the doc folder.
+
+The **Cobrawap Core Team** is in charge of defining the scientific address of the project and taking care of the continuous maintenance and development of the software. This collaborative endeavor is jointly carried by *Forschungszentrum Jülich, Germany* and *Istituto Nazionale di Fisica Nucleare (INFN), Roma, Italy* and currently includes:
+
++------------------------------+-----------------------------+
+| .. image::                   | .. image::                  |
+|    doc/images/               |    doc/images/              |
+|    institutions/             |    institutions/            |
+|    fzj.svg                   |    infn.svg                 |
+|    :height: 80px             |    :height: 80px            |
+|    :align: center            |    :align: center           |
+|    :width: 560px             |    :width: 560px            |
++------------------------------+-----------------------------+
+| - *Robin Gutzen* (now @ NYU) | - *Giulia De Bonis*         |
+| - *Michael Denker*           | - *Cosimo Lupo*             |
+|                              | - *Federico Marmoreo*       |
+|                              | - *Pier Stanislao Paolucci* |
++------------------------------+-----------------------------+
+  
+The further **Cobrawap Community** includes people and partners that offer technical support for the integration of the software in a larger framework of interoperable tools, and offer scientific support for the development of the analysis methods and the tool's integration into broader research endeavors.
+
+- Athena Research and Innovation Center, Greece
+   - *Sofia Karvounari*
+   - *Eleni Mathioulaki*
+- Unité de Neurosciences, Neuroinformatics Group, CNRS, France
+   - *Andrew Davison*
+- Istituto Nazionale di Fisica Nucleare (INFN), Italy
+   - *Chiara De Luca*
+   - *Cristiano Capone*
+   - *Irene Bernava*
+   - *Alessandra Cardinale*
+- Institut d’Investigacions Biomediques August Pi i Sunyer (IDIBAPS), Barcelona, Spain
+   - *Arnau Manasanch*
+   - *Miguel Dasilva*
+   - *Maria V. Sanchez-Vives*
+- European Laboratory for Non-Linear Spectroscopy (LENS), Firenze, Italy
+   - *Anna Letizia Allegra Mascaro*
+   - *Francesco Resta*
+   - *Francesco S. Pavone*
+- Istituto Superiore di Sanità (ISS), Roma, Italy
+   - *Maurizio Mattia*
+- University of Milano (UniMi), Italy
+   - *Andrea Pigorini*
+   - *Thierry Nieus*
+   - *Gianluca Gaglioti*
+   - *Marcello Massimini*
+
+**Cobrawap Partnering Projects**:
+
+Sleep Wave Analysis Visualization Engine (SWAVE): A data visualization tool that takes Cobrawap outputs and visualizes these to show dynamic wave-like activity patterns found in the data. Developed at Washington University in St. Louis, USA: https://github.com/cilantroxiao/SWAVE
 
 Further Context
 ===============
 
-WaveScalES
-----------
-Sleep is present in all animal species notwithstanding the risk associated with the disconnection from the environment (e.g. predation) and the reduction of time available for food search and reproduction. Indeed, it is known that the human brains need healthy sleep, as chronic sleep deprivation reduces cognitive performances.
-The goal of WaveScalES_ (description at the date 2019-03-31, SGA2-M12) is to unveil the underlying mechanisms of deep sleep, anesthesia and coma, the emergence toward wakefulness, and the link between sleep and learning, taking advantage of cortical slow wave activity (SWA) and investigating it with experimental data, analysis tools, modulation techniques, theoretical models and simulations of such states and of the transition to wakefulness. The resources of Wavescales are aimed to be made accessible via the EBRAINS_ resources including analysis tools (e.g., Elephant), simulation engines (e.g., NEST), and storage capacities (e.g., Knowledge Graph).
+Software Ecosystem
+------------------
+The functionality offered by Cobrawap builds on existing software tools and services.
 
-.. _WaveScalES: https://drive.google.com/file/d/1BYZmhz_qJ8MKPOIeyTZw6zjqfVMcCCCk/view
-.. _EBRAINS: https://ebrains.eu/
+Neo_ improves interoperability between Python tools for analyzing, visualizing, and generating electrophysiology data by providing a common, shared data object model. The Neo data representation provides a hierarchical data and metadata description for a variety of data types including intracellular and extracellular electrophysiology, electrical data with support for multi-electrode, as well as optical recordings. Furthermore, it supports a wide range of neurophysiology file formats to facilitate reading data from most common recording devices.
 
-Elephant & Neo
---------------
-Neuroscience research is very diverse in its approaches, measurement modalities, and analysis methods. However, the scale and complexity of modern challenges in the field require a large degree of collaboration and thus the ability for easy data and tool sharing.
+The Electrophysiology Analysis Toolkit, Elephant_, is an open-source Python library for analysis methods. It focuses on providing fast and reliable implementations for generic analysis functions for spike train data and time series recordings from electrodes. As community centered project, Elephant aims to serve as a common platform for analysis codes from different laboratories, and a consistent and homogeneous analysis framework.
 
-The goal of Neo_ is to improve interoperability between Python tools for analyzing, visualizing, and generating electrophysiology data, by providing a common, shared object model. The Neo data format provides a hierarchical data and metadata description for a variety of data types including intracellular and extracellular electrophysiology electrical data with support for multi-electrodes as well as optical recordings. Furthermore, it supports a wide range of neurophysiology file formats and can thus read data from most common recording devices.
+The Neuroscience Information Exchange, NIX_, format is an API and data format to store scientific data and metadata in a combined representation. Its structure is inspired by common types of neuroscience data, and it acts as one of the primary data formats for the Neo data object model.
 
-The Electrophysiology Analysis Toolkit, Elephant_, is an open-source Python library for analysis methods. It focuses on providing fast and reliable implementations for generic analysis functions for spike train data and time series recordings from electrodes. As community centered project Elephant aims to serve as a common platform for analysis codes from different laboratories, and a consistent and homogeneous analysis framework.
+.. _Neo: http://neuralensemble.org/neo
+.. _Elephant: https://python-elephant.org
+.. _NIX: http://g-node.github.io/nix
 
-.. _Neo: https://github.com/NeuralEnsemble/python-neo
-.. _Elephant: https://github.com/NeuralEnsemble/elephant
-
-HBP Deliverables
-----------------
-*Releases planned by 2020-03-31 (HBP-SGA2-M24)*
-
-* *Component C2051* (SOAP r1 - Slow Oscillation Analysis Pipeline). Snakemake integration of the Slow Wave Analysis Pipeline Component capable of extracting the local features of oscillations, a necessary prerequisite for the analysis of slow waves performed at multi-area level by the SWAP analysis. See RelatedRepositories.rst
-* *Component C2053* (SWAP r1 - Slow Wave Analysis Pipeline). Snakemake workflow for a modular slow wave analysis pipeline that can be applied to both optical calcium imaging recordings (GECI technique) and multi-electrode recordings (ECoG) in mouse.
-
-Showcase notebooks
-==================
-`Showcase in EBRAINS Collaboratory <https://wiki.ebrains.eu/bin/view/Collabs/slow-wave-analysis-pipeline/>`_
-
-... additional demos coming soon.
-
-
-Involved partners
-=================
-This collaboration was originally started by HBP-SGA2-(WP3.2 and WP5.7) and extended to other HBP members and partners as SP3 UseCase002.
-
-- **Istituto Nazionale di Fisica Nucleare (INFN), Roma, Italy:** Giulia De Bonis, Pier Stanislao Paolucci, Elena Pastorelli, Francesco Simula, Cristiano Capone, Chiara De Luca.
-
-- **Forschungszentrum Jülich, Germany:** Michael Denker, Robin Gutzen, Alper Yegenoglu.
-
-- **Istituto Superiore di Sanità (ISS), Roma, Italy:** Maurizio Mattia, Antonio Pazienti.
-
-- **Institut d’Investigacions Biomediques August Pi i Sunyer (IDIBAPS), Barcelona, Spain:** Miguel Dasilva, Maria V. Sanchez-Vives.
-
-- **European Laboratory for Non-Linear Spectroscopy (LENS), Firenze, Italy:** Anna Letizia Allegra Mascaro, Francesco Resta, Francesco Pavone.
-
-- **University of Milano (UniMi), Italy:** Andrea Pigorini, Thierry Nieus, Marcello Massimini
-
-- **Unité de Neurosciences, Neuroinformatics Group, CNRS, France:** Andrew Davison
-
-References
-==========
-Papers
-------
-* `De Bonis, Giulia, et al. "Analysis pipeline for extracting features of cortical slow oscillations." Frontiers in Systems Neuroscience 13 (2019): 70. <https://doi.org/10.3389/fnsys.2019.00070>`_
-* `Celotto, Marco, et al. "Analysis and Model of Cortical Slow Waves Acquired with Optical Techniques." Methods and Protocols 3.1 (2020): 14. <https://doi.org/10.3390/mps3010014>`_
-
-Repositories
-------------
-* `gulpgiulia/ElePhySWAPandSOAP <https://github.com/gulpgiulia/ElePhySWAP_SOAP>`_
-* `gulpgiulia/CaImanSWAP <https://github.com/gulpgiulia/CaImanSWAP>`_
-
-Citation
-========
-Please cite this repository if you use it in your work.
-
-License
-=======
-The Modular-Wave-Analysis-Pipeline project is open-source software and is licensed under the GNU General Public License v3 or later.
+The Human Brain Project and WaveScalES
+--------------------------------------
+Cobrawap was originally developed in the context the `Human Brain Project <https://www.humanbrainproject.eu>`_, launched as a use-case initiated within the *WaveScalES* sub-project.
+Sleep is present in all animal species notwithstanding the risk associated with the disconnection from the environment (e.g. predation) and the reduction of time available for food search and reproduction. Indeed, it is well known that the human brains need healthy sleep, as chronic sleep deprivation reduces cognitive performances. The goal of the WaveScalES sub-project of the `Human Brain Project <https://www.humanbrainproject.eu>`_ was to unveil the underlying mechanisms of deep sleep, anesthesia and coma, the emergence toward wakefulness, and the link between sleep and learning, taking advantage of cortical slow wave activity (SWA) and investigating it with experimental data, analysis tools, modulation techniques, theoretical models, and simulations of such states and of the transition to wakefulness.

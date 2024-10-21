@@ -1,24 +1,26 @@
 """
+Check whether the input data representation adheres to the stage's requirements.
 
+Additionally prints a short summary of the data attributes.
 """
+
 import numpy as np
 import argparse
-import quantities as pq
+from pathlib import Path
 import warnings
 import re
-from utils.io import load_neo
+from utils.io_utils import load_neo
 from utils.parse import none_or_str
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=none_or_str, default=None,
+                 help="name of neo.Event to analyze (must contain waves)")
+CLI.add_argument("--measures", "--MEASURES", nargs='+', type=none_or_str, default=None,
+                 help="list of measure names to apply")
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=none_or_str, default=None,
-                     help="name of neo.Event to analyze (must contain waves)")
-    CLI.add_argument("--measures", "--MEASURES", nargs='+', type=none_or_str, default=None,
-                     help="list of measure names to apply")
     args, unknown = CLI.parse_known_args()
 
     if args.measures is not None and args.event_name == 'wavemodes':

@@ -5,6 +5,7 @@ STAGES:
     - 'stage03_trigger_detection'
     - 'stage04_wave_detection'
     - 'stage05_wave_characterization'
+    # - 'stage05_channel_wave_characterization'
 
 # A profile collects the parameter configuration for a specific dataset. The stages are executed using the config_<PROFILE>.yaml file, and results are stored in output_path/<PROFILE>/
 PROFILE: 'IDIBAPS'
@@ -18,8 +19,8 @@ NEO_FORMAT: 'nix'
 USE_LINK_AS_STAGE_OUTPUT: True
 
 # Plotting parameters
-PLOT_TSTART: 0  # in s
-PLOT_TSTOP: 10  # in s
+PLOT_TSTART: 0  # float (in s) or 'None' -> starting time of the input signal is used
+PLOT_TSTOP: 10  # float (in s) or 'None' -> stopping time of the input signal is used
 PLOT_CHANNELS: 'None'  # int or None. default 'None' -> randomly selected
 # Note that when using the None option, the automatic creation of reports will fail
 PLOT_FORMAT: 'png'

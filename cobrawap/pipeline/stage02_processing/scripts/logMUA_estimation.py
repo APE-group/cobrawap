@@ -1,3 +1,8 @@
+"""
+Estimate the logarithmic multi-unit activity (MUA) by averaging the power
+in a given frequency range.
+"""
+
 import numpy as np
 from elephant.spectral import welch_psd
 from elephant.signal_processing import butter
@@ -7,24 +12,51 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 import os
-from utils.io import load_neo, write_neo, save_plot
+from pathlib import Path
+from utils.io_utils import load_neo, write_neo, save_plot
 from utils.parse import none_or_float, none_or_int
 from utils.neo_utils import time_slice
 
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output file")
+CLI.add_argument("--img_dir", nargs='?', type=Path,
+                 default=None, help="path of figure directory")
+CLI.add_argument("--img_name", nargs='?', type=str,
+                 default='minima_channel0.png',
+                 help='example image filename for channel 0')
+CLI.add_argument("--highpass_frequency", nargs='?', type=float, default=200,
+                 help="lower bound of frequency band in Hz")
+CLI.add_argument("--lowpass_frequency", nargs='?', type=float, default=1500,
+                 help="upper bound of frequency band in Hz")
+CLI.add_argument("--logMUA_rate", nargs='?', type=none_or_float, default=None,
+                 help="rate of the signal after transformation")
+CLI.add_argument("--psd_overlap", nargs='?', type=float, default=0.5,
+                 help="overlap parameter for Welch's algorithm [0-1]")
+CLI.add_argument("--fft_slice", nargs='?', type=none_or_float, default=None,
+                 help="time window length used for power spectrum estimate, in s")
+CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
+                 help="start time in seconds")
+CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
+                 help="stop time in seconds")
+CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=None,
+                 help="list of channels to plot")
 
-def logMUA_estimation(asig, highpass_freq, lowpass_freq, logMUA_rate,
+def logMUA_estimation(asig, highpass_frequency, lowpass_frequency, logMUA_rate,
                       psd_overlap, fft_slice):
     time_steps, channel_num = asig.shape
     fs = asig.sampling_rate.rescale('Hz')
     if fft_slice is None:
-        fft_slice = (1/highpass_freq).rescale('s')
-    elif fft_slice < 1/highpass_freq:
+        fft_slice = (1/highpass_frequency).rescale('s')
+    elif fft_slice < 1/highpass_frequency:
         raise ValueError("Too few fft samples to estimate the frequency "\
                        + "content in the range [{} {}]."\
-                         . format(highpass_freq, lowpass_freq))
+                         . format(highpass_frequency, lowpass_frequency))
     # logMUA_rate can only be an int fraction of the orginal sampling_rate
     if logMUA_rate is None:
-        logMUA_rate = highpass_freq
+        logMUA_rate = highpass_frequency
     if logMUA_rate > fs:
         raise ValueError("The requested logMUA rate can not be larger than "\
                        + "the inital sampling rate!")
@@ -61,13 +93,13 @@ def logMUA_estimation(asig, highpass_freq, lowpass_freq, logMUA_rate,
         asig_slice = asig_channels.time_slice(t_start=t_start, t_stop=t_stop)
 
         freqs, psd = welch_psd(asig_slice,
-                               freq_res=highpass_freq,
+                               frequency_resolution=highpass_frequency,
                                overlap=psd_overlap,
-                               window='hanning',
+                               window='hann',
                                detrend='linear',
                                nfft=None)
 
-        high_idx = (np.abs(freqs - lowpass_freq)).argmin()
+        high_idx = (np.abs(freqs - lowpass_frequency)).argmin()
         if not i:
             print("logMUA signal estimated in frequency range "\
                 + "{:.2f} - {:.2f}.".format(freqs[1], freqs[high_idx]))
@@ -84,19 +116,19 @@ def logMUA_estimation(asig, highpass_freq, lowpass_freq, logMUA_rate,
     logMUA_asig = asig.duplicate_with_new_data(new_signals)
     logMUA_asig.array_annotations = asig.array_annotations
     logMUA_asig.sampling_rate = eff_logMUA_rate
-    logMUA_asig.annotate(freq_band = [highpass_freq, lowpass_freq],
-                      psd_freq_res = highpass_freq,
-                      psd_overlap = psd_overlap,
-                      psd_fs = fs)
+    logMUA_asig.annotate(freq_band = [highpass_frequency, lowpass_frequency],
+                         psd_frequency_resolution = highpass_frequency,
+                         psd_overlap = psd_overlap,
+                         psd_fs = fs)
     return logMUA_asig
 
 
-def plot_logMUA_estimation(asig, logMUA_asig, highpass_freq, lowpass_freq,
+def plot_logMUA_estimation(asig, logMUA_asig, highpass_frequency, lowpass_frequency,
                            t_start, t_stop, channel):
     asig = time_slice(asig, t_start, t_stop)
     logMUA_asig = time_slice(logMUA_asig, t_start, t_stop)
-    filt_asig = butter(asig, highpass_freq=highpass_freq,
-                               lowpass_freq=lowpass_freq)
+    filt_asig = butter(asig, highpass_frequency=highpass_frequency,
+                             lowpass_frequency=lowpass_frequency)
 
     sns.set(style='ticks', palette="deep", context="notebook")
     fig, ax = plt.subplots()
@@ -107,7 +139,7 @@ def plot_logMUA_estimation(asig, logMUA_asig, highpass_freq, lowpass_freq,
 
     ax.plot(filt_asig.times,
             zscore(filt_asig.as_array()[:,channel]) + 10,
-            label=f'signal [{highpass_freq}-{lowpass_freq}]',
+            label=f'signal [{highpass_frequency}-{lowpass_frequency}]',
             alpha=0.5)
 
     ax.plot(logMUA_asig.times,
@@ -122,31 +154,7 @@ def plot_logMUA_estimation(asig, logMUA_asig, highpass_freq, lowpass_freq,
 
 
 if __name__ == '__main__':
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data", nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output", nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img", nargs='?', type=lambda v: v.split(','), default=None,
-                     help="path of output image files")
-    CLI.add_argument("--highpass_freq", nargs='?', type=float, default=200,
-                     help="lower bound of frequency band in Hz")
-    CLI.add_argument("--lowpass_freq", nargs='?', type=float, default=1500,
-                     help="upper bound of frequency band in Hz")
-    CLI.add_argument("--logMUA_rate", nargs='?', type=none_or_float, default=None,
-                     help="rate of the signal after transformation")
-    CLI.add_argument("--psd_overlap", nargs='?', type=float, default=0.5,
-                     help="overlap parameter for Welch's algorithm [0-1]")
-    CLI.add_argument("--fft_slice", nargs='?', type=none_or_float, default=None,
-                     help="time window length used for power spectrum estimate, in s")
-    CLI.add_argument("--t_start", nargs='?', type=float, default=0,
-                     help="start time in seconds")
-    CLI.add_argument("--t_stop",  nargs='?', type=float, default=10,
-                     help="stop time in seconds")
-    CLI.add_argument("--channels", nargs='+', type=none_or_int, default=None,
-                     help="list of channels to plot")
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
 
@@ -157,35 +165,26 @@ if __name__ == '__main__':
                 else args.fft_slice*pq.s
 
     asig = logMUA_estimation(block.segments[0].analogsignals[0],
-                             highpass_freq=args.highpass_freq*pq.Hz,
-                             lowpass_freq=args.lowpass_freq*pq.Hz,
+                             highpass_frequency=args.highpass_frequency*pq.Hz,
+                             lowpass_frequency=args.lowpass_frequency*pq.Hz,
                              logMUA_rate=logMUA_rate,
                              psd_overlap=args.psd_overlap,
                              fft_slice=fft_slice)
 
-#    if args.channels[0] is not None:
-# WARNING! TypeError: 'NoneType' object is not subscriptable if it is None
-# (the condition args.channel[0] cannot be evaluated)
-
-    if args.channels is not None:
-        if not len(args.output_img) == len(args.channels):
-            raise InputError("The number of plotting channels must "\
-                           + "correspond to the number of image output paths!")
-        for output_img, channel in zip(args.output_img, args.channels):
-            #[output_img] = output_img
-            # otherwise... "TypeError: expected str, bytes or os.PathLike object, not list"
+    if args.plot_channels is not None:
+        for channel in args.plot_channels:
             plot_logMUA_estimation(asig=block.segments[0].analogsignals[0],
                                    logMUA_asig=asig,
-                                   highpass_freq=args.highpass_freq*pq.Hz,
-                                   lowpass_freq=args.lowpass_freq*pq.Hz,
-                                   t_start=args.t_start,
-                                   t_stop=args.t_stop,
+                                   highpass_frequency=args.highpass_frequency*pq.Hz,
+                                   lowpass_frequency=args.lowpass_frequency*pq.Hz,
+                                   t_start=args.plot_tstart,
+                                   t_stop=args.plot_tstop,
                                    channel=channel)
-            save_plot(output_img)
+            output_path = args.img_dir / args.img_name.replace('_channel0', f'_channel{channel}')
+            save_plot(output_path)
 
-    asig.name += ""
     asig.description += "Estimated logMUA signal [{}, {}] Hz ({}). "\
-                        .format(args.highpass_freq, args.lowpass_freq,
+                        .format(args.highpass_frequency, args.lowpass_frequency,
                                 os.path.basename(__file__))
     block.segments[0].analogsignals[0] = asig
 

@@ -1,12 +1,35 @@
+"""
+Performs a dynamical downsampling, based on a (customizable) 'quality' evaluation for each channel.
+"""
+
 import neo
 import numpy as np
 
 from scipy.stats import shapiro,ks_1samp,ks_2samp
 import matplotlib.pyplot as plt
 import argparse
-from utils.io import load_neo, write_neo, save_plot
+from pathlib import Path
+from utils.io_utils import load_neo, write_neo, save_plot
 from utils.parse import none_or_float, none_or_int, none_or_str
-from utils.neo_utils import analogsignals_to_imagesequences, imagesequences_to_analogsignals
+from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
+
+CLI = argparse.ArgumentParser()
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
+                 help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output file")
+CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+                 help="path of output image", default=None)
+CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
+                 help="number of non informative macro-pixel to prune branch", default=2)
+CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
+                 help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
+CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
+                 help="signal to noise ratio evalutaion method", default='shapiro')
+CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
+                 help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
+CLI.add_argument("--output_array", nargs='?', type=none_or_str,
+                 help="path of output numpy array", default=None)
 
 def next_power_of_2(n):
     if n == 0:
@@ -52,30 +75,30 @@ def InitShapiroPlus(Input_image, fs, shapiro_plus_th):
                 rs.append(np.sum(y_0*y_1)/np.sum(y_0*y_0))
     r_mean = np.nanmean(rs)
     r_std = np.nanstd(rs)
-    
+
     # loop per generare N canali sintetici
     bins = np.arange(0, (np.shape(Input_image)[2]+0.5)/fs, 0.1)
     bin_size = bins[1]-bins[0]
 
     av_h = np.zeros(len(bins)-1)
     c = 0
-    
+
     for i in range(10000):
         red_signal = [np.random.normal(loc=m, scale=s) for t in range(np.shape(Input_image)[2])]
         r = r_mean
         #r = np.random.normal(loc=r_mean, scale=r_std)
         for t in range(1,len(red_signal)):
             red_signal[t] = r*red_signal[t-1] + np.sqrt(1-r**2)*red_signal[t]
-        
+
         y = np.diff(above_th_points(red_signal, fs, shapiro_plus_th))
-        
+
         if len(y) > 0:
             h,b = np.histogram(y, bins=bins, density=True)
             if not np.isnan(np.sum(h)):
                 av_h += h
                 c += 1
     av_h /= c
-    
+
     z = np.polyfit(b[:-1], np.cumsum(av_h)*bin_size, 4)
     zz = np.poly1d(z)
     return zz
@@ -129,11 +152,11 @@ def NewLayer(l, Input_image, fs, evaluation_method = 'shapiro', null_distr = Non
     # third leaf
     cond = CheckCondition([l[0]+l[2]//2, l[1], l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0]+l[2]//2, l[1], l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
-    
+
     # fourth leaf
     cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
-    
+
     return(new_list)
 
 def CreateMacroPixel(Input_image, fs, exit_method = 'consecutive', evaluation_method = 'shapiro', null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
@@ -149,7 +172,7 @@ def CreateMacroPixel(Input_image, fs, exit_method = 'consecutive', evaluation_me
         # create node's children
         Children = NewLayer(NodeList[0], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
         NodeList.pop(0) # delete investigated node
-       
+
         #check wether exit condition is met
         if exit_method == 'voting':
             # check how many of children are "bad"
@@ -212,50 +235,32 @@ def plot_masked_image(original_img, MacroPixelCoords):
     return axs
 
 if __name__ == '__main__':
-    
-    CLI = argparse.ArgumentParser(description=__doc__,
-                   formatter_class=argparse.RawDescriptionHelpFormatter)
-    CLI.add_argument("--data",    nargs='?', type=str, required=True,
-                     help="path to input data in neo format")
-    CLI.add_argument("--output",  nargs='?', type=str, required=True,
-                     help="path of output file")
-    CLI.add_argument("--output_img",  nargs='?', type=none_or_str,
-                     help="path of output image", default=None)
-    CLI.add_argument("--n_bad_nodes",  nargs='?', type=none_or_int,
-                     help="number of non informative macro-pixel to prune branch", default=2)
-    CLI.add_argument("--exit_condition",  nargs='?', type=none_or_str,
-                     help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
-    CLI.add_argument("--signal_eval_method",  nargs='?', type=none_or_str,
-                     help="signal to noise ratio evalutaion method", default='shapiro')
-    CLI.add_argument("--voting_threshold",  nargs='?', type=none_or_float,
-                     help="threshold of non informative nodes percentage if voting method is selected", default=0.5)
-    CLI.add_argument("--output_array",  nargs='?', type=none_or_str,
-                      help="path of output numpy array", default=None)
-    args = CLI.parse_args()
+    args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-    block = analogsignals_to_imagesequences(block)
+    block = analogsignal_to_imagesequence(block)
     fs = asig.sampling_rate.magnitude
+
     # load image sequences at the original spatial resolution
     imgseq = block.segments[0].imagesequences[0]
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
-    
+
     if args.signal_eval_method == 'shapiroplus':
         shapiro_plus_th = 2.5
         null_distr = InitShapiroPlus(imgseq_array, fs, shapiro_plus_th)
     else:
         shapiro_plus_th = None
         null_distr = None
-    
+
     # pad image sequences with nans to make it divisible by 2
-    N_pad = next_power_of_2(max(dim_x, dim_y)) 
-    padded_image_seq = np.pad(imgseq_array, 
-                         pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2), 
-                                      ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2), 
+    N_pad = next_power_of_2(max(dim_x, dim_y))
+    padded_image_seq = np.pad(imgseq_array,
+                         pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2),
+                                      ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2),
                                       (0,0)], mode = 'constant', constant_values = np.nan)
-    
+
     # tree search for the best macro-pixel dimension
     # List con x,y,L,flag,x_parent, y_parent, L_parent
     MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
@@ -266,13 +271,13 @@ if __name__ == '__main__':
                                         shapiro_plus_th = shapiro_plus_th,
                                         threshold = args.voting_threshold,
                                         n_bad = args.n_bad_nodes)
-    
+
     if args.output_img is not None:
         plot_masked_image(padded_image_seq, MacroPixelCoords)
         save_plot(args.output_img)
 
     signal = np.empty([len(MacroPixelCoords), dim_t]) #save data as analogsignal
-    coordinates = np.empty([len(MacroPixelCoords), 3]) #pixel coordinates [x,y,L] to retrieve 
+    coordinates = np.empty([len(MacroPixelCoords), 3]) #pixel coordinates [x,y,L] to retrieve
                                                        # original one
     ch_id = np.empty([len(MacroPixelCoords)]) # new channel id
     x_coord = np.empty([len(MacroPixelCoords)]) # new x coord
@@ -301,7 +306,6 @@ if __name__ == '__main__':
     new_asig = asig.duplicate_with_new_data(signal.T)
     #new_asig.array_annotations = asig.array_annotations
     new_asig.array_annotations.update(new_evt_ann)
-    new_asig.name += ""
     new_asig.description += "Non homogeneous downsampling obtained by cheching the signal to noise ratio of macropixels ad different size."
     block.segments[0].analogsignals[0] = new_asig
 
