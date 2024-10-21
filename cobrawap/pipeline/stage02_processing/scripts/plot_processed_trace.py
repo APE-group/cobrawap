@@ -21,9 +21,9 @@ CLI.add_argument("--img_dir", nargs='?', type=Path, required=True,
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='processed_trace_channel0.png',
                  help='example filename for channel 0')
-CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
+CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
-CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
+CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
 CLI.add_argument("--plot_channels", nargs='+', type=int, default=0,
                  help="channel to plot")
@@ -56,11 +56,11 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     orig_asig = load_neo(args.original_data, 'analogsignal', lazy=False)
-    orig_asig = time_slice(orig_asig, t_start=args.t_start, t_stop=args.t_stop,
+    orig_asig = time_slice(orig_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
                            lazy=False, channel_indexes=args.plot_channels)
 
     proc_asig = load_neo(args.data, 'analogsignal', lazy=False)
-    proc_asig = time_slice(proc_asig, t_start=args.t_start, t_stop=args.t_stop,
+    proc_asig = time_slice(proc_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
                            lazy=False, channel_indexes=args.plot_channels)
 
     for channel in args.plot_channels:
