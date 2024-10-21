@@ -21,6 +21,7 @@ def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
                 del objects[i].array_annotations[k]
     return None
 
+
 def merge_analogsignals(asigs):
     # ToDo: to be replaced by neo utils functions
     if len(asigs) == 1:
@@ -53,7 +54,6 @@ def merge_analogsignals(asigs):
                 warnings.warn('Unexpected length of array annotations!')
                 continue
             asig.annotations[key] = value[0]
-
 
     for key in asigs[0].annotations.keys():
         annotation_values = np.array([a.annotations[key] for a in asigs])
