@@ -16,7 +16,7 @@ CLI.add_argument("--original_data", nargs='?', type=Path, required=True,
                  help="path to original input data in neo format")
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to processed input data in neo format")
-CLI.add_argument("--img_dir", nargs='?', type=Path, required=True,
+CLI.add_argument("--output_img_dir", nargs='?', type=Path, required=True,
                  help="path of output figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='processed_trace_channel0.png',
@@ -65,6 +65,6 @@ if __name__ == '__main__':
 
     for channel in args.plot_channels:
         plot_traces(orig_asig, proc_asig, channel)
-        output_path = os.path.join(args.img_dir,
+        output_path = os.path.join(args.output_img_dir,
                                    args.img_name.replace('_channel0', f'_channel{channel}'))
         save_plot(output_path)

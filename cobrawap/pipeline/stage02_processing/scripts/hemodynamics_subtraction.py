@@ -9,7 +9,6 @@ from pathlib import Path
 import os
 import neo
 import quantities as pq
-import scipy
 from skimage import data, io, filters, measure
 from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
 from utils.neo_utils import imagesequence_to_analogsignal, analogsignal_to_imagesequence, flip_image, rotate_image, time_slice
