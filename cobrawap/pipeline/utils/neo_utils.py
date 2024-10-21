@@ -21,6 +21,7 @@ def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
                 del objects[i].array_annotations[k]
     return None
 
+
 def merge_analogsignals(asigs):
     # ToDo: to be replaced by neo utils functions
     if len(asigs) == 1:
