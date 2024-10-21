@@ -34,7 +34,7 @@ use rule template as plot_traces with:
     params:
         params(t_start = config.PLOT_TSTART,
                t_stop = config.PLOT_TSTOP,
-               channels = config.PLOT_CHANNELS)
+               plot_channels = config.PLOT_CHANNELS)
     output:
         img = Path('{dir}') / '{data_name}' / f'trace_{{data_name}}.{config.PLOT_FORMAT}'
 

@@ -20,7 +20,7 @@ CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
 CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
-CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
+CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=0,
                  help="list of channels to plot")
 
 def plot_traces(asig, channels):
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     asig = load_neo(args.data, 'analogsignal', lazy=True)
 
-    channels = parse_plot_channels(args.channels, args.data)
+    channels = parse_plot_channels(args.plot_channels, args.data)
 
     asig = time_slice(asig, t_start=args.t_start, t_stop=args.t_stop,
                       lazy=True, channel_indexes=channels)
