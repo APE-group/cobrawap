@@ -65,15 +65,22 @@ def parse_CLI_args(block_path):
         # mapping Python types into CWL types
         # CWL allowed types are: string, int, long, float, double, null, array, record, File, Directory, Any
         # Be careful with typing of "data" and "output"; are they Any, string, or File?
-        # arg["type"] = pythontype_to_cwltype(arg["dest"], arg["type"], arg["nargs"]) if arg["dest"] not in ["data","output"] else "File"
+        # arg["type"] = pythontype_to_cwltype(arg["dest"], arg["type"], arg["nargs"]) \
+        # if arg["dest"] not in ["data","output"] else "File"
         arg["type"] = pythontype_to_cwltype(arg)
     return args
 
-def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_path=None):
+def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_path=None, stage_input=None):
 
     stage_path = pipeline_path / stage
 
-    block_args_from_script = parse_CLI_args(stage_path / "scripts" / f"{block}.py")
+    # Checking if block is partly (or completely) custom
+    if os.path.isfile(config_path / stage / "scripts" / f"{block}.py"):
+        script_path = config_path / stage / "scripts" / f"{block}.py"
+    else:
+        script_path = pipeline_path / stage / "scripts" / f"{block}.py"
+
+    block_args_from_script = parse_CLI_args(script_path)
     for arg in block_args_from_script:
         if "name" not in arg.keys():
             arg["name"] = arg["dest"]
@@ -112,6 +119,7 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
                 stage_config = yaml.safe_load(f)
             except yaml.YAMLError as exc:
                 raise exc
+        block_list = stage_block_list(stage, stage_config_path)
         dataset_name = None
         if "PROFILE" in stage_config.keys():
             profile = stage_config["PROFILE"]
@@ -125,7 +133,19 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
                 else:
                     arg["value"] = stage_config["DATA_SETS"]
             if arg["name"]=="data_name":
-                arg["value"] = dataset_name
+                arg["value"] = f"\"{dataset_name}\""
+            if arg["name"]=="data":
+                depends_on = [_["depends_on"] for _ in block_list if _["name"]==block][0]
+                if depends_on=="STAGE_INPUT":
+                    input_path = stage_input
+                else:
+                    input_path = f"{output_path}/{profile}/{stage}/{depends_on}" + \
+                                 f"/{depends_on}.{stage_config['NEO_FORMAT']}"
+                arg["type"] = "File"
+                arg["value"] = f"\n    class: File\n    location: \"{input_path}\""
+            if arg["name"]=="original_data":
+                arg["type"] = "File"
+                arg["value"] = f"\n    class: File\n    location: \"{stage_input}\""
 
     block_output_path = Path(output_path / profile / stage / block)
 
@@ -140,11 +160,28 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
                 arg["type"] = "Directory"
                 arg["value"] = f"\n    class: Directory\n    location: \"{data_path}\""
         elif arg["name"]=="output":
-            # TBD: output has to be reconstructed only when not passed explicitly via CLI
-            arg["value"] = f"\"{block_output_path}/{block}.{stage_config['NEO_FORMAT']}\""
+            # TBD: output should not be an absolute path
+            # Better to use local paths and then export at the end
+            #arg["value"] = f"\"{block_output_path}/{block}.{stage_config['NEO_FORMAT']}\""
+            arg["value"] = f"\"{block}.{stage_config['NEO_FORMAT']}\""
+        elif arg["name"]=="output_img":
+            arg["value"] = f"\"{block}.{stage_config['PLOT_FORMAT']}\""
+        elif arg["name"]=="output_array":
+            arg["value"] = f"\"{block}.npy\""
+        elif arg["name"]=="output_img_dir":
+            if block=="detrending":
+                arg["value"] = f"\"detrending_plots\""
+            elif block=="logMUA_estimation":
+                arg["value"] = f"\"logMUA_estimation_plots\""
+            elif block=="plot_processed_trace":
+                # TBD: recall t_start and t_stop from stage01 config
+                arg["value"] = f"\"processed_trace_" + \
+                               f"\"{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
 
+    # Writing yaml file
     with open(stage_path / "cwl_steps" / f"{block}.yaml", "w+") as f_out:
-        f_out.write(f"pipeline_path: \"{pipeline_path}\"\n\n")
+        f_out.write(f"pipeline_path: \"{pipeline_path}\"\n")
+        f_out.write(f"step:\n    class: File\n    location: \"{script_path}\"\n\n")
         for arg in block_args_from_script:
             if isinstance(arg["value"],list):
                 f_out.write(f"{arg['name']}:\n")
@@ -154,6 +191,7 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
                 f_out.write(f"{arg['name']}: {arg['value']}\n")
         f_out.write("\n")
 
+    # Writing cwl command-line-tool file
     with open(stage_path / "cwl_steps" / f"{block}_2.cwl", "w+") as f_out:
         f_out.write("#!/usr/bin/env cwltool\n")
         f_out.write("\n")
@@ -163,36 +201,37 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
         f_out.write("baseCommand: python3\n")
         f_out.write("\n")
         f_out.write("requirements:\n")
-        f_out.write("  EnvVarRequirement:\n")
-        f_out.write("    envDef:\n")
-        f_out.write("      PYTHONPATH: $(inputs.pipeline_path)\n")
+        f_out.write("    EnvVarRequirement:\n")
+        f_out.write("        envDef:\n")
+        f_out.write("            PYTHONPATH: $(inputs.pipeline_path)\n")
         f_out.write("\n")
         f_out.write("inputs:\n")
-        f_out.write("  pipeline_path:\n")
-        f_out.write("    type: string\n")
-        f_out.write("  step:\n")
-        f_out.write("    type: File?\n")
-        f_out.write("    default:\n")
-        f_out.write("      class: File\n")
-        f_out.write(f"      location: \"../scripts/{block}.py\"\n")
-        f_out.write("    inputBinding:\n")
-        f_out.write("      position: 0\n")
+        f_out.write("    pipeline_path:\n")
+        f_out.write("        type: string\n")
+        f_out.write("    step:\n")
+        f_out.write("        type: File\n")
+        f_out.write("        inputBinding:\n")
+        f_out.write("            position: 0\n")
         for a,arg in enumerate(block_args_from_script):
-            f_out.write(f"  {arg['name']}:\n")
-            f_out.write(f"    type: {arg['type']}\n")
+            f_out.write(f"    {arg['name']}:\n")
+            f_out.write(f"        type: {arg['type']}\n")
             #if not arg["required"]:
             #    f_out.write("?")
             #f_out.write("\n")
-            f_out.write("    inputBinding:\n")
-            f_out.write(f"      position: {a+1}\n")
-            f_out.write(f"      prefix: --{arg['name']}\n")
+            f_out.write("        inputBinding:\n")
+            f_out.write(f"            position: {a+1}\n")
+            f_out.write(f"            prefix: --{arg['name']}\n")
         f_out.write("\n")
-        if "output" in [_["name"] for _ in block_args_from_script]:
+        outputs = [_ for _ in block_args_from_script if "output" in _["name"]]
+        if len(outputs):
             f_out.write("outputs:\n")
-            f_out.write(f"  {block}.output:\n")
-            f_out.write("    type: File\n")
-            f_out.write("    outputBinding:\n")
-            f_out.write("      glob: $(inputs.output)\n")
+            for output in outputs:
+                name = output["name"]
+                type = "Directory" if "dir" in name.split("_") else "File"
+                f_out.write(f"    {name}:\n")
+                f_out.write(f"        type: {type}\n")
+                f_out.write("        outputBinding:\n")
+                f_out.write(f"            glob: $(inputs.{name})\n")
         else:
             f_out.write("outputs: []\n")
 
@@ -282,7 +321,6 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "cwlVersion: v1.2\n" + \
             "class: Workflow\n\n"
 
-#def write_cwl_stage_files(stage_path, stage_input, block_list, yaml_config, global_input_list, detailed_input):
 def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
 
     stage_path = pipeline_path / stage
@@ -300,34 +338,42 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
 
     detailed_input = {}
     global_input_list = [
-        {"block_name": "", "input_name": "data", "input_name_with_prefix": "data", "input_type": "Any"},
-        {"block_name": "", "input_name": "pipeline_path", "input_name_with_prefix": "pipeline_path", "input_type": "string"}
+        {"block_name": "", "input_name": "data", \
+        "input_name_with_prefix": "data", "input_type": "Any"},
+        {"block_name": "", "input_name": "pipeline_path", \
+        "input_name_with_prefix": "pipeline_path", "input_type": "string"}
     ]
     block_specs = {}
     for b,blk in enumerate(block_list):
 
         block = blk["name"]
 
-        write_cwl_block_files(stage, block, stage_config_path=stage_config_path)
+        write_cwl_block_files(stage, block, stage_config_path=stage_config_path, stage_input=stage_input)
 
         # use the clt file
         block_specs[block] = {}
         detailed_input[block] = []
-        with open(stage_path / "cwl_steps" / f"{block}.cwl", "r") as f:
+        with open(stage_path / "cwl_steps" / f"{block}_2.cwl", "r") as f:
             try:
                 yaml_block_file = yaml.safe_load(f)
                 block_inputs = list(yaml_block_file["inputs"].keys())
-                has_output = False if len(yaml_block_file["outputs"])==0 else True
+                block_outputs = yaml_block_file["outputs"]
+                if isinstance(block_outputs,dict):
+                    block_outputs = list(block_outputs.keys())
+                print("block_outputs:", block_outputs)
+                has_output = False if len(block_outputs)==0 else True
             except yaml.YAMLError as exc:
                 raise exc
 
-            block_inputs = [_ for _ in block_inputs if _ not in ["pipeline_path","step"]]
+            block_inputs = [_ for _ in block_inputs if _ not in ["pipeline_path"]]
 
             block_specs[block]["depends_on"] = [_["depends_on"] for _ in block_list if _["name"]==block][0]
             block_specs[block]["inputs"] = {}
+            block_specs[block]["outputs"] = {}
             for input in block_inputs:
                 block_specs[block]["inputs"][input] = yaml_block_file["inputs"][input]
-                block_specs[block]["inputs"][input]["nargs"] = "+" if "[]" in yaml_block_file["inputs"][input]["type"] else "?"
+                block_specs[block]["inputs"][input]["nargs"] = \
+                    "+" if "[]" in yaml_block_file["inputs"][input]["type"] else "?"
                 detailed_input[block].append(input)
                 global_input_list.append({"block_name": block,
                                           "input_name": input,
@@ -335,6 +381,9 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
                                           "input_type": yaml_block_file["inputs"][input]["type"]
                                          })
             block_specs[block]["has_output"] = has_output
+            if has_output:
+                for output in block_outputs:
+                    block_specs[block]["outputs"][output] = yaml_block_file["outputs"][output]
 
     print("\nglobal_list:\n", global_input_list, "\n")
     print("detailed_list:\n", detailed_input, "\n")
@@ -348,14 +397,15 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
 
         # inputs
         f_out.write("inputs:\n\n")
-        f_out.write(f"  # General\n")
-        f_out.write("  pipeline_path: string\n\n")
+        #f_out.write(f"    # General\n")
+        f_out.write("    pipeline_path: string\n\n")
         for b,blk in enumerate(block_list):
             block = blk["name"]
-            f_out.write(f"  # Block \'{block}\'\n")
+            #f_out.write(f"    # Block \'{block}\'\n")
+            #f_out.write(f"  {block}.step: File\n")
             for input in block_specs[block]["inputs"].keys():
                 if input!="data" or (input=="data" and block_specs[block]["depends_on"] in ["RAW_DATA","STAGE_INPUT"]):
-                    f_out.write(f"  {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
+                    f_out.write(f"    {block}.{input}: {block_specs[block]['inputs'][input]['type']}\n")
             f_out.write("\n")
 
         # outputs
@@ -364,36 +414,39 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
         for b,blk in enumerate(block_list):
             block = blk["name"]
             if block_specs[block]["has_output"]:
-                f_out.write(f"  {block}.output:\n")
-                f_out.write(f"    type: File\n")
-                f_out.write(f"    outputSource: {block}/{block}.output\n")
+                for output in block_specs[block]["outputs"].keys():
+                    f_out.write(f"    {block}.{output}:\n")
+                    f_out.write(f"        type: {block_specs[block]['outputs'][output]['type']}\n")
+                    f_out.write(f"        outputSource: {block}/{block}.{output}\n")
                 f_out.write("\n")
-                last_output = f"{block}/{block}.output"
+                if "output" in block_specs[block]["outputs"].keys():
+                    last_output = f"{block}/{block}.output"
         if last_output is not None:
-            f_out.write("  final_output:\n")
-            f_out.write("    type: File\n")
-            f_out.write(f"    outputSource: {last_output}\n\n")
+            f_out.write("    final_output:\n")
+            f_out.write("        type: File\n")
+            f_out.write(f"        outputSource: {last_output}\n\n")
 
         # steps
         f_out.write("steps:\n\n")
         for b,blk in enumerate(block_list):
             block = blk["name"]
-            f_out.write(f"  {block}:\n")
-            f_out.write(f"    run: cwl_steps/{block}.cwl\n")
-            f_out.write(f"    in:\n")
-            f_out.write("      pipeline_path: pipeline_path\n")
+            f_out.write(f"    {block}:\n")
+            f_out.write(f"        run: cwl_steps/{block}_2.cwl\n")
+            f_out.write(f"        in:\n")
+            f_out.write("            pipeline_path: pipeline_path\n")
+            #f_out.write(f"      step: {block}.step\n")
             for input in block_specs[block]["inputs"].keys():
                 if input=="data":
                     if blk["depends_on"] in ["RAW_DATA","STAGE_INPUT"]:
-                        f_out.write(f"      data: {block}.data\n")
+                        f_out.write(f"            data: {block}.data\n")
                     else:
-                        f_out.write(f"      data: {blk['depends_on']}/{blk['depends_on']}.output\n")
+                        f_out.write(f"            data: {blk['depends_on']}/{blk['depends_on']}.output\n")
                 else:
-                    f_out.write(f"      {input}: {block}.{input}\n")
+                    f_out.write(f"            {input}: {block}.{input}\n")
             if block_specs[block]["has_output"]:
-                f_out.write(f"    out: [{block}.output]\n")
+                f_out.write(f"        out: [{block}.output]\n")
             else:
-                f_out.write("    out: []\n")
+                f_out.write("        out: []\n")
             f_out.write("\n")
 
 
@@ -499,16 +552,17 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
                         else:
                             value = "[]"
                 # Block-specific behaviour
-                elif key=="img_dir":
+                elif key=="output_img_dir":
                     if block=="detrending":
-                        value = f"\"detrending_plots\""
+                        value = f"\n    class: Directory\n    location: \"detrending_plots\""
                     elif block=="logMUA_estimation":
-                        value = f"\"logMUA_estimation_plots\""
+                        value = f"\n    class: Directory\n    location: \"logMUA_estimation_plots\""
                     elif block=="plot_processed_trace":
                         # TBD: recall t_start and t_stop from stage01 config
-                        value = f"\"processed_trace_{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
+                        value = f"\n    class: Directory\n    location: \"processed_trace_" + \
+                                f"{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
                     else:
-                        value = f"\".\""
+                        value = f"\n    class: Directory\n    location: \"output_img_dir\""
                 elif key=="img_name":
                     if block=="detrending":
                         value = f"\"detrending_trace_channel0.{stage_config['PLOT_FORMAT']}\""

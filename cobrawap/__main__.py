@@ -553,12 +553,18 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
     elif workflow_manager=="cwl":
 
         # empty the stage output folder
+
         housekeeping_cl = ["rm", "-rf", str(output_path / profile / stage), ";", \
                            "mkdir", str(output_path / profile / stage), ";", \
-                           "if", "[", "!", "-d", str(output_path / profile), "];", "then", \
-                           "mkdir", str(output_path / profile)]
+                           "if", "[", "!", "-d", str(output_path / profile / stage), "];", "then", \
+                           "mkdir", str(output_path / profile / stage)]
         with working_directory(output_path):
             subprocess.run(housekeeping_cl)
+        """
+        if os.path.isdir(output_path / profile / stage):
+            os.rmdir(output_path / profile / stage)
+        os.mkdir(output_path / profile / stage)
+        """
 
         # build yaml and cwl workflow files
         """

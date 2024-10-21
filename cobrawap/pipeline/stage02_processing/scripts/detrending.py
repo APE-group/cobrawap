@@ -18,7 +18,7 @@ CLI.add_argument("--output",  nargs='?', type=str, required=True,
                  help="path of output file")
 CLI.add_argument("--detrending_order", nargs='?', type=int, default=1,
                  help="detrending order")
-CLI.add_argument("--img_dir",  nargs='?', type=str, required=True,
+CLI.add_argument("--output_img_dir",  nargs='?', type=str, required=True,
                  help="path of output figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='detrending_trace_channel0.png',
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     if args.plot_channels[0] is not None:
         for channel in args.plot_channels:
             plot_detrend(asig, detrend_asig, channel)
-            output_path = os.path.join(args.img_dir,
+            output_path = os.path.join(args.output_img_dir,
                                        args.img_name.replace('_channel0', f'_channel{channel}'))
             save_plot(output_path)
 
