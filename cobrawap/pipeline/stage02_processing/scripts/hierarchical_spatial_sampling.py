@@ -178,7 +178,7 @@ def NewLayer(l, Input_image, fs, evaluation_method = "shapiro", null_distr = Non
     cond = CheckCondition([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
-    return(new_list)
+    return new_list
 
 
 def CreateMacroPixel(Input_image, fs, exit_method = "consecutive", evaluation_method = "shapiro", null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
@@ -223,7 +223,7 @@ def CreateMacroPixel(Input_image, fs, exit_method = "consecutive", evaluation_me
 
         NodeList.extend(Children)
 
-    return(MacroPixelCoords)
+    return MacroPixelCoords
 
 
 def plot_masked_image(original_img, MacroPixelCoords):
@@ -245,13 +245,13 @@ def plot_masked_image(original_img, MacroPixelCoords):
     axs[1].set_yticks([])
     axs[1].set_title('Post sampling', fontsize = 7.)
 
-    ls = [macro[2] for macro in MacroPixelCoords]
-
-    im = axs[2].hist(ls, bins = np.max(ls))
+    log2_sizes = [int(np.log2(mp[2])) for mp in MacroPixelCoords]
+    unique, counts = np.unique(log2_sizes, return_counts=True)
+    axs[2].bar(unique, counts, width=0.6)
     axs[2].set_yscale('log')
-    #axs[2].set_xscale('log',base = 2)
-
-    axs[2].set_xlabel('macro-pixel size', fontsize = 7.)
+    axs[2].set_xlim([-0.5+np.min(unique),0.5+np.max(unique)])
+    axs[2].set_xticks(unique, [str(int(_)) for _ in unique])
+    axs[2].set_xlabel('macro-pixel size (log2)', fontsize = 7.)
 
     plt.tight_layout()
     return axs
@@ -284,8 +284,9 @@ if __name__ == '__main__':
                                       ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2),
                                       (0,0)], mode = 'constant', constant_values = np.nan)
 
-    # tree search for the best macro-pixel dimension
-    # List con x, y, L, flag, x_parent, y_parent, L_parent
+    # Tree search for the best macro-pixel dimension
+    # MacroPixelCoords is a list of lists, each for a macro-pixel,
+    # containing following metrics: x, y, L, flag, x_parent, y_parent, L_parent
     MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
                                         fs = fs,
                                         exit_method = args.exit_condition,
