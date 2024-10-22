@@ -195,18 +195,18 @@ def CreateMacroPixel(Input_image, sampling_frequency, exit_condition, evaluation
         #check wether exit condition is met
         if exit_condition == "voting":
             # check how many of children are "bad"
-            flag_list = [np.int32(ch[3]>= n_bad) for ch in Children]
+            flag_list = [np.int32(ch[3]>= n_bad_nodes) for ch in Children]
             if np.sum(flag_list) > voting_threshold*len(Children):
                 MacroPixelCoords.append(Children[0][4:]) # store parent node
                 Children = []
         elif exit_condition == "consecutive":
             # check if some or all children are "bad"
-            flag_list = [ch[3]==n_bad for ch in Children]
+            flag_list = [ch[3]==n_bad_nodes for ch in Children]
             if all(flag_list): # if all children are "bad"
                 MacroPixelCoords.append(Children[0][4:]) # store parent node
                 Children = []
             else:
-                Children = [ch for ch in Children if ch[3] != n_bad]
+                Children = [ch for ch in Children if ch[3] != n_bad_nodes]
 
         # check whether minimum dimension has been reached
         l_list = [ch[2] == 1 for ch in Children]
