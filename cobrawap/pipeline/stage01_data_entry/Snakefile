@@ -56,7 +56,7 @@ def data_path(w):
 
 use rule template as enter_data with:
     input:
-        raw_data = data_path,
+        data = data_path,
         script = curation_script,
     params:
         params('spatial_scale', 'sampling_rate', 't_start', 't_stop',
