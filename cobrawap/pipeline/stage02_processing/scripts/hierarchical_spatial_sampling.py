@@ -5,30 +5,47 @@ Performs a dynamical downsampling, based on a (customizable) 'quality' evaluatio
 import neo
 import numpy as np
 
-from scipy.stats import shapiro,ks_1samp,ks_2samp
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
-from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import none_or_float, none_or_int, none_or_str
-from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
+from scipy.stats import (
+    ks_1samp,
+    ks_2samp,
+    shapiro
+)
+from utils.io_utils import (
+    load_neo,
+    save_plot,
+    write_neo
+)
+from utils.neo_utils import (
+    analogsignal_to_imagesequence,
+    imagesequence_to_analogsignal
+)
+from utils.parse import (
+    none_or_float,
+    none_or_int,
+    none_or_str
+)
 
 CLI = argparse.ArgumentParser()
-CLI.add_argument("--data", nargs='?', type=Path, required=True,
+CLI.add_argument("--data", nargs="?", type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output", nargs='?', type=Path, required=True,
+CLI.add_argument("--output", nargs="?", type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
+CLI.add_argument("--output_img", nargs="?", type=Path, required=True,
                  help="path of output image", default=None)
-CLI.add_argument("--n_bad_nodes", nargs='?', type=none_or_int,
-                 help="number of non informative macro-pixel to prune branch", default=2)
-CLI.add_argument("--exit_condition", nargs='?', type=none_or_str,
-                 help="exit condition in the optimal macro-pixel dimension tree search", default='consecutive')
-CLI.add_argument("--signal_eval_method", nargs='?', type=none_or_str,
-                 help="signal-to-noise ratio evaluation method", default='shapiro')
-CLI.add_argument("--voting_threshold", nargs='?', type=none_or_float,
-                 help="threshold of non-informative nodes percentage if voting method is selected", default=0.5)
-CLI.add_argument("--output_array", nargs='?', type=none_or_str,
+CLI.add_argument("--exit_condition", nargs="?", type=none_or_str,
+                 choices=["voting","consecutive"], default="consecutive",
+                 help="exit condition in the optimal macro-pixel dimension tree search")
+CLI.add_argument("--voting_threshold", nargs="?", type=none_or_float, default=0.5,
+                 help="threshold of non-informative nodes percentage if \"voting\" method is selected")
+CLI.add_argument("--n_bad_nodes", nargs="?", type=none_or_int, default=2,
+                 help="number of non-informative nodes to prune branch if \"consecutive\" method is selected")
+CLI.add_argument("--signal_eval_method", nargs="?", type=none_or_str,
+                 choices=["shapiro","shapiroplus"], default="shapiro",
+                 help="signal-to-noise ratio evaluation method")
+CLI.add_argument("--output_array", nargs="?", type=none_or_str,
                  help="path of output numpy array", default=None)
 
 def next_power_of_2(n):
@@ -115,21 +132,21 @@ def EvaluateShapiro(value):
     stat,p = shapiro(value)
     return p
 
-def CheckCondition(coords, Input_image, fs, method = 'shapiro', null_distr = None, shapiro_plus_th = None):
+def CheckCondition(coords, Input_image, fs, method = "shapiro", null_distr = None, shapiro_plus_th = None):
     # function to check whether node is compliant with the condition
     value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
     # if np.isnan(np.nanmax(value)):
     if np.isnan(value).all():
         return 1
     else:
-        if method == 'shapiro':
+        if method == "shapiro":
             p = EvaluateShapiro(value)
             if p <= 0.05:
                 return 0
             else:
                 # the pixel is classified as noise
                 return 1
-        elif method == 'shapiroplus':
+        elif method == "shapiroplus":
             p_1 = EvaluateShapiro(value)
             p_2 = EvaluateShapiroPlus(value, null_distr, fs, shapiro_plus_th)
             if (p_1 > 0.05) and ((p_2 > 0.05) or (p_2 is np.nan)):
@@ -139,7 +156,7 @@ def CheckCondition(coords, Input_image, fs, method = 'shapiro', null_distr = Non
                 return 0
 
 
-def NewLayer(l, Input_image, fs, evaluation_method = 'shapiro', null_distr = None, shapiro_plus_th = None):
+def NewLayer(l, Input_image, fs, evaluation_method = "shapiro", null_distr = None, shapiro_plus_th = None):
     new_list = []
     # first leaf
     cond = CheckCondition([l[0], l[1], l[2]//2], Input_image, fs, evaluation_method, null_distr, shapiro_plus_th)
@@ -159,7 +176,7 @@ def NewLayer(l, Input_image, fs, evaluation_method = 'shapiro', null_distr = Non
 
     return(new_list)
 
-def CreateMacroPixel(Input_image, fs, exit_method = 'consecutive', evaluation_method = 'shapiro', null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
+def CreateMacroPixel(Input_image, fs, exit_method = "consecutive", evaluation_method = "shapiro", null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
     # initialized node list
     NodeList = []
     MacroPixelCoords = []
