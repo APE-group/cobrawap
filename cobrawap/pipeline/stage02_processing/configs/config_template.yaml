@@ -57,7 +57,7 @@ MACRO_PIXEL_DIM: 2
 # method to use for the exit mode: 'consecutive', 'voting', 'standard'
 EXIT_CONDITION: 'voting'
 # method to evaluate the signal to noise ration of a macro pixel
-SIGNAL_EVALUATION_METHOD: 'shapiro'
+EVALUATION_METHOD: 'shapiro'
 # number of bad nodes in the same branch to meet the exit condition
 N_BAD_NODES: 2
 # only for "voting" method: threshold fraction of

@@ -189,7 +189,7 @@ use rule template as hierarchical_spatial_sampling with:
         data = input_file,
         script = SCRIPTS / 'hierarchical_spatial_sampling.py'
     params:
-        params('n_bad_nodes','voting_threshold','exit_condition','signal_eval_method')
+        params('n_bad_nodes','voting_threshold','exit_condition','evaluation_method')
     output:
         Path('{dir}') / '{rule_name}' / f'hierarchical_spatial_sampling.{config.NEO_FORMAT}',
         output_img = Path('{dir}') / '{rule_name}' / f'hierarchical_spatial_sampling.{config.PLOT_FORMAT}'
