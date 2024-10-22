@@ -2,6 +2,7 @@
 Plot an example signal trace before and after application of some processing steps.
 """
 
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
@@ -40,15 +41,16 @@ def plot_traces(original_asig, processed_asig, channel):
     palette = sns.color_palette()
 
     ax1.plot(original_asig.times,
-            original_asig.as_array()[:,channel],
-            color=palette[0])
+             original_asig.as_array()[:,channel],
+             color=palette[0])
     ax1.set_ylabel('original signal', color=palette[0])
     ax1.tick_params('y', colors=palette[0])
 
     ax2 = ax1.twinx()
-    ax2.plot(processed_asig.times,
-            processed_asig.as_array()[:,channel],
-            color=palette[1])
+    if channel in range(np.shape(processed_asig.as_array())[1]):
+        ax2.plot(processed_asig.times,
+                 processed_asig.as_array()[:,channel],
+                 color=palette[1])
     ax2.set_ylabel('processed signal', color=palette[1])
     ax2.tick_params('y', colors=palette[1])
 
@@ -62,12 +64,17 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     orig_asig = load_neo(args.original_data, 'analogsignal', lazy=False)
-    orig_asig = time_slice(orig_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
-                           lazy=False, channel_indexes=args.plot_channels)
+    orig_asig = time_slice(orig_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop)
 
     proc_asig = load_neo(args.data, 'analogsignal', lazy=False)
-    proc_asig = time_slice(proc_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
-                           lazy=False, channel_indexes=args.plot_channels)
+    proc_asig = time_slice(proc_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop)
+
+    # ToDo:
+    # When a subsampling is performed, the shape of the processed signal
+    # is typically different from that of the original one.
+    # 1) Check if channel(s) to be plotted is a proper index of the processed signal;
+    # 2) Try to retrieve the index of the processed signal corresponding
+    #    to the channel picked in the original signal.
 
     for channel in args.plot_channels:
         plot_traces(orig_asig, proc_asig, channel)

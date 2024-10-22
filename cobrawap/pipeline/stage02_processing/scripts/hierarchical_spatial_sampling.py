@@ -28,6 +28,7 @@ from utils.parse import (
     none_or_str
 )
 
+
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs="?", type=Path, required=True,
                  help="path to input data in neo format")
@@ -48,6 +49,7 @@ CLI.add_argument("--signal_eval_method", nargs="?", type=none_or_str,
 CLI.add_argument("--output_array", nargs="?", type=none_or_str,
                  help="path of output numpy array", default=None)
 
+
 def next_power_of_2(n):
     if n == 0:
         return 1
@@ -56,6 +58,7 @@ def next_power_of_2(n):
     while n & (n - 1) > 0:
         n &= (n - 1)
     return n << 1
+
 
 def ComputeCenterOfMass(s, scale):
     # compute the center of mass of a macropixel con nan values
@@ -66,8 +69,6 @@ def ComputeCenterOfMass(s, scale):
     if np.isnan(x_cm): x_cm = np.shape(mean)[0]/2
     if np.isnan(y_cm): y_cm = np.shape(mean)[1]/2
     return(x_cm, y_cm)
-
-# List con x,y,L,flag,x_parent, y_parent, L_parent
 
 
 def above_th_points(y, fs, shapiro_plus_th):
@@ -120,6 +121,7 @@ def InitShapiroPlus(Input_image, fs, shapiro_plus_th):
     zz = np.poly1d(z)
     return zz
 
+
 def EvaluateShapiroPlus(value, cumul_distr, fs, shapiro_plus_th):
     y = np.diff(above_th_points(value, fs, shapiro_plus_th))
     try:
@@ -128,9 +130,11 @@ def EvaluateShapiroPlus(value, cumul_distr, fs, shapiro_plus_th):
     except Exception:
         return np.nan
 
+
 def EvaluateShapiro(value):
     stat,p = shapiro(value)
     return p
+
 
 def CheckCondition(coords, Input_image, fs, method = "shapiro", null_distr = None, shapiro_plus_th = None):
     # function to check whether node is compliant with the condition
@@ -175,6 +179,7 @@ def NewLayer(l, Input_image, fs, evaluation_method = "shapiro", null_distr = Non
     new_list.append([l[0]+l[2]//2, l[1]+l[2]//2, l[2]//2, (l[3]+cond)*cond, l[0], l[1], l[2]])
 
     return(new_list)
+
 
 def CreateMacroPixel(Input_image, fs, exit_method = "consecutive", evaluation_method = "shapiro", null_distr = None, shapiro_plus_th = None, threshold = 0.5, n_bad = 2):
     # initialized node list
@@ -251,23 +256,24 @@ def plot_masked_image(original_img, MacroPixelCoords):
     plt.tight_layout()
     return axs
 
+
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     block = load_neo(args.data)
     asig = block.segments[0].analogsignals[0]
-    block = analogsignal_to_imagesequence(block)
+    #block = analogsignal_to_imagesequence(block)
     fs = asig.sampling_rate.magnitude
 
     # load image sequences at the original spatial resolution
-    imgseq = block.segments[0].imagesequences[0]
+    imgseq = analogsignal_to_imagesequence(asig)
     imgseq_array = np.swapaxes(imgseq.as_array().T, 0, 1)
     dim_x, dim_y, dim_t = imgseq_array.shape
 
-    if args.signal_eval_method == 'shapiroplus':
+    if args.signal_eval_method == "shapiroplus":
         shapiro_plus_th = 2.5
         null_distr = InitShapiroPlus(imgseq_array, fs, shapiro_plus_th)
-    else:
+    elif args.signal_eval_method == "shapiro":
         shapiro_plus_th = None
         null_distr = None
 
@@ -279,7 +285,7 @@ if __name__ == '__main__':
                                       (0,0)], mode = 'constant', constant_values = np.nan)
 
     # tree search for the best macro-pixel dimension
-    # List con x,y,L,flag,x_parent, y_parent, L_parent
+    # List con x, y, L, flag, x_parent, y_parent, L_parent
     MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
                                         fs = fs,
                                         exit_method = args.exit_condition,
@@ -289,24 +295,25 @@ if __name__ == '__main__':
                                         threshold = args.voting_threshold,
                                         n_bad = args.n_bad_nodes)
 
-    if args.output_img is not None:
-        plot_masked_image(padded_image_seq, MacroPixelCoords)
-        save_plot(args.output_img)
+    plot_masked_image(padded_image_seq, MacroPixelCoords)
+    save_plot(args.output_img)
 
-    signal = np.empty([len(MacroPixelCoords), dim_t]) #save data as analogsignal
-    coordinates = np.empty([len(MacroPixelCoords), 3]) #pixel coordinates [x,y,L] to retrieve
-                                                       # original one
-    ch_id = np.empty([len(MacroPixelCoords)]) # new channel id
-    x_coord = np.empty([len(MacroPixelCoords)]) # new x coord
-    y_coord = np.empty([len(MacroPixelCoords)]) # new y coord
-    x_coord_cm = np.empty([len(MacroPixelCoords)]) # new x coord
-    y_coord_cm = np.empty([len(MacroPixelCoords)]) # new y coord
+    N_MacroPixel = len(MacroPixelCoords)
+    signal = np.empty([N_MacroPixel, dim_t]) # save data as analogsignal
+    coordinates = np.empty([N_MacroPixel, 3]) # pixel coordinates [x,y,L] to retrieve original one
+    ch_id = np.empty([N_MacroPixel]) # new channel id
+    x_coord = np.empty([N_MacroPixel]) # new x coord
+    y_coord = np.empty([N_MacroPixel]) # new y coord
+    x_coord_cm = np.empty([N_MacroPixel]) # new x coord
+    y_coord_cm = np.empty([N_MacroPixel]) # new y coord
 
-    for px_idx, px in enumerate(MacroPixelCoords): # for each new pixel
+    # for each macro-pixel
+    for px_idx, px in enumerate(MacroPixelCoords):
         signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2],
                                        px[1]:px[1]+px[2]], axis = (0,1))
-        x_coord_cm[px_idx], y_coord_cm[px_idx] = ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
-                                 imgseq.spatial_scale)
+        x_coord_cm[px_idx], y_coord_cm[px_idx] = \
+            ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
+                                imgseq.spatial_scale)
 
         coordinates[px_idx] = px
         ch_id[px_idx] = px_idx
@@ -324,7 +331,7 @@ if __name__ == '__main__':
     new_asig = asig.duplicate_with_new_data(signal.T)
     #new_asig.array_annotations = asig.array_annotations
     new_asig.array_annotations.update(new_evt_ann)
-    new_asig.description += "Non homogeneous downsampling obtained by checking " +
+    new_asig.description += "Non homogeneous downsampling obtained by checking " + \
                             "the signal-to-noise ratio of macropixels at different sizes."
     block.segments[0].analogsignals[0] = new_asig
 
