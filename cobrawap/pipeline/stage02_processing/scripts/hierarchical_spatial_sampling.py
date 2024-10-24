@@ -46,8 +46,8 @@ CLI.add_argument("--n_bad_nodes", nargs="?", type=none_or_int, default=2,
 CLI.add_argument("--evaluation_method", nargs="?", type=none_or_str,
                  choices=["shapiro","shapiroplus"], default="shapiro",
                  help="signal-to-noise ratio evaluation method")
-CLI.add_argument("--output_array", nargs="?", type=none_or_str,
-                 help="path of output numpy array", default=None)
+CLI.add_argument("--output_array", nargs="?", type=Path, required=True,
+                 help="path of output numpy array")
 
 
 def next_power_of_2(n):
@@ -138,7 +138,7 @@ def EvaluateShapiroPlus(value, cumul_distr, sampling_frequency, shapiro_plus_th)
 
 def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
     # function to check whether node is compliant with the condition
-    value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis = (0,1))
+    value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis=(0,1))
     # if np.isnan(np.nanmax(value)):
     if np.isnan(value).all():
         return 1
@@ -228,7 +228,8 @@ def plot_masked_image(original_img, MacroPixelCoords):
     NewImage = np.empty([np.shape(original_img)[0], np.shape(original_img)[0]])*np.nan
     for macro in MacroPixelCoords:
         # fill pixels belonging to the same macropixel with the same signal
-        NewImage[macro[0]:macro[0] + macro[2], macro[1]:macro[1] + macro[2]] = np.mean(np.nanmean(original_img[macro[0]:macro[0] + macro[2], macro[1]:macro[1]+macro[2]], axis = (0,1)))
+        m = np.mean(np.nanmean(original_img[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]], axis=(0,1)))
+        NewImage[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]] = m
 
     fig, axs = plt.subplots(1, 3)
     fig.set_size_inches(6,2, forward=True)
@@ -277,7 +278,7 @@ if __name__ == '__main__':
     # pad image sequences with nans to make it divisible by 2
     N_pad = next_power_of_2(max(dim_x, dim_y))
     padded_image_seq = np.pad(imgseq_array,
-                         pad_width = [((N_pad-dim_x)//2,(N_pad-dim_x)//2 + (N_pad-dim_x)%2),
+                         pad_width = [((N_pad-dim_x)//2, (N_pad-dim_x)//2 + (N_pad-dim_x)%2),
                                       ((N_pad-dim_y)//2, (N_pad-dim_y)//2 + (N_pad-dim_y)%2),
                                       (0,0)], mode = 'constant', constant_values = np.nan)
 
@@ -327,10 +328,12 @@ if __name__ == '__main__':
 
 
     new_asig = asig.duplicate_with_new_data(signal.T)
-    #new_asig.array_annotations = asig.array_annotations
     new_asig.array_annotations.update(new_evt_ann)
     new_asig.description += "Non homogeneous downsampling obtained by checking " + \
                             "the signal-to-noise ratio of macropixels at different sizes."
     block.segments[0].analogsignals[0] = new_asig
+
+    # ToDo:
+    # use the CLI arg output_array for saving HOS summary stats
 
     write_neo(args.output, block)
