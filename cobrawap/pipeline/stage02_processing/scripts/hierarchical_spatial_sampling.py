@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
+import warnings
 from scipy.stats import (
     ks_1samp,
     ks_2samp,
@@ -50,6 +51,20 @@ CLI.add_argument("--output_array", nargs="?", type=Path, required=True,
                  help="path of output numpy array")
 
 
+# Definition of custom versions of nanmean and nanstd,
+# where automatically catching and ignoring RuntimeWarning warnings
+def silent_nanmean(arr, **kwargs):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        return np.nanmean(arr, **kwargs)
+
+
+def silent_nanstd(arr, **kwargs):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        return np.nanstd(arr, **kwargs)
+
+
 def next_power_of_2(n):
     if n == 0:
         return 1
@@ -62,7 +77,7 @@ def next_power_of_2(n):
 
 def ComputeCenterOfMass(s, scale):
     # compute the center of mass of a macropixel con nan values
-    mean = np.nanmean(s, axis = 2)
+    mean = silent_nanmean(s, axis = 2)
     idx = np.where(~np.isnan(mean))
     x_cm = (np.mean(idx[0])+0.5)*scale
     y_cm = (np.mean(idx[1])+0.5)*scale
@@ -72,18 +87,18 @@ def ComputeCenterOfMass(s, scale):
 
 
 def above_th_points(y, sampling_frequency, shapiro_plus_th):
-    m = np.nanmean(y)
-    sigma = np.nanstd(y)
+    m = silent_nanmean(y)
+    sigma = silent_nanstd(y)
     th_min = m + sigma*shapiro_plus_th
     ind_min = np.where(y>th_min)[0]
     return [_/sampling_frequency for _ in ind_min]
 
 
 def InitShapiroPlus(Input_image, sampling_frequency, shapiro_plus_th):
-    means = np.nanmean(Input_image, axis = 2)
-    stds = np.nanstd(Input_image, axis = 2)
-    m = np.nanmean(means)
-    s = np.nanmean(stds)
+    means = silent_nanmean(Input_image, axis = 2)
+    stds = silent_nanstd(Input_image, axis = 2)
+    m = silent_nanmean(means)
+    s = silent_nanmean(stds)
     rs = []
     for i in range(np.shape(Input_image)[0]):
         for j in range(np.shape(Input_image)[1]):
@@ -91,8 +106,8 @@ def InitShapiroPlus(Input_image, sampling_frequency, shapiro_plus_th):
             if not np.isnan(y_0).all():
                 y_1 = np.roll(y_0,-1)
                 rs.append(np.sum(y_0*y_1)/np.sum(y_0*y_0))
-    r_mean = np.nanmean(rs)
-    r_std = np.nanstd(rs)
+    r_mean = silent_nanmean(rs)
+    r_std = silent_nanstd(rs)
 
     # loop per generare N canali sintetici
     bins = np.arange(0, (np.shape(Input_image)[2]+0.5)/sampling_frequency, 0.1)
@@ -138,7 +153,7 @@ def EvaluateShapiroPlus(value, cumul_distr, sampling_frequency, shapiro_plus_th)
 
 def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
     # function to check whether node is compliant with the condition
-    value = np.nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis=(0,1))
+    value = silent_nanmean(Input_image[coords[0]:coords[0]+coords[2], coords[1]:coords[1]+coords[2]], axis=(0,1))
     # if np.isnan(np.nanmax(value)):
     if np.isnan(value).all():
         return 1
@@ -228,12 +243,12 @@ def plot_masked_image(original_img, MacroPixelCoords):
     NewImage = np.empty([np.shape(original_img)[0], np.shape(original_img)[0]])*np.nan
     for macro in MacroPixelCoords:
         # fill pixels belonging to the same macropixel with the same signal
-        m = np.mean(np.nanmean(original_img[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]], axis=(0,1)))
+        m = np.mean(silent_nanmean(original_img[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]], axis=(0,1)))
         NewImage[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]] = m
 
     fig, axs = plt.subplots(1, 3)
     fig.set_size_inches(6,2, forward=True)
-    im = axs[0].imshow(np.nanmean(original_img, axis = 2))
+    im = axs[0].imshow(silent_nanmean(original_img, axis = 2))
     axs[0].set_xticks([])
     axs[0].set_yticks([])
     axs[0].set_title('Original image', fontsize = 7.)
@@ -308,8 +323,8 @@ if __name__ == '__main__':
 
     # for each macro-pixel
     for px_idx, px in enumerate(MacroPixelCoords):
-        signal[px_idx, :] = np.nanmean(padded_image_seq[px[0]:px[0]+px[2],
-                                       px[1]:px[1]+px[2]], axis = (0,1))
+        signal[px_idx, :] = silent_nanmean(padded_image_seq[px[0]:px[0]+px[2],
+                                           px[1]:px[1]+px[2]], axis = (0,1))
         x_coord_cm[px_idx], y_coord_cm[px_idx] = \
             ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
                                 imgseq.spatial_scale)
