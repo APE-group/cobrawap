@@ -81,9 +81,11 @@ def ComputeCenterOfMass(s, scale):
     idx = np.where(~np.isnan(mean))
     x_cm = (np.mean(idx[0])+0.5)*scale
     y_cm = (np.mean(idx[1])+0.5)*scale
-    if np.isnan(x_cm): x_cm = np.shape(mean)[0]/2
-    if np.isnan(y_cm): y_cm = np.shape(mean)[1]/2
-    return(x_cm, y_cm)
+    if np.isnan(x_cm):
+        x_cm = np.shape(mean)[0]/2
+    if np.isnan(y_cm):
+        y_cm = np.shape(mean)[1]/2
+    return x_cm, y_cm
 
 
 def above_th_points(y, sampling_frequency, shapiro_plus_th):
@@ -247,16 +249,16 @@ def plot_masked_image(original_img, MacroPixelCoords):
         NewImage[macro[0]:macro[0]+macro[2], macro[1]:macro[1]+macro[2]] = m
 
     fig, axs = plt.subplots(1, 3)
-    fig.set_size_inches(6,2, forward=True)
-    im = axs[0].imshow(silent_nanmean(original_img, axis = 2))
+    fig.set_size_inches(6, 2, forward=True)
+    im = axs[0].imshow(silent_nanmean(original_img, axis=2))
     axs[0].set_xticks([])
     axs[0].set_yticks([])
-    axs[0].set_title('Original image', fontsize = 7.)
+    axs[0].set_title('Original image', fontsize=7)
 
     im = axs[1].imshow(NewImage)
     axs[1].set_xticks([])
     axs[1].set_yticks([])
-    axs[1].set_title('Post sampling', fontsize = 7.)
+    axs[1].set_title('Post sampling', fontsize=7)
 
     log2_sizes = [int(np.log2(mp[2])) for mp in MacroPixelCoords]
     unique, counts = np.unique(log2_sizes, return_counts=True)
@@ -264,7 +266,7 @@ def plot_masked_image(original_img, MacroPixelCoords):
     axs[2].set_yscale('log')
     axs[2].set_xlim([-0.5+np.min(unique),0.5+np.max(unique)])
     axs[2].set_xticks(unique, [str(int(_)) for _ in unique])
-    axs[2].set_xlabel('macro-pixel size (log2)', fontsize = 7.)
+    axs[2].set_xlabel('macro-pixel size (log2)', fontsize=7)
 
     plt.tight_layout()
     return axs
@@ -324,7 +326,7 @@ if __name__ == '__main__':
     # for each macro-pixel
     for px_idx, px in enumerate(MacroPixelCoords):
         signal[px_idx, :] = silent_nanmean(padded_image_seq[px[0]:px[0]+px[2],
-                                           px[1]:px[1]+px[2]], axis = (0,1))
+                                           px[1]:px[1]+px[2]], axis=(0,1))
         x_coord_cm[px_idx], y_coord_cm[px_idx] = \
             ComputeCenterOfMass(padded_image_seq[px[0]:px[0]+px[2], px[1]:px[1]+px[2]],
                                 imgseq.spatial_scale)
