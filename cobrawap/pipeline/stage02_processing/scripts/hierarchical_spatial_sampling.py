@@ -89,7 +89,7 @@ def ComputeCenterOfMass(s, scale):
     return y_cm, x_cm
 
 
-def above_th_points(y, sampling_frequency, shapiro_plus_th):
+def above_thr_points(y, sampling_frequency, shapiro_plus_th):
     avg = silent_nanmean(y)
     sigma = silent_nanstd(y)
     th_min = avg + sigma*shapiro_plus_th
@@ -116,28 +116,28 @@ def InitShapiroPlus(Input_image, sampling_frequency, shapiro_plus_th):
     bins = np.arange(0, (np.shape(Input_image)[0]+0.5)/sampling_frequency, 0.1)
     bin_size = bins[1]-bins[0]
 
-    av_h = np.zeros(len(bins)-1)
-    c = 0
+    avg_hist = np.zeros(len(bins)-1)
+    count = 0
 
     for i in range(10000):
-        red_signal = [np.random.normal(loc=avg, scale=std) for t in range(np.shape(Input_image)[0])]
+        synth_signal = [np.random.normal(loc=avg, scale=std) for t in range(np.shape(Input_image)[0])]
         r = r_mean
         #r = np.random.normal(loc=r_mean, scale=r_std)
-        for t in range(1,len(red_signal)):
-            red_signal[t] = r*red_signal[t-1] + np.sqrt(1-r**2)*red_signal[t]
+        for t in range(1,len(synth_signal)):
+            synth_signal[t] = r*synth_signal[t-1] + np.sqrt(1-r**2)*synth_signal[t]
 
-        y = np.diff(above_th_points(red_signal, sampling_frequency, shapiro_plus_th))
+        intervals = np.diff(above_thr_points(synth_signal, sampling_frequency, shapiro_plus_th))
 
-        if len(y) > 0:
-            h,b = np.histogram(y, bins=bins, density=True)
+        if len(intervals) > 0:
+            h,b = np.histogram(intervals, bins=bins, density=True)
             if not np.isnan(np.sum(h)):
-                av_h += h
-                c += 1
-    av_h /= c
+                avg_hist += h
+                count += 1
+    avg_hist /= count
 
-    z = np.polyfit(b[:-1], np.cumsum(av_h)*bin_size, 4)
-    zz = np.poly1d(z)
-    return zz
+    z = np.polyfit(b[:-1], np.cumsum(avg_hist)*bin_size, 4)
+
+    return np.poly1d(z)
 
 
 def EvaluateShapiro(value):
@@ -146,7 +146,7 @@ def EvaluateShapiro(value):
 
 
 def EvaluateShapiroPlus(value, cumul_distr, sampling_frequency, shapiro_plus_th):
-    y = np.diff(above_th_points(value, sampling_frequency, shapiro_plus_th))
+    y = np.diff(above_thr_points(value, sampling_frequency, shapiro_plus_th))
     try:
         stat, p = ks_1samp(y, cumul_distr)
         return p
