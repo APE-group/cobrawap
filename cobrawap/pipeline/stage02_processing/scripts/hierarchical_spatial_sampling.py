@@ -328,15 +328,15 @@ if __name__ == "__main__":
     # for each macro-pixel px (containing x,y,L)
     for px_idx, px in enumerate(MacroPixelCoords):
         signal[:, px_idx] = np.nanmean(padded_image_seq[:, px[1]:px[1]+px[2],
-                                                       px[0]:px[0]+px[2]],
-                                      axis=(1,2))
+                                                        px[0]:px[0]+px[2]],
+                                       axis=(1,2))
         y_coord_cm[px_idx], x_coord_cm[px_idx] = \
             ComputeCenterOfMass(padded_image_seq[:, px[1]:px[1]+px[2], px[0]:px[0]+px[2]],
-                                imgseq.spatial_scale)
+                                spatial_scale)
         coordinates[px_idx] = px
         ch_id[px_idx] = px_idx
-        y_coord[px_idx] = (px[1]+px[2]/2.)*imgseq.spatial_scale
-        x_coord[px_idx] = (px[0]+px[2]/2.)*imgseq.spatial_scale
+        y_coord[px_idx] = (px[1]+0.5*px[2])*spatial_scale
+        x_coord[px_idx] = (px[0]+0.5*px[2])*spatial_scale
 
     # macropixels details are stored as array_annotations
     mp_annot = {"x_coords": coordinates.T[0],
