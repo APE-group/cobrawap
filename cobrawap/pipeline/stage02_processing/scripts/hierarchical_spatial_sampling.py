@@ -12,7 +12,8 @@ import warnings
 from scipy.stats import (
     ks_1samp,
     ks_2samp,
-    shapiro
+    shapiro,
+    zscore
 )
 from utils.io_utils import (
     load_neo,
@@ -98,14 +99,13 @@ def above_thr_points(y, sampling_frequency, shapiro_plus_th):
 
 
 def InitShapiroPlus(Input_image, sampling_frequency, shapiro_plus_th):
-    avgs = silent_nanmean(Input_image, axis=0)
-    stds = silent_nanstd(Input_image, axis=0)
-    avg = silent_nanmean(avgs)
-    std = silent_nanmean(stds)
+    signal = zscore(Input_image, axis=0)
+    avg = 0
+    std = 1
     rs = []
-    for j in range(np.shape(Input_image)[1]):
-        for i in range(np.shape(Input_image)[2]):
-            trace = Input_image[:,j,i]
+    for j in range(np.shape(signal)[1]):
+        for i in range(np.shape(signal)[2]):
+            trace = signal[:,j,i]
             if not np.isnan(trace).all():
                 rolled_trace = np.roll(trace,-1)
                 rs.append(np.sum(trace*rolled_trace)/np.sum(trace*trace))
@@ -113,16 +113,16 @@ def InitShapiroPlus(Input_image, sampling_frequency, shapiro_plus_th):
     r_std = silent_nanstd(rs)
 
     # loop per generare N canali sintetici
-    bins = np.arange(0, (np.shape(Input_image)[0]+0.5)/sampling_frequency, 0.1)
+    bins = np.arange(0, (np.shape(signal)[0]+0.5)/sampling_frequency, 0.1)
     bin_size = bins[1]-bins[0]
 
     avg_hist = np.zeros(len(bins)-1)
     count = 0
 
     for i in range(10000):
-        synth_signal = [np.random.normal(loc=avg, scale=std) for t in range(np.shape(Input_image)[0])]
-        r = r_mean
-        #r = np.random.normal(loc=r_mean, scale=r_std)
+        synth_signal = [np.random.normal(loc=avg, scale=std) for t in range(np.shape(signal)[0])]
+        #r = r_mean
+        r = np.random.normal(loc=r_mean, scale=r_std)
         for t in range(1,len(synth_signal)):
             synth_signal[t] = r*synth_signal[t-1] + np.sqrt(1-r**2)*synth_signal[t]
 
@@ -145,10 +145,10 @@ def EvaluateShapiro(value):
     return p
 
 
-def EvaluateShapiroPlus(value, cumul_distr, sampling_frequency, shapiro_plus_th):
-    y = np.diff(above_thr_points(value, sampling_frequency, shapiro_plus_th))
+def EvaluateShapiroPlus(trace, cumul_distr, sampling_frequency, shapiro_plus_th):
+    intervals = np.diff(above_thr_points(zscore(trace), sampling_frequency, shapiro_plus_th))
     try:
-        stat, p = ks_1samp(y, cumul_distr)
+        stat, p = ks_1samp(intervals, cumul_distr)
         return p
     except Exception:
         return np.nan
