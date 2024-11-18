@@ -177,6 +177,22 @@ def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, n
                 return 0
 
 
+def coarseGrain(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
+    # function to compute how much a signal is significant, according to the chosen criterion
+
+    mean_trace = silent_nanmean(Input_image[:, coords[1]:coords[1]+coords[2], coords[0]:coords[0]+coords[2]], axis=(1,2))
+    if np.isnan(mean_trace).all():
+        p_value = np.nan
+    else:
+        if evaluation_method == "shapiro":
+            p_value = EvaluateShapiro(mean_trace)
+        elif evaluation_method == "shapiroplus":
+            p_1 = EvaluateShapiro(mean_trace)
+            p_2 = EvaluateShapiroPlus(mean_trace, null_distr, sampling_frequency, shapiro_plus_th)
+            p_value = np.nanmin([p_1,p_2])
+    return mean_trace,p_value
+
+
 def NewLayer(macropixel, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
 
     new_list = []
@@ -195,7 +211,7 @@ def NewLayer(macropixel, Input_image, sampling_frequency, evaluation_method, nul
     return new_list
 
 
-def CreateMacroPixel(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
     # initialized node list
     NodeList = []
     MacroPixelCoords = []
@@ -238,6 +254,52 @@ def CreateMacroPixel(Input_image, sampling_frequency, exit_condition, evaluation
             Children = [ch for ch in Children if ch[2] != 1]
 
         NodeList.extend(Children)
+
+    return MacroPixelCoords
+
+
+def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+    depth = int(np.log2(Input_image.shape[1]))
+    p_values = []
+    mean_signals = []
+    MacroPixelCoords = []
+
+    # d=0 corresponds to largest resolution, i.e. smallest spatial scale
+    for d in range(depth+1):
+        pixel_size = 2**d
+        matrix_size = Input_image.shape[1]//pixel_size
+        mean_signal = np.empty([Input_image.shape[0],matrix_size,matrix_size])
+        mean_signal[:,:,:] = np.nan
+        p_value = np.empty([matrix_size,matrix_size])
+        p_value[:,:] = np.nan
+        for j in range(matrix_size):
+            for i in range(matrix_size):
+                mean_signal[:,j,i], p_value[j,i] = coarseGrain([i*pixel_size, j*pixel_size, pixel_size], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
+        p_values.append(p_value)
+        mean_signals.append(mean_signal)
+
+    optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
+    optimal_depth[:,:] = depth
+    for d in range(1,depth+1)[::-1]:
+        pixel_size = 2**d
+        matrix_size = Input_image.shape[1]//pixel_size
+        for j in range(matrix_size):
+            for i in range(matrix_size):
+                if not all(mean_signals[d][:,j,i]!=mean_signals[d][:,j,i]):
+                    if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d).all():
+                        children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
+                        p_father = p_values[d][j,i]
+                        p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
+                        if all([_!=_ for _ in p_children]) or (p_father < np.nanmin(p_children) and p_father > 1e-4):
+                            # keep father macro-pixel
+                            optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
+                            MacroPixelCoords.append([pixel_size*i,pixel_size*j,pixel_size])
+                        else:
+                            # move to children macro-pixels
+                            for ch,(jj,ii) in enumerate(children):
+                                optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)] = d-1
+                                if d==1 and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                                    MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
 
     return MacroPixelCoords
 
@@ -304,14 +366,14 @@ if __name__ == "__main__":
     # Tree search for the best macro-pixel dimension
     # MacroPixelCoords is a list of lists, each for a macro-pixel,
     # containing following metrics: x, y, L
-    MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
-                                        sampling_frequency = sampling_frequency,
-                                        exit_condition = args.exit_condition,
-                                        evaluation_method = args.evaluation_method,
-                                        voting_threshold = args.voting_threshold,
-                                        n_bad_nodes = args.n_bad_nodes,
-                                        null_distr = null_distr,
-                                        shapiro_plus_th = shapiro_plus_th)
+    MacroPixelCoords = NewTopDown(Input_image = padded_image_seq,
+                                  sampling_frequency = sampling_frequency,
+                                  exit_condition = args.exit_condition,
+                                  evaluation_method = args.evaluation_method,
+                                  voting_threshold = args.voting_threshold,
+                                  n_bad_nodes = args.n_bad_nodes,
+                                  null_distr = null_distr,
+                                  shapiro_plus_th = shapiro_plus_th)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
