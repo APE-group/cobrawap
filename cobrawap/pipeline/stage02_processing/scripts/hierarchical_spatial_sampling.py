@@ -259,6 +259,7 @@ def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
 
 
 def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+    # depth is the number of hierarchic layers when doubling macro-pixels size from 1 to the whole padded roi
     depth = int(np.log2(Input_image.shape[1]))
     p_values = []
     mean_signals = []
@@ -280,7 +281,7 @@ def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
 
     optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
     optimal_depth[:,:] = depth
-    for d in range(1,depth+1)[::-1]:
+    for d in reversed(range(1,depth+1)):
         pixel_size = 2**d
         matrix_size = Input_image.shape[1]//pixel_size
         for j in range(matrix_size):
