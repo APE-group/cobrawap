@@ -281,7 +281,7 @@ def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
 
     optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
     optimal_depth[:,:] = depth
-    for d in reversed(range(1,depth+1)):
+    for d in range(depth,0,-1):
         pixel_size = 2**d
         matrix_size = Input_image.shape[1]//pixel_size
         for j in range(matrix_size):
