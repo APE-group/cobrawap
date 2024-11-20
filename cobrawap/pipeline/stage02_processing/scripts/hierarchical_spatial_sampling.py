@@ -48,6 +48,9 @@ CLI.add_argument("--n_bad_nodes", nargs="?", type=none_or_int, default=2,
 CLI.add_argument("--evaluation_method", nargs="?", type=none_or_str,
                  choices=["shapiro","shapiroplus"], default="shapiro",
                  help="signal-to-noise ratio evaluation method")
+CLI.add_argument("--pruning_direction", nargs="?", type=none_or_str,
+                 choices=["top-down","bottom-up"], default="top-down",
+                 help="direction of hierarchic pruning of the tree")
 CLI.add_argument("--output_array", nargs="?", type=Path, required=True,
                  help="path of output numpy array")
 
@@ -178,7 +181,7 @@ def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, n
 
 
 def coarseGrain(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
-    # function to compute how much a signal is significant, according to the chosen criterion
+    # function to compute the coarse-grained signal and how much it is significant, according to the chosen criterion
 
     mean_trace = silent_nanmean(Input_image[:, coords[1]:coords[1]+coords[2], coords[0]:coords[0]+coords[2]], axis=(1,2))
     if np.isnan(mean_trace).all():
@@ -304,13 +307,13 @@ def NewTopDown(Input_image, mean_signals, p_values):
                         if all([_!=_ for _ in p_children]) or (p_father < np.nanmin(p_children) and p_father > 1e-4):
                             # keep father macro-pixel
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
-                            MacroPixelCoords.append([pixel_size*i,pixel_size*j,pixel_size])
+                            MacroPixelCoords.append([pixel_size*i, pixel_size*j, pixel_size, p_father])
                         else:
                             # move to children macro-pixels
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
                             for ch,(jj,ii) in enumerate(children):
                                 if d==1 and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
-                                    MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
+                                    MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
 
     return MacroPixelCoords
 
@@ -339,17 +342,17 @@ def NewBottomUp(Input_image, mean_signals, p_values):
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
                             for ch,(jj,ii) in enumerate(children):
                                 if not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
-                                    MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
+                                    MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
                         else:
                             # move to father macro-pixel
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
                             if d==depth:
-                                MacroPixelCoords.append([pixel_size*i,pixel_size*j,pixel_size])
+                                MacroPixelCoords.append([pixel_size*i, pixel_size*j, pixel_size, p_father])
                     else:
                         # some children already stopped at a higher resolution
                         for ch,(jj,ii) in enumerate(children):
                             if (optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)]==d-1).all() and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
-                                MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
+                                MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
 
     return MacroPixelCoords
 
@@ -424,8 +427,11 @@ if __name__ == "__main__":
                                           n_bad_nodes = args.n_bad_nodes,
                                           null_distr = null_distr,
                                           shapiro_plus_th = shapiro_plus_th)
-    #MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
-    MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values)
+
+    if args.pruning_direction=="top-down":
+        MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
+    elif args.pruning_direction=="bottom-up":
+        MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
@@ -447,7 +453,7 @@ if __name__ == "__main__":
         y_coord_cm[px_idx], x_coord_cm[px_idx] = \
             ComputeCenterOfMass(padded_image_seq[:, px[1]:px[1]+px[2], px[0]:px[0]+px[2]],
                                 spatial_scale)
-        coordinates[px_idx] = px
+        coordinates[px_idx] = px[0:3]
         ch_id[px_idx] = px_idx
         y_coord[px_idx] = (px[1]+0.5*px[2])*spatial_scale
         x_coord[px_idx] = (px[0]+0.5*px[2])*spatial_scale
