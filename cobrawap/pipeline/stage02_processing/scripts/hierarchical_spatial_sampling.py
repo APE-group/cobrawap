@@ -258,12 +258,12 @@ def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
     return MacroPixelCoords
 
 
-def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+def build_layers(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+
     # depth is the number of hierarchic layers when doubling macro-pixels size from 1 to the whole padded roi
     depth = int(np.log2(Input_image.shape[1]))
     p_values = []
     mean_signals = []
-    MacroPixelCoords = []
 
     # d=0 corresponds to largest resolution, i.e. smallest spatial scale
     for d in range(depth+1):
@@ -275,12 +275,21 @@ def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
         p_value[:,:] = np.nan
         for j in range(matrix_size):
             for i in range(matrix_size):
-                mean_signal[:,j,i], p_value[j,i] = coarseGrain([i*pixel_size, j*pixel_size, pixel_size], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
+                mean_signal[:,j,i], p_value[j,i] = coarseGrain([pixel_size*i, pixel_size*j, pixel_size], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
         p_values.append(p_value)
         mean_signals.append(mean_signal)
 
+    return mean_signals, p_values
+
+
+def NewTopDown(Input_image, mean_signals, p_values):
+
+    depth = int(np.log2(Input_image.shape[1]))
+    MacroPixelCoords = []
+
     optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
     optimal_depth[:,:] = depth
+
     for d in range(depth,0,-1):
         pixel_size = 2**d
         matrix_size = Input_image.shape[1]//pixel_size
@@ -297,8 +306,8 @@ def NewTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
                             MacroPixelCoords.append([pixel_size*i,pixel_size*j,pixel_size])
                         else:
                             # move to children macro-pixels
+                            optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
                             for ch,(jj,ii) in enumerate(children):
-                                optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)] = d-1
                                 if d==1 and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
                                     MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
 
@@ -367,14 +376,15 @@ if __name__ == "__main__":
     # Tree search for the best macro-pixel dimension
     # MacroPixelCoords is a list of lists, each for a macro-pixel,
     # containing following metrics: x, y, L
-    MacroPixelCoords = NewTopDown(Input_image = padded_image_seq,
-                                  sampling_frequency = sampling_frequency,
-                                  exit_condition = args.exit_condition,
-                                  evaluation_method = args.evaluation_method,
-                                  voting_threshold = args.voting_threshold,
-                                  n_bad_nodes = args.n_bad_nodes,
-                                  null_distr = null_distr,
-                                  shapiro_plus_th = shapiro_plus_th)
+    mean_signals, p_values = build_layers(Input_image = padded_image_seq,
+                                          sampling_frequency = sampling_frequency,
+                                          exit_condition = args.exit_condition,
+                                          evaluation_method = args.evaluation_method,
+                                          voting_threshold = args.voting_threshold,
+                                          n_bad_nodes = args.n_bad_nodes,
+                                          null_distr = null_distr,
+                                          shapiro_plus_th = shapiro_plus_th)
+    MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
