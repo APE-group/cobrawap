@@ -290,6 +290,7 @@ def NewTopDown(Input_image, mean_signals, p_values):
     optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
     optimal_depth[:,:] = depth
 
+    # starting from L=2**depth and moving downwards, comparing at each step d with d-1
     for d in range(depth,0,-1):
         pixel_size = 2**d
         matrix_size = Input_image.shape[1]//pixel_size
@@ -310,6 +311,45 @@ def NewTopDown(Input_image, mean_signals, p_values):
                             for ch,(jj,ii) in enumerate(children):
                                 if d==1 and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
                                     MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
+
+    return MacroPixelCoords
+
+
+def NewBottomUp(Input_image, mean_signals, p_values):
+
+    depth = int(np.log2(Input_image.shape[1]))
+    MacroPixelCoords = []
+
+    optimal_depth = np.empty([Input_image.shape[1],Input_image.shape[1]], dtype=int)
+    optimal_depth[:,:] = 0
+
+    for d in range(1,depth+1):
+        # starting from L=2 and moving upwards, comparing at each step d with d-1
+        pixel_size = 2**d
+        matrix_size = Input_image.shape[1]//pixel_size
+        for j in range(matrix_size):
+            for i in range(matrix_size):
+                if not all(mean_signals[d][:,j,i]!=mean_signals[d][:,j,i]):
+                    children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
+                    p_father = p_values[d][j,i]
+                    p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
+                    if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d-1).all():
+                        if any([_==_ for _ in p_children]) and (np.nanmin(p_children) <= p_father or (np.nanmin(p_children) > p_father and np.nanmin(p_children) < 1e-4)):
+                            # keep children macro-pixels
+                            optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
+                            for ch,(jj,ii) in enumerate(children):
+                                if not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                                    MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
+                        else:
+                            # move to father macro-pixel
+                            optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
+                            if d==depth:
+                                MacroPixelCoords.append([pixel_size*i,pixel_size*j,pixel_size])
+                    else:
+                        # some children already stopped at a higher resolution
+                        for ch,(jj,ii) in enumerate(children):
+                            if (optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)]==d-1).all() and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                                MacroPixelCoords.append([pixel_size//2*ii,pixel_size//2*jj,pixel_size//2])
 
     return MacroPixelCoords
 
@@ -384,7 +424,8 @@ if __name__ == "__main__":
                                           n_bad_nodes = args.n_bad_nodes,
                                           null_distr = null_distr,
                                           shapiro_plus_th = shapiro_plus_th)
-    MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
+    #MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
+    MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
@@ -430,6 +471,7 @@ if __name__ == "__main__":
     # e.g. compute hist of mp linear sizes
     log2_sizes = [int(np.log2(mp[2])) for mp in MacroPixelCoords]
     unique, counts = np.unique(log2_sizes, return_counts=True)
+    print(f"unique = {unique}, counts = {counts}")
     # if args.output_array is not None:
     np.save(args.output_array, np.array([unique,counts]))
 
