@@ -299,12 +299,12 @@ def NewTopDown(Input_image, mean_signals, p_values):
         matrix_size = Input_image.shape[1]//pixel_size
         for j in range(matrix_size):
             for i in range(matrix_size):
-                if not all(mean_signals[d][:,j,i]!=mean_signals[d][:,j,i]):
+                p_father = p_values[d][j,i]
+                if p_father==p_father:
                     if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d).all():
                         children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
-                        p_father = p_values[d][j,i]
                         p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
-                        if all([_!=_ for _ in p_children]) or (p_father < np.nanmin(p_children) and p_father > 1e-4):
+                        if p_father < np.nanmin(p_children) and p_father > 1e-4:
                             # keep father macro-pixel
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
                             MacroPixelCoords.append([pixel_size*i, pixel_size*j, pixel_size, p_father])
@@ -312,7 +312,7 @@ def NewTopDown(Input_image, mean_signals, p_values):
                             # move to children macro-pixels
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
                             for ch,(jj,ii) in enumerate(children):
-                                if d==1 and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                                if d==1 and p_children[ch]==p_children[ch]:
                                     MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
 
     return MacroPixelCoords
@@ -332,16 +332,16 @@ def NewBottomUp(Input_image, mean_signals, p_values):
         matrix_size = Input_image.shape[1]//pixel_size
         for j in range(matrix_size):
             for i in range(matrix_size):
-                if not all(mean_signals[d][:,j,i]!=mean_signals[d][:,j,i]):
+                p_father = p_values[d][j,i]
+                if p_father==p_father:
                     children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
-                    p_father = p_values[d][j,i]
                     p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
                     if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d-1).all():
-                        if any([_==_ for _ in p_children]) and (np.nanmin(p_children) <= p_father or (np.nanmin(p_children) > p_father and np.nanmin(p_children) < 1e-4)):
+                        if np.nanmin(p_children) <= p_father or (np.nanmin(p_children) > p_father and np.nanmin(p_children) < 1e-4):
                             # keep children macro-pixels
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d-1
                             for ch,(jj,ii) in enumerate(children):
-                                if not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                                if p_children[ch]==p_children[ch]:
                                     MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
                         else:
                             # move to father macro-pixel
@@ -351,7 +351,7 @@ def NewBottomUp(Input_image, mean_signals, p_values):
                     else:
                         # some children already stopped at a higher resolution
                         for ch,(jj,ii) in enumerate(children):
-                            if (optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)]==d-1).all() and not all(mean_signals[d-1][:,jj,ii]!=mean_signals[d-1][:,jj,ii]):
+                            if (optimal_depth[pixel_size//2*jj:pixel_size//2*(jj+1),pixel_size//2*ii:pixel_size//2*(ii+1)]==d-1).all() and p_children[ch]==p_children[ch]:
                                 MacroPixelCoords.append([pixel_size//2*ii, pixel_size//2*jj, pixel_size//2, p_children[ch]])
 
     return MacroPixelCoords
