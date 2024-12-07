@@ -51,6 +51,9 @@ CLI.add_argument("--evaluation_method", nargs="?", type=none_or_str,
 CLI.add_argument("--pruning_direction", nargs="?", type=none_or_str,
                  choices=["top-down","bottom-up"], default="top-down",
                  help="direction of hierarchic pruning of the tree")
+CLI.add_argument("--pruning_method", nargs="?", type=none_or_str,
+                 choices=["all","one","mean","majority","father_father_1e-4","father_child_1e-4"], default="all",
+                 help="method of pruning in the new approach")
 CLI.add_argument("--output_array", nargs="?", type=Path, required=True,
                  help="path of output numpy array")
 
@@ -285,7 +288,49 @@ def build_layers(Input_image, sampling_frequency, exit_condition, evaluation_met
     return mean_signals, p_values
 
 
-def NewTopDown(Input_image, mean_signals, p_values):
+def keep_father(p_father, p_children, incr_res_condition, p_thr=0.05):
+
+    keep = False
+    match incr_res_condition:
+
+        # all children are bad
+        case "all":
+            if np.nanmin(p_children) > p_thr:
+                keep = True
+
+        # at least one child is bad
+        case "one":
+            if np.nanmax(p_children) > p_thr:
+                keep = True
+
+        # mean children p_value is bad
+        case "mean":
+            if np.nanmean(p_children) > p_thr:
+                keep = True
+
+        # most of existing children are bad
+        case "majority":
+            if len([_ for _ in p_children if _==_ and _>p_thr])/len([_ for _ in p_children if _==_])>=0.5:
+                keep = True
+
+        # father is better than all children
+        case "father_father_1e-4":
+            if p_father < np.nanmin(p_children) and p_father > 1e-4:
+                keep = True
+
+        # father is better than at least one of children
+        case "father_child_1e-4":
+            if p_father < np.nanmin(p_children) and np.nanmin(p_children) > 1e-4:
+                keep = True
+
+        # default behaviour
+        case _:
+            keep = False
+
+    return keep
+
+
+def NewTopDown(Input_image, mean_signals, p_values, incr_res_condition, p_thr):
 
     depth = int(np.log2(Input_image.shape[1]))
     MacroPixelCoords = []
@@ -304,7 +349,7 @@ def NewTopDown(Input_image, mean_signals, p_values):
                     if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d).all():
                         children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
                         p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
-                        if p_father < np.nanmin(p_children) and np.nanmin(p_children) > 0.05:
+                        if keep_father(p_father, p_children, incr_res_condition=incr_res_condition, p_thr=p_thr):
                             # keep father macro-pixel
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
                             MacroPixelCoords.append([pixel_size*i, pixel_size*j, pixel_size, p_father])
@@ -318,7 +363,7 @@ def NewTopDown(Input_image, mean_signals, p_values):
     return MacroPixelCoords
 
 
-def NewBottomUp(Input_image, mean_signals, p_values):
+def NewBottomUp(Input_image, mean_signals, p_values, incr_res_condition, p_thr):
 
     depth = int(np.log2(Input_image.shape[1]))
     MacroPixelCoords = []
@@ -337,7 +382,7 @@ def NewBottomUp(Input_image, mean_signals, p_values):
                     children = [(jj,ii) for jj in range(2*j,2*j+2) for ii in range(2*i,2*i+2)]
                     p_children = [p_values[d-1][jj,ii] for (jj,ii) in children]
                     if (optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)]==d-1).all():
-                        if p_father < np.nanmin(p_children) and np.nanmin(p_children) > 0.05:
+                        if keep_father(p_father, p_children, incr_res_condition=incr_res_condition, p_thr=p_thr):
                             # move to father macro-pixel
                             optimal_depth[pixel_size*j:pixel_size*(j+1),pixel_size*i:pixel_size*(i+1)] = d
                             if d==depth:
@@ -429,9 +474,9 @@ if __name__ == "__main__":
                                           shapiro_plus_th = shapiro_plus_th)
 
     if args.pruning_direction=="top-down":
-        MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values)
+        MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
     elif args.pruning_direction=="bottom-up":
-        MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values)
+        MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
