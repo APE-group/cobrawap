@@ -49,7 +49,7 @@ CLI.add_argument("--evaluation_method", nargs="?", type=none_or_str,
                  choices=["shapiro","shapiroplus"], default="shapiro",
                  help="signal-to-noise ratio evaluation method")
 CLI.add_argument("--pruning_direction", nargs="?", type=none_or_str,
-                 choices=["top-down","bottom-up"], default="top-down",
+                 choices=["old-top-down","top-down","bottom-up"], default="top-down",
                  help="direction of hierarchic pruning of the tree")
 CLI.add_argument("--pruning_method", nargs="?", type=none_or_str,
                  choices=["all","one","mean","majority","father_father_1e-4","father_child_1e-4"], default="all",
@@ -264,7 +264,7 @@ def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
     return MacroPixelCoords
 
 
-def build_layers(Input_image, sampling_frequency, exit_condition, evaluation_method, voting_threshold, n_bad_nodes, null_distr=None, shapiro_plus_th=None):
+def build_layers(Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
 
     # depth is the number of hierarchic layers when doubling macro-pixels size from 1 to the whole padded roi
     depth = int(np.log2(Input_image.shape[1]))
@@ -464,19 +464,25 @@ if __name__ == "__main__":
     # Tree search for the best macro-pixel dimension
     # MacroPixelCoords is a list of lists, each for a macro-pixel,
     # containing following metrics: x, y, L
-    mean_signals, p_values = build_layers(Input_image = padded_image_seq,
-                                          sampling_frequency = sampling_frequency,
-                                          exit_condition = args.exit_condition,
-                                          evaluation_method = args.evaluation_method,
-                                          voting_threshold = args.voting_threshold,
-                                          n_bad_nodes = args.n_bad_nodes,
-                                          null_distr = null_distr,
-                                          shapiro_plus_th = shapiro_plus_th)
-
-    if args.pruning_direction=="top-down":
-        MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
-    elif args.pruning_direction=="bottom-up":
-        MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
+    if args.pruning_direction=="old-top-down":
+        MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
+                                            sampling_frequency = sampling_frequency,
+                                            exit_condition = args.exit_condition,
+                                            evaluation_method = args.evaluation_method,
+                                            voting_threshold = args.voting_threshold,
+                                            n_bad_nodes = args.n_bad_nodes,
+                                            null_distr = null_distr,
+                                            shapiro_plus_th = shapiro_plus_th)
+    else:
+        mean_signals, p_values = build_layers(Input_image = padded_image_seq,
+                                              sampling_frequency = sampling_frequency,
+                                              evaluation_method = args.evaluation_method,
+                                              null_distr = null_distr,
+                                              shapiro_plus_th = shapiro_plus_th)
+        if args.pruning_direction=="top-down":
+            MacroPixelCoords = NewTopDown(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
+        elif args.pruning_direction=="bottom-up":
+            MacroPixelCoords = NewBottomUp(padded_image_seq, mean_signals, p_values, incr_res_condition=args.pruning_method, p_thr=0.05)
 
     plot_masked_image(padded_image_seq, MacroPixelCoords)
     save_plot(args.output_img)
