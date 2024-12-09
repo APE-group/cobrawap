@@ -465,14 +465,14 @@ if __name__ == "__main__":
     # MacroPixelCoords is a list of lists, each for a macro-pixel,
     # containing following metrics: x, y, L
     if args.pruning_direction=="old-top-down":
-        MacroPixelCoords = CreateMacroPixel(Input_image = padded_image_seq,
-                                            sampling_frequency = sampling_frequency,
-                                            exit_condition = args.exit_condition,
-                                            evaluation_method = args.evaluation_method,
-                                            voting_threshold = args.voting_threshold,
-                                            n_bad_nodes = args.n_bad_nodes,
-                                            null_distr = null_distr,
-                                            shapiro_plus_th = shapiro_plus_th)
+        MacroPixelCoords = OldTopDown(Input_image = padded_image_seq,
+                                      sampling_frequency = sampling_frequency,
+                                      exit_condition = args.exit_condition,
+                                      evaluation_method = args.evaluation_method,
+                                      voting_threshold = args.voting_threshold,
+                                      n_bad_nodes = args.n_bad_nodes,
+                                      null_distr = null_distr,
+                                      shapiro_plus_th = shapiro_plus_th)
     else:
         mean_signals, p_values = build_layers(Input_image = padded_image_seq,
                                               sampling_frequency = sampling_frequency,
