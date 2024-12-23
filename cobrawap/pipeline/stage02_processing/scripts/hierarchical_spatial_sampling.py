@@ -4,7 +4,7 @@ Performs a dynamical downsampling, based on a (customizable) quality evaluation 
 
 import neo
 import numpy as np
-
+import pandas as pd
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
@@ -51,11 +51,11 @@ CLI.add_argument("--evaluation_method", nargs="?", type=none_or_str,
 CLI.add_argument("--pruning_direction", nargs="?", type=none_or_str,
                  choices=["old-top-down","top-down","bottom-up"], default="top-down",
                  help="direction of hierarchic pruning of the tree")
-CLI.add_argument("--pruning_method", nargs="?", type=none_or_str,
-                 choices=["all","one","mean","majority","father_father_1e-4","father_child_1e-4"], default="all",
+CLI.add_argument("--pruning_method", nargs="?", type=none_or_str, default="all",
+                 choices=["all","one","mean","majority","father_father_1e-4","father_child_1e-4"],
                  help="method of pruning in the new approach")
-CLI.add_argument("--output_array", nargs="?", type=Path, required=True,
-                 help="path of output numpy array")
+CLI.add_argument("--output_stats", nargs="?", type=Path, required=True,
+                 help="path of output files with summary statistics")
 
 
 # Definition of custom versions of nanmean and nanstd,
@@ -165,22 +165,22 @@ def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, n
     # 0 is returned if pixel is informative, 1 otherwise
     mean_trace = silent_nanmean(Input_image[:, coords[1]:coords[1]+coords[2], coords[0]:coords[0]+coords[2]], axis=(1,2))
     if np.isnan(mean_trace).all():
-        return 1
+        return 1, np.nan
     else:
         if evaluation_method == "shapiro":
             p = EvaluateShapiro(mean_trace)
             if p <= 0.05:
-                return 0
+                return 0, p
             else:
-                return 1
+                return 1, p
         elif evaluation_method == "shapiroplus":
             p_1 = EvaluateShapiro(mean_trace)
             p_2 = EvaluateShapiroPlus(mean_trace, null_distr, sampling_frequency, shapiro_plus_th)
             # pixel is classified as non-informative if both tests fail
             if (p_1 > 0.05) and ((p_2 > 0.05) or (p_2 is np.nan)):
-                return 1
+                return 1, np.nanmin([p_1,p_2])
             else:
-                return 0
+                return 0, np.nanmin([p_1,p_2])
 
 
 def coarseGrain(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
@@ -211,7 +211,7 @@ def NewLayer(macropixel, Input_image, sampling_frequency, evaluation_method, nul
         for row in range(2):
             x = x0 + col*half_L0
             y = y0 + row*half_L0
-            cond = CheckCondition([x, y, half_L0], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
+            cond, p_value = CheckCondition([x, y, half_L0], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
             new_list.append([x, y, half_L0, (macropixel[3]+cond)*cond, x0, y0, L0])
 
     return new_list
@@ -434,6 +434,37 @@ def plot_masked_image(original_img, MacroPixelCoords):
     return axs
 
 
+def save_mp_stats(padded_image, mp_annot, output_filename):
+
+    # creation of padded roi mask
+    padded_roi_mask = np.array(padded_image[0,:,:])
+    padded_roi_mask[~np.isnan(padded_roi_mask)] = 1
+    number_native_pixels = np.sum(~np.isnan(padded_roi_mask))
+
+    # statistics on macro-pixel sizes
+    log2_sizes = [int(np.log2(_)) for _ in mp_annot["pixel_coordinates_L"]]
+    sides, counts = np.unique(log2_sizes, return_counts=True)
+    print(f"sides = {sides}, counts = {counts}")
+
+    stats_dict = {"number_native_pixels": number_native_pixels, \
+                  "number_macropixels": len(mp_annot["channel_id"]), \
+                  "side_distr": (sides,counts), \
+                  "area_covered_by_hos": "???", \
+                  "nans_from_hos": "???"}
+
+    stats_filename = Path(output_filename).parent.joinpath(Path(output_filename).stem + ".npy")
+    np.save(stats_filename, stats_dict)
+
+    df = pd.DataFrame({"left_anchor": mp_annot["x_coords"], \
+                       "top_anchor": mp_annot["y_coords"], \
+                       "side_length": mp_annot["pixel_coordinates_L"], \
+                       "p_value": mp_annot["p_values"]})
+
+    df_filename = Path(stats_filename).parent.joinpath(Path(stats_filename).stem + ".csv")
+    df[["left_anchor","top_anchor","side_length"]] = df[["left_anchor","top_anchor","side_length"]].astype(int)
+    df.to_csv(df_filename, index=False)
+
+
 if __name__ == "__main__":
     args, unknown = CLI.parse_known_args()
 
@@ -495,6 +526,7 @@ if __name__ == "__main__":
     y_coord = np.empty([N_MacroPixel])
     x_coord_cm = np.empty([N_MacroPixel])
     y_coord_cm = np.empty([N_MacroPixel])
+    p_values = np.empty([N_MacroPixel])
 
     # for each macro-pixel px (containing x,y,L)
     for px_idx, px in enumerate(MacroPixelCoords):
@@ -508,6 +540,10 @@ if __name__ == "__main__":
         ch_id[px_idx] = px_idx
         y_coord[px_idx] = (px[1]+0.5*px[2])*spatial_scale
         x_coord[px_idx] = (px[0]+0.5*px[2])*spatial_scale
+        if args.pruning_direction in ["top-down","bottom-up"]:
+            p_values[px_idx] = px[3]
+        else:
+            p_values[px_idx] = np.nan
 
     # macropixels details are stored as array_annotations
     mp_annot = {"x_coords": coordinates.T[0],
@@ -515,7 +551,8 @@ if __name__ == "__main__":
                 "x_coord_cm": x_coord_cm,
                 "y_coord_cm": y_coord_cm,
                 "pixel_coordinates_L": coordinates.T[2],
-                "channel_id": ch_id}
+                "channel_id": ch_id,
+                "p_values": p_values}
 
     new_asig = asig.duplicate_with_new_data(signal)
     new_asig.array_annotations.update(mp_annot) # check!
@@ -523,13 +560,6 @@ if __name__ == "__main__":
                             "the signal-to-noise ratio of macropixels at different sizes."
     block.segments[0].analogsignals[0] = new_asig
 
-    # ToDo:
-    # use the CLI arg output_array for saving HOS summary stats
-    # e.g. compute hist of mp linear sizes
-    log2_sizes = [int(np.log2(mp[2])) for mp in MacroPixelCoords]
-    unique, counts = np.unique(log2_sizes, return_counts=True)
-    print(f"unique = {unique}, counts = {counts}")
-    # if args.output_array is not None:
-    np.save(args.output_array, np.array([unique,counts]))
+    save_mp_stats(padded_image_seq, mp_annot, args.output_stats)
 
     write_neo(args.output, block)

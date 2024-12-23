@@ -192,5 +192,5 @@ use rule template as hierarchical_spatial_sampling with:
         params('n_bad_nodes','voting_threshold','exit_condition','evaluation_method')
     output:
         Path('{dir}') / '{rule_name}' / f'hierarchical_spatial_sampling.{config.NEO_FORMAT}',
-        output_img = Path('{dir}') / '{rule_name}' / f'hierarchical_spatial_sampling.{config.PLOT_FORMAT}'
+        output_img = Path('{dir}') / '{rule_name}' / f'hierarchical_spatial_sampling.{config.PLOT_FORMAT}',
         output_array = Path('{dir}') / '{rule_name}' / 'hierarchical_spatial_sampling.npy'
