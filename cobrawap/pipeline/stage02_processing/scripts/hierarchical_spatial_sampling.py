@@ -165,22 +165,22 @@ def CheckCondition(coords, Input_image, sampling_frequency, evaluation_method, n
     # 0 is returned if pixel is informative, 1 otherwise
     mean_trace = silent_nanmean(Input_image[:, coords[1]:coords[1]+coords[2], coords[0]:coords[0]+coords[2]], axis=(1,2))
     if np.isnan(mean_trace).all():
-        return 1, np.nan
+        return 1,np.nan
     else:
         if evaluation_method == "shapiro":
             p = EvaluateShapiro(mean_trace)
             if p <= 0.05:
-                return 0, p
+                return 0,p
             else:
-                return 1, p
+                return 1,p
         elif evaluation_method == "shapiroplus":
             p_1 = EvaluateShapiro(mean_trace)
             p_2 = EvaluateShapiroPlus(mean_trace, null_distr, sampling_frequency, shapiro_plus_th)
             # pixel is classified as non-informative if both tests fail
             if (p_1 > 0.05) and ((p_2 > 0.05) or (p_2 is np.nan)):
-                return 1, np.nanmin([p_1,p_2])
+                return 1,np.nanmin([p_1,p_2])
             else:
-                return 0, np.nanmin([p_1,p_2])
+                return 0,np.nanmin([p_1,p_2])
 
 
 def coarseGrain(coords, Input_image, sampling_frequency, evaluation_method, null_distr=None, shapiro_plus_th=None):
@@ -205,6 +205,7 @@ def NewLayer(macropixel, Input_image, sampling_frequency, evaluation_method, nul
     x0 = macropixel[0]
     y0 = macropixel[1]
     L0 = macropixel[2]
+    p0 = macropixel[3]
     half_L0 = L0//2
 
     for col in range(2):
@@ -212,7 +213,7 @@ def NewLayer(macropixel, Input_image, sampling_frequency, evaluation_method, nul
             x = x0 + col*half_L0
             y = y0 + row*half_L0
             cond, p_value = CheckCondition([x, y, half_L0], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
-            new_list.append([x, y, half_L0, (macropixel[3]+cond)*cond, x0, y0, L0])
+            new_list.append([x, y, half_L0, p_value, (macropixel[4]+cond)*cond, x0, y0, L0, p0])
 
     return new_list
 
@@ -222,10 +223,11 @@ def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
     NodeList = []
     MacroPixelCoords = []
 
-    # Elements in NodeList contain: x, y, L, flag, x_parent, y_parent, L_parent
+    # Elements in NodeList contain: x, y, L, p_value, flag, x_parent, y_parent, L_parent, p_value_parent
 
     # initialized root
-    NodeList.append([0, 0, np.shape(Input_image)[2], 0, 0, 0, np.shape(Input_image)[2]])
+    cond, p_value = CheckCondition([0, 0, np.shape(Input_image)[2]], Input_image, sampling_frequency, evaluation_method, null_distr, shapiro_plus_th)
+    NodeList.append([0, 0, np.shape(Input_image)[2], p_value, cond, 0, 0, np.shape(Input_image)[2], p_value])
 
     while len(NodeList):
 
@@ -236,30 +238,28 @@ def OldTopDown(Input_image, sampling_frequency, exit_condition, evaluation_metho
         # check whether exit condition is met
         if exit_condition == "voting":
             # check how many of children are "bad"
-            flag_list = [np.int32(ch[3]>=n_bad_nodes) for ch in Children]
+            flag_list = [np.int32(ch[4]>=n_bad_nodes) for ch in Children]
             if np.sum(flag_list) > voting_threshold*len(Children):
-                MacroPixelCoords.append(Children[0][4:]) # store parent node
+                mp = Children[0][5:]
+                MacroPixelCoords.append(mp) # store parent node
                 Children = []
         elif exit_condition == "consecutive":
             # check if some or all children are "bad"
-            flag_list = [ch[3]==n_bad_nodes for ch in Children]
+            flag_list = [ch[4]==n_bad_nodes for ch in Children]
             if all(flag_list): # if all children are "bad"
-                MacroPixelCoords.append(Children[0][4:]) # store parent node
+                mp = Children[0][5:]
+                MacroPixelCoords.append(mp) # store parent node
                 Children = []
             else:
-                Children = [ch for ch in Children if ch[3] != n_bad_nodes]
+                Children = [ch for ch in Children if ch[4] != n_bad_nodes]
+
+        # filter out children fully out of the roi
+        Children = [ch for ch in Children if ch[3]==ch[3]]
 
         # check whether minimum dimension has been reached
-        l_list = [ch[2]==1 for ch in Children]
-        idx = np.where(l_list)[0]
-        if len(idx):
-            for i in range(len(l_list)):
-                # check whether minimum-dimension pixels are actually included in the roi
-                if l_list[i] == True and not np.isnan(Input_image[:, Children[i][1], Children[i][0]]).all():
-                    MacroPixelCoords.append(Children[i][0:3])
-            Children = [ch for ch in Children if ch[2] != 1]
+        MacroPixelCoords.extend([ch[0:4] for ch in Children if ch[2]==1])
 
-        NodeList.extend(Children)
+        NodeList.extend([ch for ch in Children if ch[2]!=1])
 
     return MacroPixelCoords
 
@@ -440,28 +440,45 @@ def save_mp_stats(padded_image, mp_annot, output_filename):
     padded_roi_mask = np.array(padded_image[0,:,:])
     padded_roi_mask[~np.isnan(padded_roi_mask)] = 1
     number_native_pixels = np.sum(~np.isnan(padded_roi_mask))
+    tessellated_area = np.array(padded_image[0,:,:])*np.nan
 
     # statistics on macro-pixel sizes
     log2_sizes = [int(np.log2(_)) for _ in mp_annot["pixel_coordinates_L"]]
     sides, counts = np.unique(log2_sizes, return_counts=True)
     print(f"sides = {sides}, counts = {counts}")
 
+    # area of macro-pixels actually in roi
+    covered_area = np.empty([len(mp_annot["pixel_coordinates_L"])])*np.nan
+    for i in range(len(covered_area)):
+        x0 = int(mp_annot["x_coords"][i])
+        y0 = int(mp_annot["y_coords"][i])
+        L0 = int(mp_annot["pixel_coordinates_L"][i])
+        covered_area[i] = np.sum(~np.isnan(padded_roi_mask[y0:y0+L0,x0:x0+L0]))
+        tessellated_area[y0:y0+L0,x0:x0+L0] = 1
+    tessellated_area[np.isnan(padded_roi_mask)] = 1
+
     stats_dict = {"number_native_pixels": number_native_pixels, \
                   "number_macropixels": len(mp_annot["channel_id"]), \
                   "side_distr": (sides,counts), \
-                  "area_covered_by_hos": "???", \
-                  "nans_from_hos": "???"}
+                  "area_covered_by_hos": int(np.sum(covered_area)), \
+                  "nans_from_hos": int(np.sum(np.isnan(tessellated_area)))}
+    print(f"stats_dict = {stats_dict}")
 
     stats_filename = Path(output_filename).parent.joinpath(Path(output_filename).stem + ".npy")
     np.save(stats_filename, stats_dict)
 
-    df = pd.DataFrame({"left_anchor": mp_annot["x_coords"], \
-                       "top_anchor": mp_annot["y_coords"], \
+    df = pd.DataFrame({"x_anchor_left": mp_annot["x_coords"], \
+                       "y_anchor_top": mp_annot["y_coords"], \
                        "side_length": mp_annot["pixel_coordinates_L"], \
-                       "p_value": mp_annot["p_values"]})
+                       "p_value": mp_annot["p_values"], \
+                       "covered_area": covered_area, \
+                       "x_coord_cm": mp_annot["x_coord_cm"], \
+                       "y_coord_cm": mp_annot["y_coord_cm"], \
+    })
 
     df_filename = Path(stats_filename).parent.joinpath(Path(stats_filename).stem + ".csv")
-    df[["left_anchor","top_anchor","side_length"]] = df[["left_anchor","top_anchor","side_length"]].astype(int)
+    int_cols = ["x_anchor_left","y_anchor_top","side_length","covered_area"]
+    df[int_cols] = df[int_cols].astype(int)
     df.to_csv(df_filename, index=False)
 
 
@@ -540,10 +557,7 @@ if __name__ == "__main__":
         ch_id[px_idx] = px_idx
         y_coord[px_idx] = (px[1]+0.5*px[2])*spatial_scale
         x_coord[px_idx] = (px[0]+0.5*px[2])*spatial_scale
-        if args.pruning_direction in ["top-down","bottom-up"]:
-            p_values[px_idx] = px[3]
-        else:
-            p_values[px_idx] = np.nan
+        p_values[px_idx] = px[3]
 
     # macropixels details are stored as array_annotations
     mp_annot = {"x_coords": coordinates.T[0],
