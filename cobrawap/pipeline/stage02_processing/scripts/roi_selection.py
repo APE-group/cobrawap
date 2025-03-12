@@ -11,7 +11,7 @@ from pathlib import Path
 import neo
 import os
 from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import str_to_bool
+from utils.parse import none_or_path, str_to_bool
 from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
 CLI = argparse.ArgumentParser()
@@ -19,12 +19,12 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
-                 help="path of output image")
+CLI.add_argument("--output_img", nargs='?', type=none_or_path,
+                 help="path of output image", default=None)
 CLI.add_argument("--intensity_threshold", nargs='?', type=float,
                  help="threshold for mask [0,1]", default=0.5)
-CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool, const=True,
-                 help="discard frame outside of ROI", default=False,)
+CLI.add_argument("--crop_to_selection", nargs='?', type=str_to_bool,
+                 help="discard frame outside of ROI", default=True)
 
 def calculate_contour(img, contour_limit):
     # Computing the contour lines...
@@ -163,18 +163,14 @@ if __name__ == '__main__':
     tmp_imgseq = imgseq.duplicate_with_new_data(imgseq_array)
     new_asig = imagesequence_to_analogsignal(tmp_imgseq)
 
-    if not args.crop_to_selection:
-        new_asig.array_annotate(**block.segments[0].analogsignals[0].array_annotations)
-    else:
-        new_asig.array_annotate(**new_asig.array_annotations)
-
     # save data and figure
     new_asig.description += "Border regions with mean intensity below "\
                          + "{args.intensity_threshold} were discarded. "\
                          + "({})".format(os.path.basename(__file__))
-    block.segments[0].analogsignals[0] = new_asig
+    block.segments[0].analogsignals = [new_asig]
 
     plot_roi(avg_img, contour)
-    save_plot(args.output_img)
+    if args.output_img is not None:
+        save_plot(args.output_img)
 
     write_neo(args.output, block)

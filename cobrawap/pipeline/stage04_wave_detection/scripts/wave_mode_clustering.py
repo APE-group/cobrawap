@@ -19,7 +19,7 @@ from scipy.spatial.distance import cdist
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import none_or_str, none_or_int
+from utils.parse import none_or_int, none_or_path
 from utils.neo_utils import analogsignal_to_imagesequence, remove_annotations
 
 CLI = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--min_trigger_fraction", "--MIN_TRIGGER_FRACTION",
                  nargs='?', type=float, default=.5,
@@ -117,12 +117,11 @@ def fill_nan_sites_from_similar_waves(timelag_df, num_neighbours=5,
     if np.isnan(neighbourhood_distance).any():
         warn('Unexpected nan value in wave triggers!')
         return timelag_df
-
+    
     if outlier_quantile < 1:
         q = np.quantile(neighbourhood_distance, outlier_quantile)
         keep_rows = np.where(neighbourhood_distance <= q)[0]
         timelag_df = timelag_df.iloc[keep_rows, :]
-
     return timelag_df
 
 def get_triu_indices_pos(i, N):
@@ -331,7 +330,7 @@ if __name__ == '__main__':
     mode_ids = kout.labels_
     if len(mode_ids) != len(timelag_df):
         raise IndexError('Some waves are not assigned to a kmeans cluster!'
-                      + f' {len(mode_ids)} != {len(timelag_df)}')
+                         + f' {len(mode_ids)} != {len(timelag_df)}')
 
     mode_labels, mode_counts = np.unique(mode_ids, return_counts=True)
 
@@ -356,8 +355,8 @@ if __name__ == '__main__':
                                               step=args.interpolation_step_size,
                                               dim_x=dim_x, dim_y=dim_y)
         interpolated_mode_grids = np.concatenate((interpolated_mode_grids,
-                                                     pattern[np.newaxis,:])) \
-                                           if i else pattern[np.newaxis,:]
+                                                  pattern[np.newaxis,:])) \
+                                  if i else pattern[np.newaxis,:]
 
     # add cluster labels as annotation to the wavefronts event
     evt_id, waves = [(i, evt) for i, evt in enumerate(block.segments[0].events) \

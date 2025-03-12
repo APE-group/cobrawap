@@ -21,7 +21,6 @@ def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
                 del objects[i].array_annotations[k]
     return None
 
-
 def merge_analogsignals(asigs):
     # ToDo: to be replaced by neo utils functions
     if len(asigs) == 1:
@@ -125,7 +124,6 @@ def rotate_image(imgseq, rotation=0):
 
     return rotated_imgseq
 
-
 def robust_t(neo_obj, t_value=None, t_name='t_start', unit='s'):
     if t_value is None:
         if hasattr(neo_obj, t_name):
@@ -196,7 +194,7 @@ def imagesequence_to_analogsignal(imgseq):
 
             if not (x_coords == asig.array_annotations['x_coords']).all() \
             or not (y_coords == asig.array_annotations['y_coords']).all():
-                raise IndexError("Transformation of array_annotations for the "
+                raise IndexError("Transformation of array_annotations for the " 
                                + "AnalogSignal went wrong!")
         except ValueError:
             warnings.warn("ImageSequence <-> AnalogSignal transformation "
@@ -276,7 +274,7 @@ def add_empty_sites_to_analogsignal(asig):
     dim_t, dim_channels = asig_array.shape
     num_grid_channels = dim_x * dim_y
     num_nan_channels = num_grid_channels - dim_channels
-
+    
     if num_nan_channels == 0:
         return asig
 
@@ -299,7 +297,7 @@ def add_empty_sites_to_analogsignal(asig):
             new_values = new_values.magnitude * values.units
         new_asig.array_annotations[key] = new_values
 
-    new_asig.array_annotate(x_coords=np.append(x_coords, x_nan_coords),
+    new_asig.array_annotate(x_coords=np.append(x_coords, x_nan_coords), 
                             y_coords=np.append(y_coords, y_nan_coords))
 
     return new_asig

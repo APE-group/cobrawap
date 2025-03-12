@@ -24,7 +24,7 @@ CLI.add_argument("--neighbour_distance", nargs='?', type=float, default=30,
                  help="eps parameter in sklearn.cluster.DBSCAN")
 CLI.add_argument("--min_samples", nargs='?', type=int, default=10,
                  help="minimum number of trigger times to form a wavefront")
-
+                    
 def cluster_triggers(event, metric, neighbour_distance, min_samples,
                      time_space_ratio, sampling_rate):
     up_idx = np.where(event.labels == 'UP')[0]

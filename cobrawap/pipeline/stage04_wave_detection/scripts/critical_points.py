@@ -17,7 +17,7 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-
+                    
 def detect_critical_points(imgseq, times):
     frames = imgseq.as_array()
     if frames.dtype != np.complex128:
@@ -63,9 +63,9 @@ def detect_critical_points(imgseq, times):
     evt = neo.Event(name='critical_points',
                     times=times[frame_ids],
                     labels=labels)
-    evt.array_annotations.update({'x':x, 'y':y,
+    evt.array_annotations.update({'x':x, 'y':y, 
                                   'trace':trace, 'det':det,
-                                  'extend':extend,
+                                  'extend':extend, 
                                   'winding_number':winding_number})
     return evt
 
@@ -187,18 +187,10 @@ def get_line_intersections(contourA, contourB):
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
-
     block = load_neo(args.data)
 
     asig = block.filter(name='optical_flow', objects="AnalogSignal")[0]
     imgseq = analogsignal_to_imagesequence(asig)
-
-    # if imgseq:
-    #     imgseq = imgseq[0]
-    # else:
-    #     raise ValueError("Input does not contain a signal with name " \
-    #                    + "'optical_flow'!")
-
 
     crit_point_evt = detect_critical_points(imgseq,
                                     block.segments[0].analogsignals[0].times)

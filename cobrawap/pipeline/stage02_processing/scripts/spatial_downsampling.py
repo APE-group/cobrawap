@@ -10,7 +10,7 @@ import os
 import neo
 from skimage import measure
 from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
 CLI = argparse.ArgumentParser()
@@ -18,7 +18,7 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path,
                  help="path of output image", default=None)
 CLI.add_argument("--macro_pixel_dim", nargs='?', type=int,
                  help="smoothing factor", default=2)
@@ -68,6 +68,10 @@ if __name__ == '__main__':
     if args.output_img is not None:
         plot_downsampled_image(imgseq_reduced.as_array()[0], args.output_img)
 
+    new_block = neo.Block()
+    new_segment = neo.Segment()
+    new_block.segments.append(new_segment)
+    new_block.segments[0].imagesequences.append(imgseq_reduced)
     new_asig = imagesequence_to_analogsignal(imgseq_reduced)
 
     block.segments[0].analogsignals[0] = new_asig

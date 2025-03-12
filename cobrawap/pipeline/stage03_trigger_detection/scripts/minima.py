@@ -1,5 +1,5 @@
 """
-Detect trigger times (i.e., state transition / local wavefronts onsets)
+Detect trigger times (i.e., state transition / local wavefronts onsets) 
 by finding local minima preceding a prominent peak in the channel signals.
 """
 
@@ -171,7 +171,7 @@ def plot_minima(asig, event, threshold_asig, channel, min_peak_distance):
     threshold = threshold_asig.as_array().T[channel]
 
     peaks, _ = find_peaks(signal, height=threshold,
-                          distance=np.max([min_peak_distance*sampling_rate, 1]))
+                          distance=np.max([min_peak_distance*sampling_rate, 1]))  
 
     # plot figure
     sns.set(style='ticks', palette="deep", context="notebook")
@@ -183,17 +183,10 @@ def plot_minima(asig, event, threshold_asig, channel, min_peak_distance):
 
     idx_ch = np.where(event.array_annotations['channels'] == channel)[0]
 
-    ax.plot(times[peaks], signal[peaks], 'x', color='r', label='detected maxima')
+    ax.plot(times[peaks], signal[peaks], 'x', color='r', label='detected maxima') 
     ax.plot(event.times[idx_ch],
             signal[((event.times[idx_ch]-asig.times[0])*sampling_rate).astype(int)],
             'x', color='g', label='selected minima')
-
-            # TO BE DONE
-            # If wanting to interpolate linearly the height of minima, add something like
-            #     np.interp(event.times[idx_ch], times, signal)
-            # and remember to the take into account also the initial offset, asig.times[0]
-            # Also, decide if use higher-order interpolation also for plot
-            # (same order actually used in the computation)
 
     ax.set_title(f'channel {channel}')
     ax.set_xlabel('time [s]')

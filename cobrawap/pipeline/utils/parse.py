@@ -1,8 +1,10 @@
-import numpy as np
-import warnings
 import re
-from pathlib import Path
 import sys
+import warnings
+from pathlib import Path
+
+import numpy as np
+
 from .io_utils import load_neo
 
 
@@ -143,10 +145,7 @@ def str_to_bool(value, raise_exc=False):
 
 
 def none_or_X(value, dtype):
-    # if value is None or not bool(value) or value == 'None':
-    # I would not use value=0 as a synonim of 'None'
-    # as it can be a meaningful value assigned to a variable
-    if value is None or value == 'None':
+    if value is None or not bool(value) or value == "None":
         return None
     try:
         return dtype(value)
@@ -157,6 +156,7 @@ def none_or_X(value, dtype):
 none_or_int = lambda v: none_or_X(v, int)
 none_or_float = lambda v: none_or_X(v, float)
 none_or_str = lambda v: none_or_X(v, str)
+none_or_path = lambda v: none_or_X(v, Path)
 str_list = lambda v: v.split(",")
 
 
@@ -164,7 +164,7 @@ def parse_plot_channels(channels, input_file):
     channels = channels if isinstance(channels, list) else [channels]
     channels = [none_or_int(channel) for channel in channels]
     # ToDo:
-    #   * check if channel exists, even when there is no None
+    #   * check is channel exists, even when there is no None
     #   * use annotation channel ids instead of array indices
     if None in channels:
         dim_t, channel_num = load_neo(

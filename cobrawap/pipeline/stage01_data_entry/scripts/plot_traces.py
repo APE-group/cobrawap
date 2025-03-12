@@ -7,27 +7,20 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.io_utils import (
-    load_neo,
-    save_plot
-)
+from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import time_slice
-from utils.parse import (
-    none_or_float,
-    none_or_int,
-    parse_plot_channels
-)
+from utils.parse import parse_plot_channels, none_or_int, none_or_float
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output figure")
-CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
+CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
-CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
+CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
-CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=0,
+CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
                  help="list of channels to plot")
 
 def plot_traces(asig, channels):
@@ -52,7 +45,7 @@ def plot_traces(asig, channels):
             f'ANNOTATIONS FOR CHANNEL(s) {channels} \n'\
           +  '\n ANNOTATIONS:\n' + '\n'.join(annotations) \
           +  '\n\n ARRAY ANNOTATIONS:\n' + '\n'.join(array_annotations) +'\n' \
-          + f' t_start: {asig.plot_tstart}; t_stop: {asig.plot_tstop} \n' \
+          + f' t_start: {asig.t_start}; t_stop: {asig.t_stop} \n' \
           + f' dimensions(x,y): {dim_x}, {dim_y}')
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')
@@ -67,10 +60,10 @@ if __name__ == '__main__':
 
     asig = load_neo(args.data, 'analogsignal', lazy=True)
 
-    channels = parse_plot_channels(args.plot_channels, args.data)
+    channels = parse_plot_channels(args.channels, args.data)
 
-    asig = time_slice(asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
+    asig = time_slice(asig, t_start=args.t_start, t_stop=args.t_stop,
                       lazy=True, channel_indexes=channels)
 
     ax = plot_traces(asig, channels)
-    save_plot(args.output_img)
+    save_plot(args.output)

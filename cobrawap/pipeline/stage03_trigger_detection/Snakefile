@@ -3,7 +3,6 @@
 """
 
 from pathlib import Path
-
 configfile: Path('configs') / 'config_template.yaml'
 include: Path() / '..' / 'utils' / 'Snakefile'
 
@@ -51,6 +50,7 @@ rule threshold:
                                   --output {output.data:q} \
                                   --thresholds {input.thresholds:q}
         """
+
 
 use rule template as calc_threshold_fixed with:
     # subrule of threshold

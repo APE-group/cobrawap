@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to spatial derivative dataframe")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
                  help="name of neo.Event to analyze (must contain waves)")
@@ -34,11 +34,6 @@ if __name__ == '__main__':
     velocity_df[f'{args.event_name}_id'] = df[f'{args.event_name}_id']
 
     velocity_df.to_csv(args.output)
-
-    fig, ax = plt.subplots()
-    ax.hist(velocity[np.where(np.isfinite(velocity))[0]],
-            bins=100, range=[0, 20])
-    plt.xlabel('local velocity of waves (' + str(velocity_df['velocity_local_unit'][0]) + ')', fontsize=7.)
 
     if args.output_img is not None:
         save_plot(args.output_img)
