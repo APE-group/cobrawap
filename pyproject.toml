@@ -1,10 +1,10 @@
 [project]
 name = "cobrawap"
 description = "Collaborative Brain Wave Analysis Pipeline (Cobrawap)"
-version = "0.2.0"
+version = "0.2.1"
 readme = "README.rst"
 authors = [
-    { name = "Cobrawap authors and contributors" }
+    { name = "Cobrawap authors and contributors", email = "contact@cobrawap.org"}
 ]
 
 requires-python = ">=3.8"
@@ -23,7 +23,7 @@ dependencies = [
     "pandas >= 1.2.0",
     "pulp < 2.8",
     "scikit-learn >= 1.1.0",
-    "scikit-image >= 0.20.0",
+    "scikit-image >= 0.19.0",
     "matplotlib >= 3.5.1",
     "seaborn",
     "networkx",
@@ -40,7 +40,7 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://cobrawap.readthedocs.io/"
-"Bug Tracker" = "https://github.com/INM-6/cobrawap/issues"
+"Bug Tracker" = "https://github.com/NeuralEnsemble/cobrawap/issues"
 
 [project.scripts]
 cobrawap = "cobrawap.__main__:main"
