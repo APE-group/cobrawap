@@ -18,7 +18,7 @@ configfile: config_path / 'configs' / 'config.yaml'
 report: "report.rst"
 
 # Setting the profile
-config_profile = f'config_{config["PROFILE"]}.yaml'
+config_profile = str("config_%s.yaml" % config["PROFILE"])
 output_path = output_path / config["PROFILE"]
 
 STAGES = config['STAGES']
@@ -81,7 +81,7 @@ def stage_input(wildcards):
         stage_num = [i for i, stage in enumerate(STAGES)
                                     if stage == wildcards.stage][0]
         if stage_num:
-            return output_path / f'{STAGES[stage_num-1]}.done'
+            return output_path / str("%s.done" % STAGES[stage_num-1])
         else:
             return []
 
@@ -100,7 +100,7 @@ def stage_output(wildcards):
 
 rule all:
     input:
-        last_stage = output_path / f'{STAGES[-1]}.done',
+        last_stage = output_path / str("%s.done" % STAGES[-1]),
         # reports = expand(os.path.join(output_path, '{subworkflow_name}',
         #                               'report.html'),
         #                  subworkflow_name=STAGES)
