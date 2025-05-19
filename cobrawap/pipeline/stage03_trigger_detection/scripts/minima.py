@@ -116,7 +116,7 @@ def detect_minima(asig, threshold_asig, interpolation_points,
         min_time_idx = np.append(min_time_idx, clean_mins)
         channel_idx = np.append(channel_idx, np.ones(len(clean_mins), dtype=int)*channel)
 
-    # compute local minima times.
+    # compute local minima times
     if interpolation_points:
         # parabolic fit on the right branch of local minima
         start_arr = min_time_idx - 1

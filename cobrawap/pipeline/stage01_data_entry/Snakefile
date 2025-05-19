@@ -59,7 +59,7 @@ use rule template as enter_data with:
         script = curation_script,
     params:
         params('spatial_scale', 'sampling_rate', 't_start', 't_stop',
-               'orientation_top', 'orientation_right', 'annotations',
-               'array_annotations', 'array_annotation_file', 'kwargs', 'trial', config=config)
+               'projection', 'annotations', 'array_annotations', 'array_annotation_file',
+               'kwargs', config=config)
     output:
         Path('{dir}') / '{data_name}' / str("{data_name}.%s" % config.NEO_FORMAT)

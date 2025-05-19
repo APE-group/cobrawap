@@ -9,7 +9,7 @@ include: Path() / '..' / 'utils' / 'Snakefile'
 #### Housekeeping ####
 
 def measures_output(wildcards):
-    return [OUTPUT_DIR / measure / f'{config.EVENT_NAME}_{measure}.csv'
+    return [OUTPUT_DIR / str("%s" % measure) / str("%s_%s.csv" % (config.EVENT_NAME,measure))
             for measure in config.MEASURES]
 
 if config.EVENT_NAME == 'wavemodes':
@@ -23,7 +23,7 @@ use rule template as all with:
         check = OUTPUT_DIR / 'input.check',
         data = measures_output,
         script = SCRIPTS / 'merge_dataframes.py',
-        # configfile = Path('configs') / f'config_{config.PROFILE}.yaml'
+        # configfile = Path('configs') / str("config_%s.yaml" % config.PROFILE)
     params:
         params()
     output:
@@ -35,10 +35,9 @@ use rule template as all with:
 use rule template as compute_measure with:
     input:
         data = config.STAGE_INPUT,
-        script = SCRIPTS / '{measure}.py'
+        script = SCRIPTS / str("{measure}.py")
     params:
         params(config.__dict__)
     output:
-        Path('{dir}') / '{measure}' / f'{config.EVENT_NAME}_{{measure}}.csv',
-        output_img = Path('{dir}') / '{measure}'
-                      / f'{config.EVENT_NAME}_{{measure}}.{config.PLOT_FORMAT}'
+        Path('{dir}') / '{measure}' / str("%s_{measure}.csv" % config.EVENT_NAME),
+        output_img = Path('{dir}') / '{measure}' / str("%s_{measure}.%s" % (config.EVENT_NAME,config.PLOT_FORMAT))
