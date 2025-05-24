@@ -18,7 +18,7 @@ def filtered_triggers(wildcards):
 use rule template_all as all with:
     input:
         check = OUTPUT_DIR / 'input.check',
-        # configfile = Path('configs') / f'config_{PROFILE}.yaml',
+        # configfile = Path('configs') / str("config_%s.yaml" % PROFILE),
         data = filtered_triggers,
         img = OUTPUT_DIR / 'plot_trigger_times'
 
@@ -39,7 +39,7 @@ use rule template as plot_trigger_times with:
 rule threshold:
     input:
         data = config.STAGE_INPUT,
-        thresholds = Path('{dir}') / 'threshold' / f'{config.THRESHOLD_METHOD}_thresholds.npy',
+        thresholds = Path('{dir}') / 'threshold' / str("%s_thresholds.npy" % config.THRESHOLD_METHOD),
         script = SCRIPTS / 'threshold.py'
     output:
         data = Path('{dir}') / 'threshold' / config.STAGE_OUTPUT
@@ -110,7 +110,7 @@ use rule template as remove_short_states with:
         data = filtered_triggers,
         script = SCRIPTS / 'remove_short_states.py'
     output:
-        Path('{dir}') / '{rule_name}' / f'remove_short_states.{config.NEO_FORMAT}'
+        Path('{dir}') / '{rule_name}' / str("remove_short_states.%s" % config.NEO_FORMAT)
     params:
         params('min_up_duration', 'min_down_duration', 'remove_down_first', 
                 config=config)
