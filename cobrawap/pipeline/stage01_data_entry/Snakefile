@@ -12,9 +12,9 @@ config.DATA_NAME = list(config.DATA_SETS.keys())[0]
 use rule template_all as all with:
     input:
         check = OUTPUT_DIR / str("%s.check" % config.DATA_NAME),
-        img = OUTPUT_DIR / str("%s" % config.DATA_NAME) 
+        img = OUTPUT_DIR / str("%s" % config.DATA_NAME)
                          / str("trace_%s.%s" % (config.DATA_NAME,config.PLOT_FORMAT)),
-        data = OUTPUT_DIR / str("%s" % config.DATA_NAME) 
+        data = OUTPUT_DIR / str("%s" % config.DATA_NAME)
                           / str("%s.%s" % (config.DATA_NAME,config.NEO_FORMAT)),
         # configfile = Path('configs') / str("config_%s.yaml" % config.PROFILE)
 
