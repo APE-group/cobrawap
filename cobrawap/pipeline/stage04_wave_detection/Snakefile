@@ -8,18 +8,13 @@ include: Path() / '..' / 'utils' / 'Snakefile'
 
 #### UTILITY BLOCKS ####
 
-#if config["DETECTION_BLOCK"] == "WaveHunt_Clustering":
-#    BLOCK_ORDER = ["clustering", "optical_flow", "critical_points", "critical_points_clustering", "merge_wave_definitions"]
-
-#elif config["DETECTION_BLOCK"] == "WaveHunt_Time":
-#    BLOCK_ORDER = ["WaveHunt_Cropped"]
-
 use rule template_all as all with:
     input:
         check = OUTPUT_DIR / 'input.check',
         data = OUTPUT_DIR / 'merge_wave_definitions' / config.STAGE_OUTPUT,
         # img = OUTPUT_DIR / 'wave_plots'
         # configfile = Path('configs') / f'config_{PROFILE}.yaml',
+
 
 def additional_properties(wildcards):
     return [Path(wildcards.dir) / prop / f'{prop}.{config.NEO_FORMAT}'
@@ -58,17 +53,6 @@ use rule template_plus_plot_script as trigger_clustering with:
 
 #### ADDITIONAL PROPERTIES ####
 
-use rule template as WaveHunt with:
-    input:
-        data = config.STAGE_INPUT,
-        script = SCRIPTS / 'WaveHunt.py'
-    params:
-        params('Max_Abs_Timelag', 'Acceptable_rejection_rate', 'min_ch_fraction',
-               'n_trans_th_fraction', config=config)
-    output:
-        Path('{dir}') / 'WaveHunt' / f'WaveHunt.{config.NEO_FORMAT}',
-        output_img = Path('{dir}') / 'WaveHunt' / f'WaveHunt.{config.PLOT_FORMAT}'
-
 use rule template as optical_flow with:
     input:
         data = config.STAGE_INPUT,
@@ -77,19 +61,21 @@ use rule template as optical_flow with:
         params('alpha', 'max_Niter', 'convergence_limit', 'gaussian_sigma',
                'derivative_filter', 'use_phases', config=config)
     output:
-        Path('{dir}') / 'optical_flow' / f'optical_flow.{config.NEO_FORMAT}',
-        output_img = Path('{dir}') / 'optical_flow' / f'optical_flow.{config.PLOT_FORMAT}'
+        Path('{dir}') / '{rule_name}' / f'{rule_name}.{config.NEO_FORMAT}',
+        output_img = Path('{dir}') / '{rule_name}' / f'{rule_name}.{config.PLOT_FORMAT}'
+
 
 use rule template_plus_plot_script as critical_points with:
     input:
         data = Path('{dir}') / 'optical_flow' / f'optical_flow.{config.NEO_FORMAT}',
         script = SCRIPTS / 'critical_points.py',
-        plot_script = SCRIPTS / 'plot_critical_points.py'
+        plot_script = SCRIPTS / 'plot_critical_points.py',
     params:
         params(frame_id=0, skip_step=1)
     output:
         Path('{dir}') / 'critical_points' / f'critical_points.{config.NEO_FORMAT}',
         img = Path('{dir}') / 'critical_points' / f'critical_points.{config.PLOT_FORMAT}'
+
 
 # use rule template as critical_points_clustering with:
 #     # ToDo
@@ -104,6 +90,7 @@ use rule template_plus_plot_script as critical_points with:
 #         cp {input.data:q} {output.data:q}
 #         """
 
+
 use rule template as wave_mode_clustering with:
     input:
         data = rules.trigger_clustering.output,
@@ -113,8 +100,8 @@ use rule template as wave_mode_clustering with:
                'wave_outlier_quantile', 'num_kmeans_cluster',
                'interpolation_step_size', 'interpolation_smoothing', config=config)
     output:
-        Path('{dir}') / 'wave_mode_clustering' / f'wave_mode_clustering.{config.NEO_FORMAT}',
-        output_img = Path('{dir}') / 'wave_mode_clustering' / f'wave_mode_clustering.{config.PLOT_FORMAT}'
+        Path('{dir}') / '{rule_name}' / f'{rule_name}.{config.NEO_FORMAT}',
+        output_img = Path('{dir}') / '{rule_name}' / f'{rule_name}.{config.PLOT_FORMAT}'
 
 #### PLOTTING ####
 
@@ -129,6 +116,7 @@ use rule template as plot_waves with:
     output:
         directory(Path('{dir}') / 'wave_plots')
 
+
 #### MOVIE PLOTTING ####
 
 use rule template as time_slice with:
@@ -140,6 +128,7 @@ use rule template as time_slice with:
     output:
         Path('{dir}') / f'{{data_name}}_{{t_start, [0-9]+}}-{{t_stop, [0-9]+}}s.{config.NEO_FORMAT}'
 
+
 use rule template as plot_movie_frames with:
     input:
         data = Path('{dir}') / f'{{data_name}}.{config.NEO_FORMAT}',
@@ -149,6 +138,7 @@ use rule template as plot_movie_frames with:
                config=config, frame_name='frame', frame_format='png')
     output:
         frame_folder = directory(Path('{dir}') / '{data_name}_frames')
+
 
 rule plot_movie:
     input:
