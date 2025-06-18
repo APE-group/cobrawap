@@ -110,19 +110,10 @@ ENV/
 .mypy_cache/
 
 # MacOS
-./.DS_store
-./.DS_Store
-*/.DS_Store
-*/*/.DS_Store
-*/*/*/.DS_Store
-*/*/*/*/.DS_Store
+**/.DS_store
 
 # __pycache__
-./__pycache__/
-*/__pycache__/
-*/*/__pycache__/
-*/*/*/__pycache__/
-*/*/*/*/__pycache__/
+**/__pycache__
 
 # Config and curate files
 cobrawap/pipeline/*/configs/config_LENS*
