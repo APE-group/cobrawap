@@ -1,11 +1,11 @@
 # workflow folder
-.snakemake/
+**/.snakemake
 temp*
 temp*/
 .idea/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+**/__pycache__
 *.py[cod]
 *$py.class
 
@@ -77,7 +77,7 @@ doc/source/_toctree/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+**/.ipynb_checkpoints
 
 # pyenv
 .python-version
@@ -111,9 +111,6 @@ ENV/
 
 # MacOS
 **/.DS_store
-
-# __pycache__
-**/__pycache__
 
 # Config and curate files
 cobrawap/pipeline/*/configs/config_LENS*
