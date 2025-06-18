@@ -4,7 +4,6 @@ by finding crossing of a set phase-value in the channel signals.
 """
 
 import argparse
-from pathlib import Path
 import neo
 import numpy as np
 import quantities as pq
@@ -15,6 +14,7 @@ import seaborn as sns
 from utils.io_utils import load_neo, write_neo, save_plot
 from utils.neo_utils import time_slice, remove_annotations
 from utils.parse import none_or_int, none_or_float
+from pathlib import Path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
