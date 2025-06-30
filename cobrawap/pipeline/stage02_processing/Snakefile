@@ -112,6 +112,17 @@ use rule template as detrending with:
         img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
 
 
+use rule template as convolve with:
+    input:
+        is_clear = is_clear,
+        data = input_file,
+        script = SCRIPTS / 'convolve.py'
+    params:
+        params('kernel_type', 'kernel_params', config=config)
+    output:
+        Path('{dir}') / '{rule_name}' / f'convolve.{config.NEO_FORMAT}'
+
+
 use rule template as frequency_filter with:
     input:
         is_clear = is_clear,
