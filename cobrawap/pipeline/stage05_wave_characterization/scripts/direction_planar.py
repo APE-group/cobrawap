@@ -172,6 +172,11 @@ if __name__ == '__main__':
     df['direction_x_std'] = dx_std
     df['direction_y_std'] = dy_std
 
+    if 'orientation_top' not in evts.annotations.keys():
+        evts.annotations['orientation_top'] = None
+    if 'orientation_right' not in evts.annotations.keys():
+        evts.annotations['orientation_right'] = None
+
     if args.output_img is not None:
         plot_directions(df,
                         wave_ids=np.unique(evts.labels.astype(int)),
