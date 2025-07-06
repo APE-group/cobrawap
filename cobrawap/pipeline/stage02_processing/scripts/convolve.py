@@ -16,8 +16,8 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
 CLI.add_argument("--kernel_type", nargs='?', type=str, required=True,
-                 help="type of convolution kernel")
-CLI.add_argument("--kernel_params", nargs='+', type=str, default=None,
+                 choices=["gaussian"], help="type of convolution kernel")
+CLI.add_argument("--kernel_params", nargs='+', type=str, required=True,
                  help="parameters of convolution kernel")
 
 
@@ -35,13 +35,9 @@ def gaussian_kernel(duration_ms, sampling_rate_Hz, std_dev_ms):
     """
     sampling_duration_s = 1 / sampling_rate_Hz
     sampling_duration_ms = sampling_duration_s * 1000.0  # ms / s
-    kernel_start_ms = -duration_ms / 2.0
-    kernel_stop_ms = duration_ms / 2.0
-    #print("kernel_start_ms", kernel_start_ms)
-    #print("kernel_stop_ms", kernel_stop_ms)
-    #print("sampling_duration_ms", sampling_duration_ms)
-    t_ms = np.arange(kernel_start_ms, kernel_stop_ms, sampling_duration_ms)
-    #print("length in samples", len(t_ms))
+    kernel_start_ms = -0.5*duration_ms
+    kernel_stop_ms = 0.5*duration_ms
+    t_ms = np.arange(kernel_start_ms, kernel_stop_ms+0.5*sampling_duration_ms, sampling_duration_ms)
     gaussian = np.exp(-0.5 * (t_ms / std_dev_ms) ** 2)
     gaussian /= gaussian.sum()  # Normalize the kernel to ensure the signal energy is preserved
     return gaussian
@@ -95,6 +91,5 @@ if __name__ == '__main__':
     convolved_asig.description += "Convolved with a {} kernel of parameters {} ({}). "\
                         .format(args.kernel_type, args.kernel_params, os.path.basename(__file__))
     block.segments[0].analogsignals[0] = convolved_asig
-    print(np.sum(asig[100:-100,221]),np.sum(convolved_asig[100:-100,221]))
 
     write_neo(args.output, block)
