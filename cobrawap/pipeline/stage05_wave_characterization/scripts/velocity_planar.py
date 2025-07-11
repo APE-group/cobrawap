@@ -9,14 +9,14 @@ from pathlib import Path
 import scipy
 import pandas as pd
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
                  help="name of neo.Event to analyze (must contain waves)")
@@ -57,10 +57,11 @@ def calc_planar_velocities(evts):
     for i, wave_i in enumerate(wave_ids):
         # Fit wave displacement
         idx = np.where(evts.labels == wave_i)[0]
-        x_times, x_locations = center_points(evts.times[idx].magnitude,
-                                        coords['x'][idx])
-        y_times, y_locations = center_points(evts.times[idx].magnitude,
-                                        coords['y'][idx])
+        times = evts.times[idx].magnitude
+        if (times == times[0]).all():
+            continue
+        x_times, x_locations = center_points(times, coords['x'][idx])
+        y_times, y_locations = center_points(times, coords['y'][idx])
         vx, vx_err, dx = linregress(x_times, x_locations)
         vy, vy_err, dy = linregress(y_times, y_locations)
         v = np.sqrt(vx**2 + vy**2)
@@ -90,15 +91,19 @@ def calc_planar_velocities(evts):
         cax.set_title('wave {}'.format(wave_i))
 
     # plot total velocities
-    ax[-1][-1].errorbar(wave_ids, velocities[:,0], yerr=velocities[:,1],
-                        linestyle='', marker='+')
-    ax[-1][-1].set_xlabel(f'{evts.name} id')
-    ax[-1][-1].set_title('velocities [{}]'.format(v_unit))
+    if ncols == 1:
+        cax = ax[-1]
+    else:
+        cax = ax[-1][-1]
+        for i in range(len(wave_ids), nrows*ncols-1):
+            row = int(i/ncols)
+            col = i % ncols
+            ax[row][col].set_axis_off()
 
-    for i in range(len(wave_ids), nrows*ncols-1):
-        row = int(i/ncols)
-        col = i % ncols
-        ax[row][col].set_axis_off()
+    cax.errorbar(wave_ids, velocities[:,0], yerr=velocities[:,1],
+                        linestyle='', marker='+')
+    cax.set_xlabel(f'{evts.name} id')
+    cax.set_title('velocities [{}]'.format(v_unit))
 
     plt.figure()
     plt.hist(velocities[:][0])

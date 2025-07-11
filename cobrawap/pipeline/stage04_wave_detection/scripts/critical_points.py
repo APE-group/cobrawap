@@ -187,18 +187,10 @@ def get_line_intersections(contourA, contourB):
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
-
     block = load_neo(args.data)
 
     asig = block.filter(name='optical_flow', objects="AnalogSignal")[0]
     imgseq = analogsignal_to_imagesequence(asig)
-
-    # if imgseq:
-    #     imgseq = imgseq[0]
-    # else:
-    #     raise ValueError("Input does not contain a signal with name " \
-    #                    + "'optical_flow'!")
-
 
     crit_point_evt = detect_critical_points(imgseq,
                                     block.segments[0].analogsignals[0].times)

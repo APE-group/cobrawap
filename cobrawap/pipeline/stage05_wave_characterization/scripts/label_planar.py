@@ -13,14 +13,14 @@ import copy
 import seaborn as sns
 from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import analogsignal_to_imagesequence
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--alignment_threshold", nargs='?', type=float, default=.85,
                  help="threshold for alignment of velocity vectors at transitions")
@@ -111,6 +111,7 @@ if __name__ == '__main__':
     wavefront_evt = block.filter(name=args.event_name, objects="Event")[0]
     wavefront_evt = wavefront_evt[wavefront_evt.labels.astype('str') != '-1']
 
+
     planar_labels = label_planar(waves_event=wavefront_evt,
                                  vector_field=optical_flow,
                                  times=vec_asig.times,
@@ -131,6 +132,6 @@ if __name__ == '__main__':
                        ax=ax)
         save_plot(os.path.join(os.path.dirname(args.output),
                                f'wave_{wave_id}.png'))
-        if not i:
+        if not i and args.output_img is not None:
             save_plot(args.output_img)
         plt.close()

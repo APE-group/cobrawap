@@ -7,21 +7,22 @@ The derivative is calculated using a kernel convolution.
 
 import argparse
 from pathlib import Path
+from warnings import warn
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from warnings import warn
 from scipy.interpolate import RBFInterpolator
+from utils.convolve import get_kernel, nan_conv2d
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str, str_to_bool
-from utils.convolve import nan_conv2d, get_kernel
+from utils.parse import none_or_path, none_or_str, str_to_bool
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--kernel", "--KERNEL", nargs='?', type=none_or_str, default=None,
                  help="derivative kernel")
@@ -90,7 +91,7 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
                 warn('Continuing without interpolation.')
 
         kernel = get_kernel(kernel_name)
-        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.x)
+        d_horizont = -1 * nan_conv2d(trigger_collection, kernel.x) # is -1 correct?
         d_vertical = -1 * nan_conv2d(trigger_collection, kernel.y)
 
         dt_y = d_vertical[y_coords, x_coords]

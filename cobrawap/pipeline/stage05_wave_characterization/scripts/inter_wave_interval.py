@@ -2,6 +2,7 @@
 Calculate the period between two consecutive waves for each wave.
 """
 
+from pathlib import Path
 import neo
 import numpy as np
 import quantities as pq
@@ -9,18 +10,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import argparse
-from pathlib import Path
 import scipy
 import pandas as pd
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
                  help="name of neo.Event to analyze (must contain waves)")
@@ -78,8 +78,14 @@ if __name__ == '__main__':
     df = pd.DataFrame(IWIs, columns=['inter_wave_interval', 'inter_wave_interval_std'])
     df['inter_wave_interval_unit'] = t_unit
     df[f'{args.event_name}_id'] = wave_ids
-
     df.to_csv(args.output)
 
     # ToDo
-    save_plot(args.output_img)
+    fig, ax = plt.subplots()
+
+    if np.isfinite(IWIs[:,0]).any():
+        ax.hist(IWIs[:,0])
+
+    ax.set_xlabel('inter-wave interval [s]')
+    if args.output_img is not None:
+        save_plot(args.output_img)

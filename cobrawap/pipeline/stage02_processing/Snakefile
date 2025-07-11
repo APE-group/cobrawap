@@ -37,26 +37,28 @@ rule clear:
         touch {output:q}
         """
 
+
 use rule template as plot_processed_traces with:
     input:
         data = input_file,
         script = SCRIPTS / 'plot_processed_trace.py'
     params:
-        params(plot_channels=config.PLOT_CHANNELS,
+        params(channels=config.PLOT_CHANNELS,
                img_name='processed_trace_channel0.'+config.PLOT_FORMAT,
                original_data=config.STAGE_INPUT)
     output:
-        output_img_dir = directory(OUTPUT_DIR / 'processed_traces_{t_start}-{t_stop}s')
+        img_dir = directory(OUTPUT_DIR / 'processed_traces_{t_start}-{t_stop}s')
+
 
 use rule template as plot_power_spectrum with:
     input:
         data = input_file,
         script = SCRIPTS / 'plot_power_spectrum.py'
+    output:
+        Path('{dir}') / '{rule_name}' / f'power_spectrum.{config.PLOT_FORMAT}'
     params:
         params('highpass_frequency', 'lowpass_frequency', 'psd_frequency_resolution', 'psd_overlap',
                 config=config)
-    output:
-        Path('{dir}') / '{rule_name}' / f'power_spectrum.{config.PLOT_FORMAT}'
 
 #### PROCESSING BLOCKS (choose any)####
 
@@ -91,6 +93,7 @@ use rule template as spatial_downsampling with:
     params:
         params(macro_pixel_dim=config.MACRO_PIXEL_DIM)
 
+
 use rule template as normalization with:
     input:
         is_clear = is_clear,
@@ -101,18 +104,20 @@ use rule template as normalization with:
     output:
         Path('{dir}') / 'normalization' / f'{{rule_name}}.{config.NEO_FORMAT}'
 
+
 use rule template as detrending with:
     input:
         is_clear = is_clear,
         data = input_file,
         script = SCRIPTS / 'detrending.py'
     params:
-        params(detrending_order = config.DETRENDING_ORDER,
+        params(order = config.DETRENDING_ORDER,
                plot_channels = config.PLOT_CHANNELS,
-               img_name = 'detrending_trace_channel0.'+config.PLOT_FORMAT)
+               img_name = 'detrending_channel0.'+config.PLOT_FORMAT)
     output:
         Path('{dir}') / '{rule_name}' / f'detrending.{config.NEO_FORMAT}',
-        output_img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
+        img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
+
 
 use rule template as frequency_filter with:
     input:
@@ -122,9 +127,10 @@ use rule template as frequency_filter with:
         script = SCRIPTS / 'frequency_filter.py'
     params:
         params('highpass_frequency', 'lowpass_frequency', 'filter_function',
-                filter_order=config.FILTER_ORDER, config=config)
+                order=config.FILTER_ORDER, config=config)
     output:
         Path('{dir}') / '{rule_name}' /  f'frequency_filter.{config.NEO_FORMAT}'
+
 
 use rule template as roi_selection with:
     input:
@@ -136,6 +142,7 @@ use rule template as roi_selection with:
     output:
         Path('{dir}') / '{rule_name}' / f'roi_selection.{config.NEO_FORMAT}',
         output_img =  Path('{dir}') / '{rule_name}' / f'roi_selection.{config.PLOT_FORMAT}'
+
 
 use rule template as logMUA_estimation with:
     input:
@@ -151,7 +158,8 @@ use rule template as logMUA_estimation with:
                img_name = 'logMUA_trace_channel0.'+config.PLOT_FORMAT)
     output:
         Path('{dir}') / '{rule_name}' / f'logMUA_estimation.{config.NEO_FORMAT}',
-        output_img_dir =  directory(Path('{dir}') / '{rule_name}' / 'logMUA_estimation_plots')
+        img_dir =  directory(Path('{dir}') / '{rule_name}' / 'logMUA_estimation_plots')
+
 
 use rule template as phase_transform with:
     input:
@@ -162,6 +170,7 @@ use rule template as phase_transform with:
         params()
     output:
         Path('{dir}') / '{rule_name}' /  f'phase_transform.{config.NEO_FORMAT}'
+
 
 use rule template as z_score with:
     input:
