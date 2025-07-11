@@ -67,7 +67,7 @@ use rule template as optical_flow with:
 
 use rule template_plus_plot_script as critical_points with:
     input:
-        data = Path('{dir}') / 'optical_flow' / str("optical_flow.%s" % config.NEO_FORMAT),
+        data = Path('{dir}') / 'optical_flow' / f'optical_flow.{config.NEO_FORMAT}',
         script = SCRIPTS / 'critical_points.py',
         plot_script = SCRIPTS / 'plot_critical_points.py',
     params:
