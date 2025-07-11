@@ -41,11 +41,13 @@ def plot_traces(asig, channels):
     dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
     ax.text(1.05, 0.5,
-            f'ANNOTATIONS FOR CHANNEL(s): {channels}' + '\n\n'\
-            + 'ANNOTATIONS:' + '\n'
-            + ' - ' + '\n - '.join(annotations) + '\n\n'\
-            + 'ARRAY ANNOTATIONS:' + '\n'
-            + ' - ' + '\n - '.join(array_annotations) +'\n' \
+            f'ANNOTATIONS FOR CHANNEL(s): {channels}' + '\n' \
+            + '\n' \
+            + 'ANNOTATIONS:' + '\n' \
+            + ' - ' + '\n - '.join(annotations) + '\n' \
+            + '\n' \
+            + 'ARRAY ANNOTATIONS:' + '\n' \
+            + ' - ' + '\n - '.join(array_annotations) + '\n' \
             + f' - t_start: {asig.t_start}; t_stop: {asig.t_stop}' + '\n' \
             + f' - dimensions(x,y): {dim_x}, {dim_y}',
             ha='left', va='center', transform=ax.transAxes)
