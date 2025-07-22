@@ -10,7 +10,7 @@ import pandas as pd
 import quantities as pq
 import re
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_str
+from utils.parse import none_or_path, none_or_str
 from utils.neo_utils import remove_annotations
 
 CLI = argparse.ArgumentParser()
@@ -18,13 +18,13 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
                  help="name of neo.Event to analyze (must contain waves)")
-CLI.add_argument("--ignore_keys", "--IGNORE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
+CLI.add_argument("--ignore_keys", "--IGNORE_KEYS", nargs='*', type=str, default=[],
                  help="neo.Event annotations keys to not include in dataframe")
-CLI.add_argument("--include_keys", "--INCLUDE_KEYS", nargs='?', type=lambda s: s.split(), default=[],
+CLI.add_argument("--include_keys", "--INCLUDE_KEYS", nargs='*', type=str, default=[],
                  help="neo object annotations keys to include in dataframe")
 CLI.add_argument("--profile", "--PROFILE", nargs='?', type=none_or_str, default=None,
                  help="profile name")
@@ -112,4 +112,5 @@ if __name__ == '__main__':
     df.to_csv(args.output)
 
     # ToDo
-    save_plot(args.output_img)
+    if args.output_img is not None:
+        save_plot(args.output_img)

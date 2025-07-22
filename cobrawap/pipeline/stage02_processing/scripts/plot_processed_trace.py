@@ -7,31 +7,26 @@ import seaborn as sns
 import argparse
 from pathlib import Path
 import os
-from utils.io_utils import (
-    load_neo,
-    save_plot
-)
+from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import time_slice
-from utils.parse import (
-    none_or_float,
-    none_or_int
-)
+from utils.parse import none_or_float, none_or_int
+
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--original_data", nargs='?', type=Path, required=True,
                  help="path to original input data in neo format")
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to processed input data in neo format")
-CLI.add_argument("--output_img_dir", nargs='?', type=Path, required=True,
+CLI.add_argument("--img_dir", nargs='?', type=Path, required=True,
                  help="path of output figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='processed_trace_channel0.png',
                  help='example filename for channel 0')
-CLI.add_argument("--plot_tstart", nargs='?', type=none_or_float, default=0,
+CLI.add_argument("--t_start", nargs='?', type=none_or_float, default=0,
                  help="start time in seconds")
-CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
+CLI.add_argument("--t_stop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
-CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=0,
+CLI.add_argument("--channels", nargs='+', type=none_or_int, default=0,
                  help="channel to plot")
 
 def plot_traces(original_asig, processed_asig, channel):
@@ -62,15 +57,15 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     orig_asig = load_neo(args.original_data, 'analogsignal', lazy=False)
-    orig_asig = time_slice(orig_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
-                           lazy=False, channel_indexes=args.plot_channels)
+    orig_asig = time_slice(orig_asig, t_start=args.t_start, t_stop=args.t_stop,
+                           lazy=False, channel_indexes=args.channels)
 
     proc_asig = load_neo(args.data, 'analogsignal', lazy=False)
-    proc_asig = time_slice(proc_asig, t_start=args.plot_tstart, t_stop=args.plot_tstop,
-                           lazy=False, channel_indexes=args.plot_channels)
+    proc_asig = time_slice(proc_asig, t_start=args.t_start, t_stop=args.t_stop,
+                           lazy=False, channel_indexes=args.channels)
 
-    for channel in args.plot_channels:
+    for channel in args.channels:
         plot_traces(orig_asig, proc_asig, channel)
-        output_path = os.path.join(args.output_img_dir,
+        output_path = os.path.join(args.img_dir,
                                    args.img_name.replace('_channel0', f'_channel{channel}'))
         save_plot(output_path)

@@ -14,7 +14,7 @@ import argparse
 import os
 from pathlib import Path
 from utils.io_utils import load_neo, write_neo, save_plot
-from utils.parse import none_or_float, none_or_int
+from utils.parse import none_or_float, none_or_int, none_or_path
 from utils.neo_utils import time_slice
 
 CLI = argparse.ArgumentParser()
@@ -22,7 +22,7 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img_dir", nargs='?', type=Path, required=True,
+CLI.add_argument("--img_dir", nargs='?', type=none_or_path, default=None,
                  help="path of figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='logMUA_trace_channel0.png',
@@ -43,6 +43,7 @@ CLI.add_argument("--plot_tstop", nargs='?', type=none_or_float, default=10,
                  help="stop time in seconds")
 CLI.add_argument("--plot_channels", nargs='+', type=none_or_int, default=None,
                  help="list of channels to plot")
+
 
 def logMUA_estimation(asig, highpass_frequency, lowpass_frequency, logMUA_rate,
                       psd_overlap, fft_slice):
@@ -180,8 +181,8 @@ if __name__ == '__main__':
                                    t_start=args.plot_tstart,
                                    t_stop=args.plot_tstop,
                                    channel=channel)
-            output_path = os.path.join(args.output_img_dir,
-                                       args.img_name.replace('_channel0', f'_channel{channel}'))
+            output_path = args.img_dir \
+                        / args.img_name.replace('_channel0', f'_channel{channel}')
             save_plot(output_path)
 
     asig.description += "Estimated logMUA signal [{}, {}] Hz ({}). "\

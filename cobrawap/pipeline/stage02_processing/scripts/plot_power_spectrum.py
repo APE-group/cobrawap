@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from elephant.spectral import welch_psd
 from utils.io_utils import load_neo, save_plot
-from utils.parse import none_or_float
+from utils.parse import none_or_float, none_or_path
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output figure")
 CLI.add_argument("--highpass_frequency", nargs='?', type=none_or_float,
                  default='None', help="lower bound of frequency band in Hz")
@@ -61,4 +61,5 @@ if __name__ == '__main__':
              highpass_frequency=args.highpass_frequency,
              lowpass_frequency=args.lowpass_frequency)
 
-    save_plot(args.output_img)
+    if args.output_img is not None:
+        save_plot(args.output_img)

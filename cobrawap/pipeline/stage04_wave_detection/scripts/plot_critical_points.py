@@ -41,7 +41,6 @@ def plot_frame(frame, ax=None, skip_step=3):
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
-
     block = load_neo(args.data)
 
     asigs = block.filter(name='optical_flow', objects="AnalogSignal")

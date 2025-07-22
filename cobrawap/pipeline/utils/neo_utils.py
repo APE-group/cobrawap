@@ -21,7 +21,6 @@ def remove_annotations(objects, del_keys=['nix_name', 'neo_name']):
                 del objects[i].array_annotations[k]
     return None
 
-
 def merge_analogsignals(asigs):
     # ToDo: to be replaced by neo utils functions
     if len(asigs) == 1:
@@ -124,7 +123,6 @@ def rotate_image(imgseq, rotation=0):
         rotated_imgseq.annotations['array_annotations']['x_coords'] = x_coords
 
     return rotated_imgseq
-
 
 def robust_t(neo_obj, t_value=None, t_name='t_start', unit='s'):
     if t_value is None:

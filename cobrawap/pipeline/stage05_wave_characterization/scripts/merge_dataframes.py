@@ -6,15 +6,17 @@ import argparse
 from pathlib import Path
 import pandas as pd
 from copy import deepcopy
-from utils.parse import none_or_str
+from utils.parse import none_or_path
 
 CLI = argparse.ArgumentParser()
-CLI.add_argument("--data", nargs='+', type=str, required=True,
+CLI.add_argument("--data", nargs='+', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
                  help="path of output image file")
+# CLI.add_argument("--merge_key", nargs='?', type=str,
+#                  help="")
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
@@ -29,6 +31,7 @@ if __name__ == '__main__':
             full_df = deepcopy(df)
         del df
 
-    full_df.to_html(args.output_img)
+    if args.output_img is not None:
+        full_df.to_html(args.output_img)
 
     full_df.to_csv(args.output)
