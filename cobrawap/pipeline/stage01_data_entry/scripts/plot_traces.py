@@ -42,15 +42,19 @@ def plot_traces(asig, channels):
         dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
     text_string = f'ANNOTATIONS FOR CHANNEL(s): {channels}' + '\n' \
-                  + '\n' \
-                  + 'ANNOTATIONS:' + '\n' \
-                  + ' - ' + '\n - '.join(annotations) + '\n' \
-                  + '\n' \
-                  + 'ARRAY ANNOTATIONS:' + '\n' \
-                  + ' - ' + '\n - '.join(array_annotations) + '\n' \
-                  + f' - t_start: {asig.t_start}; t_stop: {asig.t_stop}' + '\n'
+                  + '\n'
+    if len(annotations):
+        text_string += 'ANNOTATIONS:' + '\n' \
+                       + ' - ' + '\n - '.join(annotations) + '\n' \
+                       + '\n'
+    if len(array_annotations):
+        text_string += 'ARRAY ANNOTATIONS:' + '\n' \
+                       + ' - ' + '\n - '.join(array_annotations) + '\n' \
+                       + '\n'
+    text_string += f' - t_start: {asig.t_start}; t_stop: {asig.t_stop}' + '\n'
     if 'spatial_scale' in asig.annotations.keys():
         text_string += f' - dimensions(x,y): {dim_x}, {dim_y}'
+
     ax.text(1.05, 0.5, text_string, ha='left', va='center', transform=ax.transAxes)
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')

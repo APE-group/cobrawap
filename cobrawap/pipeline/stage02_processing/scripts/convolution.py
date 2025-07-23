@@ -42,7 +42,7 @@ def gaussian_kernel(sampling_rate_Hz, std_dev_ms, duration_ms=None):
     if duration_ms:
         n = math.ceil(0.5*duration_ms/sampling_dt_ms)
     else:
-        # default span is 4 times std_dev on both sides
+        # default span is 4 times std_dev_ms, on both sides
         n = 4
     times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
@@ -58,11 +58,11 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
 
     Parameters:
     - sampling_rate_Hz:  The number of samples per second.
-    - tau_rise:          Time constant for the rising phase in ms.
-    - tau_decay:         Time constant for the decaying phase in ms.
+    - tau_rise_ms:       Time constant for the rising phase in ms.
+    - tau_decay_ms:      Time constant for the decaying phase in ms.
     - duration_ms:       [Optional] The duration over which the kernel is non-zero;
                          default value is 4 times the sum of the provided values
-                         for tau_rise and tau_decay
+                         for tau_rise_ms and tau_decay_ms
 
     Returns:
     - Biexponential kernel array.
@@ -70,12 +70,14 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
 
     sampling_duration_s = 1 / sampling_rate_Hz
     sampling_duration_ms = sampling_duration_s * 1000.0
-    if not duration_ms:
-        # default span is 4 times (tau_rise + tau_decay)
-        duration_ms = 4*(tau_rise+tau_decay)
-    times = np.arange(0, duration_ms, sampling_dt_ms)
+    if duration_ms:
+        n = math.ceil(0.5*duration_ms/sampling_dt_ms)
+    else:
+        # default span is 4 times (tau_rise_ms + tau_decay_ms), on both sides
+        n = math.ceil(4*(tau_rise_ms+tau_decay_ms)/sampling_dt_ms)
+    times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
-    kernel = np.exp(-times / tau_decay) - np.exp(-times / tau_rise)
+    kernel = np.exp(-times / tau_decay_ms) - np.exp(-times / tau_rise_ms)
     kernel /= np.sum(kernel)
 
     return kernel
