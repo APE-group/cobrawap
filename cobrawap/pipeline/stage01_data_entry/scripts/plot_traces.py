@@ -36,7 +36,7 @@ def plot_traces(asig, channels):
     array_annotations = [f'{k}: {v[channels]}'
                         for k,v in asig.array_annotations.items()]
 
-    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+    if 'spatial_scale' in asig.annotations.keys():
         x_coords = asig.array_annotations['x_coords']
         y_coords = asig.array_annotations['y_coords']
         dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
@@ -49,7 +49,7 @@ def plot_traces(asig, channels):
                   + 'ARRAY ANNOTATIONS:' + '\n' \
                   + ' - ' + '\n - '.join(array_annotations) + '\n' \
                   + f' - t_start: {asig.t_start}; t_stop: {asig.t_stop}' + '\n'
-    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+    if 'spatial_scale' in asig.annotations.keys():
         text_string += f' - dimensions(x,y): {dim_x}, {dim_y}'
     ax.text(1.05, 0.5, text_string, ha='left', va='center', transform=ax.transAxes)
 

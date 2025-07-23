@@ -27,8 +27,7 @@ if __name__ == '__main__':
             + "will be ignored.")
 
     asig = block.segments[0].analogsignals[0]
-  
-    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+    if 'spatial_scale' in asig.annotations.keys():
         imgseq = analogsignal_to_imagesequence(asig)
         asig2 = imagesequence_to_analogsignal(imgseq)
         if asig.shape != asig2.shape:
@@ -39,16 +38,16 @@ if __name__ == '__main__':
 
     print('Recording Time:\t\t', asig.t_stop - asig.t_start)
     print('Sampling Rate:\t\t', asig.sampling_rate)
-    print('Spatial Scale:\t\t', asig.annotations['spatial_scale'])
 
     num_channels = np.count_nonzero(~np.isnan(np.sum(asig, axis=0)))
     print('Number of Channels:\t', num_channels)
 
-    if asig.annotations['spatial_scale'] and asig.annotations['spatial_scale'] !='None':
+    if 'spatial_scale' in asig.annotations.keys():
         x_coords = asig.array_annotations['x_coords']
         y_coords = asig.array_annotations['y_coords']
 
         dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
-        print('Grid Dimensions:\t', f'{dim_x} x {dim_y}')
-        print('Empty Grid Sites:\t', dim_x*dim_y - num_channels)
+        print('Spatial Scale:\t\t', asig.annotations['spatial_scale'])
+        print('Grid Dimensions:\t\t', f'{dim_x} x {dim_y}')
+        print('Empty Grid Sites:\t\t', dim_x*dim_y - num_channels)
