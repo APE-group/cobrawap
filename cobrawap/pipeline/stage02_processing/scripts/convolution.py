@@ -40,10 +40,11 @@ def gaussian_kernel(sampling_rate_Hz, std_dev_ms, duration_ms=None):
     sampling_dt_s = 1 / sampling_rate_Hz
     sampling_dt_ms = sampling_dt_s * 1000
     if duration_ms:
-        n = math.ceil(0.5*duration_ms/sampling_dt_ms)
+        half_width = 0.5*duration_ms
     else:
         # default span is 4 times std_dev_ms, on both sides
-        n = math.ceil(4*std_dev_ms/sampling_dt_ms)
+        half_width = 4*std_dev_ms
+    n = math.ceil(half_width/sampling_dt_ms)
     times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
     kernel = np.exp(-0.5 * (times / std_dev_ms) ** 2)
@@ -71,10 +72,11 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
     sampling_dt_s = 1 / sampling_rate_Hz
     sampling_dt_ms = sampling_dt_s * 1000.0
     if duration_ms:
-        n = math.ceil(0.5*duration_ms/sampling_dt_ms)
+        half_width = 0.5*duration_ms
     else:
         # default span is 4 times (tau_rise_ms + tau_decay_ms), on both sides
-        n = math.ceil(4*(tau_rise_ms+tau_decay_ms)/sampling_dt_ms)
+        half_width = 4*(tau_rise_ms+tau_decay_ms)
+    n = math.ceil(half_width/sampling_dt_ms)
     times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
     kernel = (np.exp(-times / tau_decay_ms) - np.exp(-times / tau_rise_ms)) * np.heaviside(times, 0)
