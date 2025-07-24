@@ -77,7 +77,7 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
         n = math.ceil(4*(tau_rise_ms+tau_decay_ms)/sampling_dt_ms)
     times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
-    kernel = np.exp(-times / tau_decay_ms) - np.exp(-times / tau_rise_ms)
+    kernel = (np.exp(-times / tau_decay_ms) - np.exp(-times / tau_rise_ms)) * np.heaviside(times, 0)
     kernel /= np.sum(kernel)
 
     return kernel
