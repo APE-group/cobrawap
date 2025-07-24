@@ -68,8 +68,8 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
     - Biexponential kernel array.
     """
 
-    sampling_duration_s = 1 / sampling_rate_Hz
-    sampling_duration_ms = sampling_duration_s * 1000.0
+    sampling_dt_s = 1 / sampling_rate_Hz
+    sampling_dt_ms = sampling_dt_s * 1000.0
     if duration_ms:
         n = math.ceil(0.5*duration_ms/sampling_dt_ms)
     else:
