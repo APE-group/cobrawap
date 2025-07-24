@@ -43,7 +43,7 @@ def gaussian_kernel(sampling_rate_Hz, std_dev_ms, duration_ms=None):
         n = math.ceil(0.5*duration_ms/sampling_dt_ms)
     else:
         # default span is 4 times std_dev_ms, on both sides
-        n = 4
+        n = math.ceil(4*std_dev_ms/sampling_dt_ms)
     times = np.linspace(-n*sampling_dt_ms, n*sampling_dt_ms, 2*n+1)
 
     kernel = np.exp(-0.5 * (times / std_dev_ms) ** 2)
@@ -61,7 +61,7 @@ def biexponential_kernel(sampling_rate_Hz, tau_rise_ms, tau_decay_ms, duration_m
     - tau_rise_ms:       Time constant for the rising phase in ms.
     - tau_decay_ms:      Time constant for the decaying phase in ms.
     - duration_ms:       [Optional] The duration over which the kernel is non-zero;
-                         default value is 4 times the sum of the provided values
+                         default value is 8 times the sum of the provided values
                          for tau_rise_ms and tau_decay_ms
 
     Returns:
