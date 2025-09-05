@@ -30,7 +30,7 @@ CLI.add_argument("--n_trans_th_fraction", nargs='?', type=float, default=0.05,
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
-#--- Load Input Data 
+#--- Load Input Data
 #    Collect Geometry Information from data ----------------------------------------------
 
     block = load_neo(args.data)
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     sampling_rate = 1./np.diff(asig.times)[0]
     spatial_scale = asig.annotations['spatial_scale']
 
-    # spatial_scale = pixel size (for regularly -spaced and/or -downsampled channel arrays) 
+    # spatial_scale = pixel size (for regularly -spaced and/or -downsampled channel arrays)
     # N.B. spatial_scale is set at native resolution for dataset processed with HOS
 
     #--- Get center of mass (cm) coordinates for each signal
@@ -60,19 +60,19 @@ if __name__ == '__main__':
                   'y': (asig.array_annotations['y_coords']+0.5)*spatial_scale,
                   'radius': np.ones([len(asig.array_annotations['x_coords'])])}
 
-    # 'radius' is the size of the pixel, expressed in terms of number of pixels at the spatial resolution 
-    # given by 'spatial_scale', e.g. radius = 2 corresponds to a downsampling into a 2 x 2 macropixel 
+    # 'radius' is the size of the pixel, expressed in terms of number of pixels at the spatial resolution
+    # given by 'spatial_scale', e.g. radius = 2 corresponds to a downsampling into a 2 x 2 macropixel
 
     #---
     block = analogsignals_to_imagesequences(block)
     imgseq = block.segments[0].imagesequences[0]
-    
+
     dim_x, dim_y = np.shape(imgseq[0]) # size of the array/grid expressed in number of channels/pixels
 
-    #--- Printout geometry information and checks 
+    #--- Printout geometry information and checks
     print('spatial_scale: ', spatial_scale)
     print('dim_x, dim_y:', dim_x, dim_y)
-    
+
     ##print('x: ', coords['x'])
     ##print('y: ', coords['y'])
     ##print('radius: ', coords['radius'])
@@ -86,7 +86,7 @@ if __name__ == '__main__':
        print("--> spatial resolution is not constant, dataset went through Hierarchical Optimal Sampling (HOS)\
               \n('spatial_scale' is native spatial resolution, i.e. before the HOS)")
 
-    #--- Get Events    
+    #--- Get Events
     evts = [ev for ev in block.segments[0].events if ev.name== 'transitions']
     if len(evts):
         evts = evts[0]
@@ -96,21 +96,21 @@ if __name__ == '__main__':
 #--- WaveHunt Preliminary Measurements ---------------------------------------------------
 # ExpectedTrans = number of expected Waves in the WaveCollection --> used to estimate/optimize IWI
 # IWI = Inter Wave Interval = time distance between two consecutive candidate waves
-# nCh = total number of active channels, i.e. channels for which an upward transition has been reported at least once    
+# nCh = total number of active channels, i.e. channels for which an upward transition has been reported at least once
 
     TransPerCh_Idx, TransPerCh_Num = np.unique(evts.array_annotations['channels'], return_counts=True)
     ExpectedTrans = np.median(TransPerCh_Num[np.where(TransPerCh_Num != 0)])
     print('Expected Transitions: ', ExpectedTrans)
-     
+
     nCh = len(np.unique(evts.array_annotations['channels'])) # total number of active channels
     print('Active Channels: ', nCh)
     transition_th = np.int32(args.n_trans_th_fraction*nCh) # number of transition threshold to detect stationary
 
     ChRatio = nCh/nChannels
     print('--> Channel Ratio = ', ChRatio)
-# ChRatio < 1 means that there are channels among those identified at stage02 (after ROI and downsampling, 
-# or after ROI and then selected as non-noisy by HOS) for which no upward transitions (triggers) 
-# have been identified at stage03. 
+# ChRatio < 1 means that there are channels among those identified at stage02 (after ROI and downsampling,
+# or after ROI and then selected as non-noisy by HOS) for which no upward transitions (triggers)
+# have been identified at stage03.
 
 # neighbors --> used when facing the "unicity" issue
     neighbors = Neighbourhood_Search(coords, spatial_scale)
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         Times.extend(Wave[i]['times'].magnitude)
         Label.extend(np.ones([len(Wave[i]['ndx'])])*i)
         Pixels.extend(Wave[i]['ch'])
-    
+
 
     Label = [str(i) for i in Label]
     Times = Times*(Wave[0]['times'].units)
