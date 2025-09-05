@@ -39,7 +39,8 @@ def gaussian_kernel(duration_ms, sampling_rate_Hz, std_dev_ms):
     kernel_stop_ms = duration_ms / 2.0
     t_ms = np.arange(kernel_start_ms, kernel_stop_ms, sampling_duration_ms)
     gaussian = np.exp(-0.5 * (t_ms / std_dev_ms) ** 2)
-    gaussian /= gaussian.sum()  # Normalize the kernel to ensure the signal energy is preserved
+    # Normalize the kernel to ensure the signal energy is preserved
+    gaussian /= gaussian.sum()
     return gaussian
 
 
@@ -48,7 +49,7 @@ def smooth_signal(asig, kernel_type, kernel_params):
     Smooths the given signal by convolving it with the specified kernel.
 
     Parameters:
-    - signal: The original signal
+    - signal: The original signal.
     - kernel: The smoothing kernel.
 
     Returns:

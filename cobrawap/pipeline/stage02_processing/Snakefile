@@ -120,7 +120,7 @@ use rule template as convolution with:
     params:
         params('kernel_type', 'kernel_params', config=config)
     output:
-        Path('{dir}') / '{rule_name}' / str("convolution.%s" % config.NEO_FORMAT)
+        Path('{dir}') / '{rule_name}' / str("convolution." + config.NEO_FORMAT)
 
 
 use rule template as frequency_filter with:
