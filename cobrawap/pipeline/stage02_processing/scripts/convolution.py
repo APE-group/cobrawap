@@ -50,6 +50,7 @@ def gaussian_kernel(sampling_rate_Hz, std_dev_ms, duration_ms=None):
 
     kernel = np.exp(-0.5 * (times / std_dev_ms) ** 2)
     kernel /= np.sum(kernel)
+
     return kernel
 
 
