@@ -60,7 +60,7 @@ use rule template as plot_power_spectrum with:
         params('highpass_frequency', 'lowpass_frequency', 'psd_frequency_resolution', 'psd_overlap',
                 config=config)
 
-#### PROCESSING BLOCKS (choose any)####
+#### PROCESSING BLOCKS (choose any) ####
 
 use rule template as background_subtraction with:
     input:
