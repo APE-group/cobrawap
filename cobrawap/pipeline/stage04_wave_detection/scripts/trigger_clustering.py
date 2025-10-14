@@ -86,7 +86,7 @@ if __name__ == '__main__':
                                     sampling_rate=asig.sampling_rate)
 
     else:
-        wave_evt = neo.Event(name='wavefronts', 
+        wave_evt = neo.Event(name='wavefronts',
                              times=np.array([])*pq.s, labels=[])
 
     block.segments[0].events.append(wave_evt)

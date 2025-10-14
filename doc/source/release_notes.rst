@@ -3,6 +3,42 @@ Release Notes
 *************
 
 
+Release 0.2.3
+=============
+Bug fixes
+---------
+* Fixed bug in `--version` handling of installed versions (`#113 <https://github.com/NeuralEnsemble/cobrawap/pull/113>`_)
+* Fixed breaking syntax error in stage 2 (`#115 <https://github.com/NeuralEnsemble/cobrawap/pull/115>`_)
+
+Other changes
+-------------
+* Housekeeping (`#114 <https://github.com/NeuralEnsemble/cobrawap/pull/114>`_)
+
+
+Release 0.2.2
+=============
+Bug fixes
+---------
+* Fixed `--version` argument of `cobrawap` command (`#95 <https://github.com/NeuralEnsemble/cobawap/pull/95>`_)
+* Fixed path handling issues (`#92 <https://github.com/NeuralEnsemble/cobawap/pull/92>`_), (`#101 <https://github.com/NeuralEnsemble/cobrawap/pull/101>`_)
+
+Other changes
+-------------
+* Fixed path issue in automated documentation builds (`#102 <https://github.com/NeuralEnsemble/cobrawap/pull/102>`_)
+* Fixed Python 3.12 compatibility (`#105 <https://github.com/NeuralEnsemble/cobrawap/pull/105>`_)
+* Improved figure outputs (`#98 <https://github.com/NeuralEnsemble/cobrawap/pull/98>`_)
+* Added `--force-overwrite` flag (`#110 <https://github.com/NeuralEnsemble/cobrawap/pull/110>`_)
+* Various maintenance fixes (`#86 <https://github.com/NeuralEnsemble/cobrawap/pull/86>`_), (`#89 <https://github.com/NeuralEnsemble/cobrawap/pull/89>`_), (`#90 <https://github.com/NeuralEnsemble/cobrawap/pull/90>`_), (`#93 <https://github.com/NeuralEnsemble/cobrawap/pull/93>`_), (`#97 <https://github.com/NeuralEnsemble/cobrawap/pull/97>`_), (`#102 <https://github.com/NeuralEnsemble/cobrawap/pull/102>`_), (`#107 <https://github.com/NeuralEnsemble/cobrawap/pull/107>`_), (`#108 <https://github.com/NeuralEnsemble/cobrawap/pull/108>`_)
+
+
+Release 0.2.1
+=============
+Other changes
+-------------
+* Improved internal handling of pathnames (`#79 <https://github.com/NeuralEnsemble/cobrawap/pull/79>`_)
+* Maintenance fixes, including dependency adjustments (`#80 <https://github.com/NeuralEnsemble/cobrawap/pull/80>`_), (`#83 <https://github.com/NeuralEnsemble/cobrawap/pull/83>`_)
+
+
 Release 0.2.0
 =============
 New functionality and features
@@ -47,5 +83,3 @@ Release 0.1.0
 Initial release of Cobrawap accompanying the manuscript
 
 Gutzen, R., De Bonis, G., De Luca, C., Pastorelli, E., Capone, C., Allegra Mascaro, A. L., Resta, F., Manasanch, A., Pavone, F. S., Sanchez-Vives, M. V., Mattia, M., Grün, S., Paolucci, P. S., & Denker, M. (2022). *A modular and adaptable analysis pipeline to compare slow cerebral rhythms across heterogeneous datasets*. Cell Reports Methods 4, 100681. `https://doi.org/10.1016/j.crmeth.2023.100681 <https://doi.org/10.1016/j.crmeth.2023.100681>`_
-
-

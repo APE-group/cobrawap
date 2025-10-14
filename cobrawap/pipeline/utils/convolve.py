@@ -83,8 +83,8 @@ def get_kernel(kernel_name):
     elif kernel_name.lower() in ['sobel_7x7']:
         return sobel_7x7
     else:
-        warnings.warn(f'Deriviative name {kernel_name} is not implemented, '
-                     + 'using sobel filter instead.')
+        warnings.warn(f'Derivative kernel `{kernel_name}` is not implemented, '
+                     + 'using `sobel` filter instead.')
         return sobel_3x3
 
 

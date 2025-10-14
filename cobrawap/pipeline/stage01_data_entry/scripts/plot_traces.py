@@ -7,16 +7,9 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.io_utils import (
-    load_neo,
-    save_plot
-)
+from utils.io_utils import load_neo, save_plot
 from utils.neo_utils import time_slice
-from utils.parse import (
-    none_or_float,
-    none_or_int,
-    parse_plot_channels,
-)
+from utils.parse import parse_plot_channels, none_or_int, none_or_float
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
@@ -48,12 +41,17 @@ def plot_traces(asig, channels):
     y_coords = asig.array_annotations['y_coords']
     dim_x, dim_y = np.max(x_coords)+1, np.max(y_coords)+1
 
-    ax.text(ax.get_xlim()[1]*1.05, ax.get_ylim()[0],
-            f'ANNOTATIONS FOR CHANNEL(s) {channels} \n'\
-          +  '\n ANNOTATIONS:\n' + '\n'.join(annotations) \
-          +  '\n\n ARRAY ANNOTATIONS:\n' + '\n'.join(array_annotations) +'\n' \
-          + f' t_start: {asig.t_start}; t_stop: {asig.t_stop} \n' \
-          + f' dimensions(x,y): {dim_x}, {dim_y}')
+    ax.text(1.05, 0.5,
+            f'ANNOTATIONS FOR CHANNEL(s): {channels}' + '\n' \
+            + '\n' \
+            + 'ANNOTATIONS:' + '\n' \
+            + ' - ' + '\n - '.join(annotations) + '\n' \
+            + '\n' \
+            + 'ARRAY ANNOTATIONS:' + '\n' \
+            + ' - ' + '\n - '.join(array_annotations) + '\n' \
+            + f' - t_start: {asig.t_start}; t_stop: {asig.t_stop}' + '\n' \
+            + f' - dimensions(x,y): {dim_x}, {dim_y}',
+            ha='left', va='center', transform=ax.transAxes)
 
     ax.set_xlabel(f'time [{asig.times.units.dimensionality.string}]')
     ax.set_ylabel(f'channels [in {asig.units.dimensionality.string}]')

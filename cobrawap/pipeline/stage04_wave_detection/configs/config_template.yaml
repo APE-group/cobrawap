@@ -26,14 +26,14 @@ PLOT_FORMAT: 'png'
 
 # DETECTION BLOCK
 ##################
-# Available Blocks: 'WaveHunt', 'trigger_clustering'
+# Available Blocks: 'trigger_clustering'
 DETECTION_BLOCK: 'trigger_clustering'
 
 # ADDITIONAL PROPERTIES
 #######################
 # Available Blocks: 'optical_flow', 'critical_points', 'wave_mode_clustering'
 # use empty list [] for selecting none
-ADDITIONAL_PROPERTIES: ['optical_flow']
+ADDITIONAL_PROPERTIES: ['wave_mode_clustering', 'optical_flow']
 
 # Trigger Clustering
 ######################
@@ -69,14 +69,6 @@ DETECT_CRITICAL_POINTS: False
 
 # Critical Point Clustering
 ###########################
-
-#WaveHunt_Time
-###########################
-MAX_ABS_TIMELAG: 0.8 # Maximum reasonable time lag between electrodes (pixels)...
-ACCEPTABLE_REJECTION_RATE: 0.1
-MIN_CH_FRACTION: 0.5 # percentage of minimum active channels to meet globality principle
-N_TRANS_TH_FRACTION: 0.05 # maximum percentage of active channels performing
-                          # a transition to detect a stationarity
 
 # Wave Mode Clustering
 ######################

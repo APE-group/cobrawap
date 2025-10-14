@@ -11,17 +11,17 @@ yaml.indent(mapping=4, sequence=4, offset=4)
 SETTINGS_PATH = Path('~/.cobrawap/config').expanduser()
 
 def get_setting(key: str = None):
-    with open(SETTINGS_PATH, 'r') as f:
-        try:
+    try:
+        with open(SETTINGS_PATH, 'r') as f:
             settings = yaml.load(f)
             if not settings:
                 settings = {}
-        except Exception as e:
-            logger.warning(e)
-            raise FileNotFoundError("The settings file either doesn't exist "\
-                                    "or is not in proper JSON format! "\
-                                    "Try to run `cobrawap init` to set up the "\
-                                    "settings file.")
+    except Exception as e:
+        raise FileNotFoundError("The settings file `~/.cobrawap/config` "\
+                                "either does not exist "\
+                                "or is not in proper JSON format! "\
+                                "Try to run `cobrawap init` to set up the "\
+                                "settings file.") from e
     if key is None:
         return settings
     elif key not in settings.keys():
@@ -30,10 +30,10 @@ def get_setting(key: str = None):
         return settings[key]
 
 
-def set_setting(setting: dict) -> None:
+def set_setting(setting: dict, force_overwrite=False) -> None:
     if type(setting) != dict:
         raise TypeError('Function expects a dictionary!')
-    
+
     if SETTINGS_PATH.exists():
         with open(SETTINGS_PATH, 'r') as f:
             settings = yaml.load(f)
@@ -43,12 +43,12 @@ def set_setting(setting: dict) -> None:
         logger.warning("Creating a new cobrawap settings file at "\
                       f"`{SETTINGS_PATH.resolve()}`.")
         if not SETTINGS_PATH.parent.exists():
-            SETTINGS_PATH.parent.mkdir(parents=True)   
+            SETTINGS_PATH.parent.mkdir(parents=True)
         SETTINGS_PATH.touch(exist_ok=True)
         settings = {}
-    
+
     key_overlap = [k for k in setting.keys() if k in settings.keys()]
-    if key_overlap:
+    if key_overlap and not force_overwrite:
         overwrite = (input(f"There are already settings for {key_overlap}! "\
                             "Overwrite? [y/N]").lower() == 'y'
                     or False)
@@ -158,7 +158,7 @@ def get_config(config_dir, config_name, get_path_instead=False):
 
             logger.info(f"'{prev_try_config_name}' not found, "
                         f"trying '{try_config_name}'.")
-            
+
     logger.info(f"Using '{try_config_name}.")
     if get_path_instead:
         return config_path
@@ -234,8 +234,8 @@ def dict_to_cla(arg_dict):
 
 
 def in_quotes(object):
-    char = ['\s', '|']  # when these characters are in an argument str
-                        # they need to be put in quotes to be passed as cla
+    char = [r"\s", "|"]  # when these characters are in an argument str
+                         # they need to be put in quotes to be passed as cla
     return any([c in str(object) for c in char])
 
 
@@ -243,18 +243,18 @@ def params(*args, config=None, **kwargs):
     '''
     Creates a parameter dictionary that is returned as a string as
     command line argument as `--key value` for each key-value pair in the dict.
-    
+
     args:
         - if args[0] is a dict, it is added to the parameter dict
-        - if args are strings and config is a dict, args (and args.upper()) 
-          are interpreted as keys of config dict and the corresponding elements 
+        - if args are strings and config is a dict, args (and args.upper())
+          are interpreted as keys of config dict and the corresponding elements
           are added to the parameter dict
     config:
         dict from which elements (keys given by args) are selected
     kwargs:
         kwargs are added as key-value pairs are to the parameter dict
 
-    Additionally, all wildcards and named outputs of the current rule are added 
+    Additionally, all wildcards and named outputs of the current rule are added
     as key-value pairs to the parameter dict.
     '''
 
@@ -275,7 +275,7 @@ def params(*args, config=None, **kwargs):
             elif arg.upper() in config.keys():
                 param_dict[arg] = config[arg.upper()]
             else:
-                logger.info(f'Parameter "{arg}" not found in the config! ' 
+                logger.info(f'Parameter "{arg}" not found in the config! '
                              'Set to None!')
                 param_dict[arg] = None
 
@@ -289,7 +289,7 @@ def params(*args, config=None, **kwargs):
                 del item_dict['data']
 
             duplicates = [key for key in item_dict.keys() if key in param_dict.keys()]
-            
+
             for key in duplicates:
                 if param_dict[key] != item_dict[key]:
                     logger.warning(f"The keyword {key} is used multiple times "
@@ -298,7 +298,7 @@ def params(*args, config=None, **kwargs):
                                    f"in favor of '{item_dict[key]}'")
 
             param_dict.update(item_dict)
-        return dict_to_cla(param_dict) 
+        return dict_to_cla(param_dict)
 
     return add_output_and_wildcards_to_args
 

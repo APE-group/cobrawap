@@ -16,7 +16,7 @@ CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output_img", nargs='?', type=Path, required=True,
-                 help="path of output image")
+                 help="path of output figure")
 CLI.add_argument("--highpass_frequency", nargs='?', type=none_or_float,
                  default='None', help="lower bound of frequency band in Hz")
 CLI.add_argument("--lowpass_frequency", nargs='?', type=none_or_float,

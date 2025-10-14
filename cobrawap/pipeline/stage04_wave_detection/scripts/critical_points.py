@@ -199,7 +199,6 @@ if __name__ == '__main__':
     #     raise ValueError("Input does not contain a signal with name " \
     #                    + "'optical_flow'!")
 
-
     crit_point_evt = detect_critical_points(imgseq,
                                     block.segments[0].analogsignals[0].times)
 

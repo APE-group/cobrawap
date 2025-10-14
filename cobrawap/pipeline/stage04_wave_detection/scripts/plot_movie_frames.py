@@ -15,7 +15,7 @@ from utils.parse import none_or_str, none_or_float
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
-CLI.add_argument("--frame_folder", nargs='?', type=str,
+CLI.add_argument("--frame_folder", nargs='?', type=Path,
                  help="")
 CLI.add_argument("--frame_name", nargs='?', type=str,
                  help="")
@@ -25,7 +25,7 @@ CLI.add_argument("--frame_rate", nargs='?', type=none_or_float,
                  help="")
 CLI.add_argument("--colormap", nargs='?', type=str,
                  help="")
-CLI.add_argument("--event", nargs='?', type=none_or_str, default=None,
+CLI.add_argument("--plot_event", nargs='?', type=none_or_str, default=None,
                  help="")
 CLI.add_argument("--marker_color", nargs='?', type=str, default='k',
                  help="")
@@ -163,7 +163,7 @@ if __name__ == '__main__':
         ax.set_ylabel('pixel size: {:.2f} mm'.format(imgseq.spatial_scale.rescale('mm').magnitude))
         ax.set_xlabel('{:.3f} s'.format(times[frame_num].rescale('s').magnitude))
 
-        save_plot(os.path.join(args.frame_folder,
+        save_plot(os.path.join(str(args.frame_folder),
                                args.frame_name + '_{}.{}'.format(str(i).zfill(5),
                                args.frame_format)),
                   transparent=True)
