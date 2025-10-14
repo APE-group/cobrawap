@@ -95,7 +95,7 @@ The **Cobrawap Core Team** is in charge of defining the scientific address of th
 |                                       | - *Federico Marmoreo*                    |
 |                                       | - *Pier Stanislao Paolucci*              |
 +---------------------------------------+------------------------------------------+
-  
+
 The further **Cobrawap Community** includes people and partners that offer technical support for the integration of the software in a larger framework of interoperable tools, and offer scientific support for the development of the analysis methods and the tool's integration into broader research endeavors.
 
 - Athena Research and Innovation Center, Greece
@@ -108,7 +108,7 @@ The further **Cobrawap Community** includes people and partners that offer techn
    - *Cristiano Capone*
    - *Irene Bernava*
    - *Alessandra Cardinale*
-- Institut d’Investigacions Biomediques August Pi i Sunyer (IDIBAPS), Barcelona, Spain
+- Institut d'Investigacions Biomediques August Pi i Sunyer (IDIBAPS), Barcelona, Spain
    - *Arnau Manasanch*
    - *Miguel Dasilva*
    - *Maria V. Sanchez-Vives*

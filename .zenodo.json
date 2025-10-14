@@ -59,7 +59,7 @@
     },
     {
       "orcid": "0000-0002-8306-0759",
-      "affiliation": "Institut d’Investigacions Biomèdiques August Pi i Sunyer (IDIBAPS), Barcelona, Spain",
+      "affiliation": "Institut d'Investigacions Biomèdiques August Pi i Sunyer (IDIBAPS), Barcelona, Spain",
       "name": "Manasanch, Arnau",
       "type": "ProjectMember"
     },
@@ -71,7 +71,7 @@
     },
     {
       "orcid": "0000-0002-8437-9083",
-      "affiliation": "Institut d’Investigacions Biomèdiques August Pi i Sunyer (IDIBAPS), Barcelona, Spain; Institució Catalana de Recerca i Estudis Avançats (ICREA), Barcelona, Spain",
+      "affiliation": "Institut d'Investigacions Biomèdiques August Pi i Sunyer (IDIBAPS), Barcelona, Spain; Institució Catalana de Recerca i Estudis Avançats (ICREA), Barcelona, Spain",
       "name": "Sanchez-Vives, Maria V.",
       "type": "ProjectMember"
     },
@@ -101,7 +101,7 @@
     }
   ],
 
-  "title": "Cobrawap 0.2.2",
+  "title": "Cobrawap 0.2.3",
 
   "keywords": [
     "neuroscience",
@@ -124,7 +124,7 @@
 
     {
       "scheme": "doi",
-      "identifier": "10.5281/zenodo.15005123",
+      "identifier": "10.5281/zenodo.17048329",
       "relation": "isNewVersionOf",
       "resource_type": "software"
     },
