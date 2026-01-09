@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     ax.hist(1./intervals.magnitude[np.where(np.isfinite(1./intervals))[0]],
-            bins=100, range=[0, 8])
+            bins=100, range=[0, 12])
     plt.xlabel('local rate of waves (Hz)', fontsize=7.)
     if args.output_img is not None:
         save_plot(args.output_img)
