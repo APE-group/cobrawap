@@ -23,7 +23,7 @@ def input(wildcards):
     else:
         return config.STAGE_INPUT
 
-ruleorder: spatial_derivative > compute_measure
+ruleorder: spatial_derivative > velocity_local > direction_local
 
 #### UTILITY BLOCKS ####
 
@@ -40,24 +40,54 @@ use rule template as all with:
 
 #### CHARACTERIZATION BLOCKS ####
 
-use rule template as compute_measure with:
+use rule template as spatial_derivative with:
     input:
-        data = input,
-        script = SCRIPTS / str('{measure}' + ".py")
+        data = config.STAGE_INPUT,
+        script = SCRIPTS / 'spatial_derivative.py',
+    params:
+        params(kernel=config.KERNEL, interpolate=config.INTERPOLATE, smoothing=config.SMOOTHING,
+               output_img_name = config.EVENT_NAME + "_spatial_derivative_wave0." + config.PLOT_FORMAT),
+    output:
+        OUTPUT_DIR / 'spatial_derivative'
+                      / str(config.EVENT_NAME + "_spatial_derivative.csv"),
+        output_img_dir = directory(OUTPUT_DIR / 'spatial_derivative'
+                                   / str(config.EVENT_NAME + "_spatial_derivative_plots"))
+
+use rule template as annotations with:
+    input:
+        data = config.STAGE_INPUT,
+        script = SCRIPTS / "annotations.py"
     params:
         params(config.__dict__)
     output:
-        Path('{dir}') / '{measure}' / str(config.EVENT_NAME + "_" + '{measure}' + ".csv"),
-        output_img = Path('{dir}') / '{measure}'
-                      / str(config.EVENT_NAME + "_" + '{measure}' + "." + config.PLOT_FORMAT)
+        OUTPUT_DIR / "annotations" / str(config.EVENT_NAME + "_annotations.csv")
 
+use rule template as direction_local with:
+    input:
+        data = rules.spatial_derivative.output,
+        script = SCRIPTS / "direction_local.py"
+    params:
+        params(config.__dict__)
+    output:
+        OUTPUT_DIR / "direction_local" / str(config.EVENT_NAME + "_direction_local.csv"),
+        output_img = OUTPUT_DIR / "direction_local" / str(config.EVENT_NAME + "_direction_local." + config.PLOT_FORMAT)
 
-use rule compute_measure as spatial_derivative with:
+use rule template as inter_wave_interval_local with:
     input:
         data = config.STAGE_INPUT,
-        script = SCRIPTS / 'spatial_derivative.py'
+        script = SCRIPTS / "inter_wave_interval_local.py"
+    params:
+        params(config.__dict__)
     output:
-        Path('{dir}') / 'spatial_derivative'
-                      / str(config.EVENT_NAME + "_spatial_derivative.csv"),
-        output_img = Path('{dir}') / 'spatial_derivative'
-               / str(config.EVENT_NAME + "_spatial_derivative." + config.PLOT_FORMAT)
+        OUTPUT_DIR / "inter_wave_interval_local" / str(config.EVENT_NAME + "_inter_wave_interval_local.csv"),
+        output_img = OUTPUT_DIR / "inter_wave_interval_local" / str(config.EVENT_NAME + "_inter_wave_interval_local." + config.PLOT_FORMAT)
+
+use rule template as velocity_local with:
+    input:
+        data = rules.spatial_derivative.output,
+        script = SCRIPTS / "velocity_local.py"
+    params:
+        params(config.__dict__)
+    output:
+        OUTPUT_DIR / "velocity_local" / str(config.EVENT_NAME + "_velocity_local.csv"),
+        output_img = OUTPUT_DIR / "velocity_local" / str(config.EVENT_NAME + "_velocity_local." + config.PLOT_FORMAT)

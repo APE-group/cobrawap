@@ -6,6 +6,7 @@ The derivative is calculated using a kernel convolution.
 """
 
 import argparse
+import os
 from pathlib import Path
 from warnings import warn
 
@@ -22,8 +23,11 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--output_img", nargs='?', type=none_or_path, default=None,
-                 help="path of output image file")
+CLI.add_argument("--output_img_dir", nargs='?', type=none_or_path, default=None,
+                 help="path of output figure directory")
+CLI.add_argument("--output_img_name", nargs='?', type=none_or_str,
+                 default='wavefronts_spatial_derivative_wave0.png',
+                 help='example filename for wave 0')
 CLI.add_argument("--kernel", "--KERNEL", nargs='?', type=none_or_str, default=None,
                  help="derivative kernel")
 CLI.add_argument("--event_name", "--EVENT_NAME", nargs='?', type=str, default='wavefronts',
@@ -92,23 +96,27 @@ def calc_spatial_derivative(evts, kernel_name, interpolate=False, smoothing=0):
         spatial_derivative_df = pd.concat([spatial_derivative_df, df],
                                           ignore_index=True)
 
-    fig, ax = plt.subplots(ncols=3, figsize=(15,5))
-    img = ax[0].imshow(trigger_collection, cmap='viridis', origin='lower')
-    plt.colorbar(img, ax=ax[0])
-    vminmax = np.nanmax(abs(d_vertical))
-    img = ax[1].imshow(d_vertical, origin='lower', cmap='coolwarm',
-                       vmin=-vminmax, vmax=vminmax)
-    plt.colorbar(img, ax=ax[1])
-    vminmax = np.nanmax(abs(d_horizont))
-    img = ax[2].imshow(d_horizont, origin='lower', cmap='coolwarm',
-                       vmin=-vminmax, vmax=vminmax)
-    plt.colorbar(img, ax=ax[2])
-    ax[0].set_title(f'wave {wave_id}')
-    ax[1].set_title('dt Y (vertical)')
-    ax[2].set_title('dt X (horizontal)')
-    ax[0].set_axis_off()
-    ax[1].set_axis_off()
-    ax[2].set_axis_off()
+        if args.output_img_dir is not None:
+            fig, ax = plt.subplots(ncols=3, figsize=(15,5))
+            img = ax[0].imshow(trigger_collection, cmap='viridis', origin='lower')
+            plt.colorbar(img, ax=ax[0])
+            vminmax = np.nanmax(abs(d_vertical))
+            img = ax[1].imshow(d_vertical, origin='lower', cmap='coolwarm',
+                               vmin=-vminmax, vmax=vminmax)
+            plt.colorbar(img, ax=ax[1])
+            vminmax = np.nanmax(abs(d_horizont))
+            img = ax[2].imshow(d_horizont, origin='lower', cmap='coolwarm',
+                               vmin=-vminmax, vmax=vminmax)
+            plt.colorbar(img, ax=ax[2])
+            ax[0].set_title(f'wave {wave_id}')
+            ax[1].set_title('dt Y (vertical)')
+            ax[2].set_title('dt X (horizontal)')
+            ax[0].set_axis_off()
+            ax[1].set_axis_off()
+            ax[2].set_axis_off()
+            output_path = os.path.join(args.output_img_dir,
+                                       args.output_img_name.replace('_wave0', f'_wave{wave_id}'))
+            save_plot(output_path)
 
     return spatial_derivative_df
 
@@ -133,6 +141,3 @@ if __name__ == '__main__':
     df['dt_unit'] = evts.times.dimensionality.string
 
     df.to_csv(args.output)
-
-    if args.output_img is not None:
-        save_plot(args.output_img)
