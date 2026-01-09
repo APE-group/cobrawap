@@ -162,7 +162,7 @@ str_list = lambda v: v.split(",")
 
 def parse_plot_channels(channels, input_file):
     channels = channels if isinstance(channels, list) else [channels]
-    channels = [none_or_int(channel) for channel in channels]
+    channels = [0 if channel==0 else none_or_int(channel) for channel in channels]
     # ToDo:
     #   * check if channel exists, even when there is no None
     #   * use annotation channel ids instead of array indices
