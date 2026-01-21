@@ -257,7 +257,7 @@ def stage_block_list(stage, stage_config_path):
                           {"name": "check_input",
                            "depends_on": curate_block},
                           {"name": "plot_traces",
-                          "depends_on": curate_block}]
+                           "depends_on": curate_block}]
 
         case "stage02_processing":
             depends_on = "STAGE_INPUT"
