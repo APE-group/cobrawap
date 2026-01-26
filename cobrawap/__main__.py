@@ -41,6 +41,7 @@ from utils.cwl_utils import (
     write_cwl_stage_files
 )
 
+log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
 # Fetch version number
