@@ -73,14 +73,6 @@ use rule template as background_subtraction with:
         output_img = Path('{dir}') / '{rule_name}' / str("background." + config.PLOT_FORMAT),
         output_array = Path('{dir}') / '{rule_name}' / 'background.npy'
 
-use rule template as hemodynamics_subtraction with:
-    input:
-        is_clear = is_clear,
-        data = input_file,
-        script = SCRIPTS / 'hemodynamics_subtraction.py'
-    output:
-        Path('{dir}') / '{rule_name}' / str("hemodynamics_subtraction." + config.NEO_FORMAT)
-
 
 use rule template as spatial_downsampling with:
     input:
@@ -185,14 +177,3 @@ use rule template as subsampling with:
         params(target_rate = config.TARGET_RATE)
     output:
         Path('{dir}') / '{rule_name}' / str("subsampling." + config.NEO_FORMAT)
-
-use rule template as hierarchical_spatial_sampling with:
-    input:
-        is_clear = is_clear,
-        data = input_file,
-        script = SCRIPTS / "hierarchical_spatial_sampling.py"
-    params:
-        params('n_bad_nodes','voting_threshold','exit_condition','signal_eval_method')
-    output:
-        Path('{dir}') / '{rule_name}' / str("hierarchical_spatial_sampling." + config.NEO_FORMAT),
-        output_img = Path('{dir}') / '{rule_name}' / str("hierarchical_spatial_sampling." + config.PLOT_FORMAT)
