@@ -10,6 +10,7 @@ from cmd_utils import (
     working_directory
 )
 from pathlib import Path
+from utils.parse import none_or_float, none_or_int
 
 pipeline_path = Path(get_setting("pipeline_path"))
 config_path = Path(get_setting("config_path"))
@@ -23,9 +24,9 @@ myenv["PYTHONPATH"] = ":".join(sys.path)
 def pythontype_to_cwltype(arg):
     if arg["type"] is str:
         cwl_type = "string"
-    elif arg["type"] is int:
+    elif arg["type"] in (int,none_or_int):
         cwl_type = "int"
-    elif arg["type"] is float:
+    elif arg["type"] in (float,none_or_float):
         cwl_type = "float"
     elif arg["type"] is Path:
         cwl_type = "string"
@@ -70,7 +71,50 @@ def parse_CLI_args(block_path):
         arg["type"] = pythontype_to_cwltype(arg)
     return args
 
-def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_path=None, stage_input=None):
+def write_cwl_block_file(block_path):
+
+    block = block_path.stem
+
+    block_args_from_script = parse_CLI_args(block_path)
+    for arg in block_args_from_script:
+        if "name" not in arg.keys():
+            arg["name"] = arg["dest"]
+        arg["value"] = None
+
+    with open(block_path.parents[0] / f"{block}.cwl", "w+") as f_out:
+        f_out.write("#!/usr/bin/env cwltool" + "\n\n")
+        f_out.write("cwlVersion: v1.2" + "\n")
+        f_out.write("class: CommandLineTool" + "\n\n")
+        f_out.write(f"baseCommand: [\"python3\", \"{block_path}\"]" + "\n\n")
+        f_out.write("requirements:" + "\n")
+        f_out.write("    EnvVarRequirement:" + "\n")
+        f_out.write("        envDef:" + "\n")
+        f_out.write(f"            PYTHONPATH: {pipeline_path}" + "\n\n")
+        f_out.write("inputs:" + "\n")
+        for a,arg in enumerate(block_args_from_script):
+            f_out.write(f"    {arg['name']}:" + "\n")
+            f_out.write(f"        type: {arg['type']}" + "\n")
+            #if not arg["required"]:
+            #    f_out.write("?")
+            #f_out.write("\n")
+            f_out.write("        inputBinding:" + "\n")
+            f_out.write(f"            position: {a}" + "\n")
+            f_out.write(f"            prefix: --{arg['name']}" + "\n")
+        f_out.write("\n")
+        outputs = [_ for _ in block_args_from_script if "output" in _["name"]]
+        if len(outputs):
+            f_out.write("outputs:" + "\n")
+            for output in outputs:
+                name = output["name"]
+                type = "Directory" if "dir" in name.split("_") else "File"
+                f_out.write(f"    {name}:" + "\n")
+                f_out.write(f"        type: {type}" + "\n")
+                f_out.write("        outputBinding:" + "\n")
+                f_out.write(f"            glob: $(inputs.{name})" + "\n")
+        else:
+            f_out.write("outputs: []" + "\n")
+
+def write_yaml_block_file(stage, block, block_args_from_CLI=None, stage_config_path=None, stage_input=None):
 
     stage_path = pipeline_path / stage
 
@@ -191,50 +235,6 @@ def write_cwl_block_files(stage, block, block_args_from_CLI=None, stage_config_p
                 f_out.write(f"{arg['name']}: {arg['value']}\n")
         f_out.write("\n")
 
-    # Writing cwl command-line-tool file
-    with open(stage_path / "cwl_steps" / f"{block}_2.cwl", "w+") as f_out:
-        f_out.write("#!/usr/bin/env cwltool\n")
-        f_out.write("\n")
-        f_out.write("cwlVersion: v1.2\n")
-        f_out.write("class: CommandLineTool\n")
-        f_out.write("\n")
-        f_out.write("baseCommand: python3\n")
-        f_out.write("\n")
-        f_out.write("requirements:\n")
-        f_out.write("    EnvVarRequirement:\n")
-        f_out.write("        envDef:\n")
-        f_out.write("            PYTHONPATH: $(inputs.pipeline_path)\n")
-        f_out.write("\n")
-        f_out.write("inputs:\n")
-        f_out.write("    pipeline_path:\n")
-        f_out.write("        type: string\n")
-        f_out.write("    step:\n")
-        f_out.write("        type: File\n")
-        f_out.write("        inputBinding:\n")
-        f_out.write("            position: 0\n")
-        for a,arg in enumerate(block_args_from_script):
-            f_out.write(f"    {arg['name']}:\n")
-            f_out.write(f"        type: {arg['type']}\n")
-            #if not arg["required"]:
-            #    f_out.write("?")
-            #f_out.write("\n")
-            f_out.write("        inputBinding:\n")
-            f_out.write(f"            position: {a+1}\n")
-            f_out.write(f"            prefix: --{arg['name']}\n")
-        f_out.write("\n")
-        outputs = [_ for _ in block_args_from_script if "output" in _["name"]]
-        if len(outputs):
-            f_out.write("outputs:\n")
-            for output in outputs:
-                name = output["name"]
-                type = "Directory" if "dir" in name.split("_") else "File"
-                f_out.write(f"    {name}:\n")
-                f_out.write(f"        type: {type}\n")
-                f_out.write("        outputBinding:\n")
-                f_out.write(f"            glob: $(inputs.{name})\n")
-        else:
-            f_out.write("outputs: []\n")
-
 # Stage level
 
 def stage_block_list(stage, stage_config_path):
@@ -313,7 +313,8 @@ def stage_block_list(stage, stage_config_path):
 
     missing_blocks = [block["name"] for block in block_list if block["name"] not in available_blocks]
     if len(missing_blocks)>0:
-        raise Exception(f"The following blocks are not available: {missing_blocks}")
+    #    raise Exception(f"The following blocks are not available: {missing_blocks}")
+        print(f"The following blocks are not available: {missing_blocks}")
 
     return block_list
 
