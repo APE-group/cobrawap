@@ -99,8 +99,10 @@ def input_block(stage=None, block=None):
     if stage is None:
         raise ValueError("Stage must be specified!")
 
-    block_dir = Path(get_setting("pipeline_path")) / stage / "scripts"
-    available_blocks = get_available_blocks(block_dir)
+    default_block_dir = pipeline_path / stage / "scripts"
+    custom_block_dir = config_path / stage / "scripts"
+
+    available_blocks = get_available_blocks(default_block_dir, custom_block_dir)
 
     while block not in available_blocks:
 
@@ -120,10 +122,14 @@ def print_settings(*args, **kwargs):
     return None
 
 
-def get_available_blocks(block_dir):
+def get_available_blocks(default_block_dir, custom_block_dir):
     available_scripts = [
-        script for script in block_dir.iterdir() if os.path.isfile(script)
+        script for script in default_block_dir.iterdir() if os.path.isfile(script)
     ]
+    if custom_block_dir.is_dir():
+        available_scripts.extend([
+            script for script in custom_block_dir.iterdir() if os.path.isfile(script)
+        ])
     available_blocks = [
         s.stem
         for s in available_scripts
@@ -131,7 +137,7 @@ def get_available_blocks(block_dir):
         and s.suffix == ".py"
         and "template" not in s.stem
     ]
-    return available_blocks
+    return list(set(available_blocks))
 
 
 def is_profile_name_valid(profile: str) -> bool:

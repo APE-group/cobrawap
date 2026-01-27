@@ -19,7 +19,6 @@ sys.path.append(str(Path(inspect.getfile(lambda: None)).parent))
 sys.path.append(str(Path(inspect.getfile(lambda: None)).parent / "pipeline"))
 from cmd_utils import (
     create_new_configfile,
-    get_available_blocks,
     get_config,
     get_initial_available_stages,
     get_profile,
@@ -523,6 +522,8 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
     # if stage is None and extra_args and extra_args[0][0] != "-":
     #     stage = extra_args.pop(0)
 
+    # TBD: implement custom versions of block_specs
+
     stage = input_stage(stage=stage)
     profile = input_profile(profile=profile)
 
@@ -629,9 +630,12 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
     pipeline_path = Path(get_setting("pipeline_path"))
     stage_path = pipeline_path / stage
     output_path = Path(get_setting("output_path"))
-    block_dir = pipeline_path / stage / "scripts"
-    # check if a custom version of this script is present in the configs folder
     block_output_path = output_path / profile / stage / block
+
+    # Check if block is partly (or completely) custom
+    block_dir = pipeline_path / stage / "scripts"
+    if os.path.isfile(config_path / stage / "scripts" / f"{block}.py"):
+        block_dir = config_path / stage / "scripts"
 
     if block_help:
         block_args += ["--help"]
@@ -654,7 +658,7 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
         # build yaml and cwl clt files
         block_args += ["--pipeline_path", pipeline_path]
         #write_cwl_block_files(stage, block, block_args_from_CLI=block_args)
-        write_cwl_block_file(stage_path / "scripts" / f"{block}.py")
+        write_cwl_block_file(stage_path / "scripts" / f"{block}.py", pipeline_path / stage / "cwl_steps")
         # insert new write_yaml_block_file()
 
         # empty the stage output folder

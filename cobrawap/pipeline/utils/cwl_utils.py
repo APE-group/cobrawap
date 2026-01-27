@@ -34,8 +34,6 @@ def pythontype_to_cwltype(arg):
         cwl_type = "Any"
     if arg["dest"] in ["data", "original_data"]:
         cwl_type = "File"
-    #if arg["dest"] in ["img_dir"]:
-    #    cwl_type = "Directory"
     if arg["nargs"]=="+":
         cwl_type += "[]"
     if not arg["required"]:
@@ -69,19 +67,18 @@ def parse_CLI_args(block_path):
         # arg["type"] = pythontype_to_cwltype(arg["dest"], arg["type"], arg["nargs"]) \
         # if arg["dest"] not in ["data","output"] else "File"
         arg["type"] = pythontype_to_cwltype(arg)
-    return args
-
-def write_cwl_block_file(block_path):
-
-    block = block_path.stem
-
-    block_args_from_script = parse_CLI_args(block_path)
-    for arg in block_args_from_script:
         if "name" not in arg.keys():
             arg["name"] = arg["dest"]
         arg["value"] = None
+    return args
 
-    with open(block_path.parents[0] / f"{block}.cwl", "w+") as f_out:
+def write_cwl_block_file(block_path, dest_folder):
+
+    block = block_path.stem
+    block_args_from_script = parse_CLI_args(block_path)
+    block_cwl_file = dest_folder / f"{block}.cwl"
+
+    with open(block_cwl_file, "w+") as f_out:
         f_out.write("#!/usr/bin/env cwltool" + "\n\n")
         f_out.write("cwlVersion: v1.2" + "\n")
         f_out.write("class: CommandLineTool" + "\n\n")
@@ -94,9 +91,6 @@ def write_cwl_block_file(block_path):
         for a,arg in enumerate(block_args_from_script):
             f_out.write(f"    {arg['name']}:" + "\n")
             f_out.write(f"        type: {arg['type']}" + "\n")
-            #if not arg["required"]:
-            #    f_out.write("?")
-            #f_out.write("\n")
             f_out.write("        inputBinding:" + "\n")
             f_out.write(f"            position: {a}" + "\n")
             f_out.write(f"            prefix: --{arg['name']}" + "\n")
@@ -118,17 +112,7 @@ def write_yaml_block_file(stage, block, block_args_from_CLI=None, stage_config_p
 
     stage_path = pipeline_path / stage
 
-    # Checking if block is partly (or completely) custom
-    if os.path.isfile(config_path / stage / "scripts" / f"{block}.py"):
-        script_path = config_path / stage / "scripts" / f"{block}.py"
-    else:
-        script_path = pipeline_path / stage / "scripts" / f"{block}.py"
-
     block_args_from_script = parse_CLI_args(script_path)
-    for arg in block_args_from_script:
-        if "name" not in arg.keys():
-            arg["name"] = arg["dest"]
-        arg["value"] = None
 
     if block_args_from_CLI:
         # config parameters are parsed from CLI args
@@ -195,6 +179,8 @@ def write_yaml_block_file(stage, block, block_args_from_CLI=None, stage_config_p
 
     # Filling missing values
     for arg in block_args_from_script:
+        if arg["value"] in (None,"None"):
+            arg["value"] = "null"
         if arg["name"]=="raw_data":
             data_path = Path(arg["value"]).expanduser().resolve()
             if os.path.isfile(data_path):
@@ -245,8 +231,9 @@ def stage_block_list(stage, stage_config_path):
         except yaml.YAMLError as exc:
             raise exc
 
-    block_dir = pipeline_path / stage / "scripts"
-    available_blocks = get_available_blocks(block_dir)
+    default_block_dir = pipeline_path / stage / "scripts"
+    custom_block_dir = config_path / stage / "scripts"
+    available_blocks = get_available_blocks(default_block_dir, custom_block_dir)
 
     match stage:
 
