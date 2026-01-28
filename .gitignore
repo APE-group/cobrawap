@@ -125,4 +125,7 @@ ENV/
 
 # Config and curate files
 cobrawap/pipeline/*/configs/config_LENS*
-cobrawap/pipeline/stage01_data_entry/scripts/curate_LENS*
+cobrawap/pipeline/stage01_data_entry/scripts/curat*
+
+# CWL-related files
+cobrawap/pipeline/stage*/cwl_steps/*

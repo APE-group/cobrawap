@@ -12,7 +12,7 @@ from utils.neo_utils import flip_image, rotate_image, time_slice
 from utils.io_utils import load_neo, write_neo
 
 CLI = argparse.ArgumentParser()
-CLI.add_argument("--raw_data", nargs='?', type=Path, required=True,
+CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
 
     # Load data with Neo IO or custom loading routine
-    block = load_neo(args.raw_data)
+    block = load_neo(args.data)
     # If there is no Neo IO for the data type available,
     # the data must be loaded conventionally and added to a newly constructed
     # Neo block. For building a Neo objects, have a look into the documentation

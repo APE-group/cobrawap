@@ -23,6 +23,8 @@ from cmd_utils import (
     get_initial_available_stages,
     get_profile,
     get_setting,
+    get_stage_index,
+    get_stage_input,
     input_block,
     input_profile,
     input_stage,
@@ -532,16 +534,7 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
     config_path = Path(get_setting("config_path"))
     output_path = Path(get_setting("output_path"))
 
-    # lookup stage input file
-    pipeline_config_path = config_path / "configs" / "config.yaml"
-    config_dict = load_config_file(pipeline_config_path)
-    stage_idx = locate_str_in_list(config_dict["STAGES"], stage)
-    # stage_idx_global = locate_str_in_list([v for k,v in stages.items()], stage)
-    if stage_idx is None:
-        raise IndexError(
-            "Make sure that the selected stage is also specified "
-            "in your top-level config in the list `STAGES`!"
-        )
+    stage_idx = get_stage_index(config_path, stage)
 
     stage_config_path = get_config(
         config_dir=config_path / stage,
@@ -550,19 +543,7 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
     )
 
     if stage_idx > 0:
-        prev_stage = config_dict["STAGES"][stage_idx - 1]
-        prev_stage_config_path = get_config(
-            config_dir=config_path / prev_stage,
-            config_name=f"config_{profile}.yaml",
-            get_path_instead=True,
-        )
-        prev_config_name = Path(prev_stage_config_path).name
-        prev_output_name = read_stage_output(
-            stage=prev_stage,
-            config_dir=config_path,
-            config_name=prev_config_name,
-        )
-        stage_input = output_path / profile / prev_stage / prev_output_name
+        stage_input = get_stage_input(config_path, stage_idx, profile)
         extra_args = [f"STAGE_INPUT={stage_input}"] + extra_args
 
     # descend into stage folder
@@ -628,9 +609,30 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
 
     # get settings
     pipeline_path = Path(get_setting("pipeline_path"))
-    stage_path = pipeline_path / stage
+    config_path = Path(get_setting("config_path"))
     output_path = Path(get_setting("output_path"))
+    stage_path = pipeline_path / stage
     block_output_path = output_path / profile / stage / block
+
+    # retrieve the corresponding stage info
+    stage_idx = get_stage_index(config_path, stage)
+    stage_config_path = get_config(
+        config_dir=config_path / stage,
+        config_name=f"config_{profile}.yaml",
+        get_path_instead=True,
+    )
+    if stage_idx > 0:
+        stage_input = get_stage_input(config_path, stage_idx, profile)
+        block_args = [f"STAGE_INPUT={stage_input}"] + block_args
+        curation_block = None
+    else:
+        stage_input = None
+        stage_config = get_config(
+            config_dir=config_path / stage,
+            config_name=f"config_{profile}.yaml",
+            get_path_instead=False,
+        )
+        curation_block = Path(stage_config['CURATION_SCRIPT']).stem
 
     # Check if block is partly (or completely) custom
     block_dir = pipeline_path / stage / "scripts"
@@ -655,11 +657,13 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
 
     elif workflow_manager=="cwl":
 
-        # build yaml and cwl clt files
-        block_args += ["--pipeline_path", pipeline_path]
+        # build cwl and yaml block files
+
         #write_cwl_block_files(stage, block, block_args_from_CLI=block_args)
-        write_cwl_block_file(stage_path / "scripts" / f"{block}.py", pipeline_path / stage / "cwl_steps")
-        # insert new write_yaml_block_file()
+        cwl_step_folder = pipeline_path / stage / "cwl_steps"
+        cwl_step_folder.mkdir(parents=True, exist_ok=True)
+        write_cwl_block_file(block_dir / f"{block}.py", cwl_step_folder, curation_block=curation_block)
+        write_yaml_block_file(block_dir / f"{block}.py", stage, stage_config_path, cwl_step_folder, stage_input, block_args)
 
         # empty the stage output folder
         if block_output_path.is_dir():
@@ -669,8 +673,8 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
         # execute block
         cwl_cl = ["cwltool", "--outdir", \
                   str(block_output_path), \
-                  str(stage_path / "cwl_steps" / f"{block}_fixed_by_hand.cwl"), \
-                  str(stage_path / "cwl_steps" / f"{block}_fixed_by_hand.yaml")]
+                  str(cwl_step_folder / f"{block}.cwl"), \
+                  str(cwl_step_folder / f"{block}.yaml")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)

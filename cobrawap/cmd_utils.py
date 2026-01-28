@@ -23,6 +23,9 @@ from pipeline.utils.snakefile import (
 log = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
+pipeline_path = Path(get_setting("pipeline_path"))
+config_path = Path(get_setting("config_path"))
+output_path = Path(get_setting("output_path"))
 
 def create_new_configfile(profile, stage=None, stage_number=None, parent=None):
     if stage is None:
@@ -31,8 +34,6 @@ def create_new_configfile(profile, stage=None, stage_number=None, parent=None):
         else:
 
             stage = get_setting("stages")[stage_number]
-
-    config_path = Path(get_setting("config_path"))
 
     parent = f"_{parent}" if parent else ""
     config_dir = config_path / stage / "configs"
@@ -140,6 +141,41 @@ def get_available_blocks(default_block_dir, custom_block_dir):
     return list(set(available_blocks))
 
 
+def get_stage_index(config_path, stage):
+    pipeline_config_path = config_path / "configs" / "config.yaml"
+    config_dict = load_config_file(pipeline_config_path)
+    stage_idx = locate_str_in_list(config_dict["STAGES"], stage)
+    # stage_idx_global = locate_str_in_list([v for k,v in stages.items()], stage)
+    if stage_idx is None:
+        raise IndexError(
+            "Make sure that the selected stage is also specified "
+            "in your top-level config in the list `STAGES`!"
+        )
+    return stage_idx
+
+
+def get_stage_input(config_path, stage_idx, profile):
+
+    pipeline_config_path = config_path / "configs" / "config.yaml"
+    config_dict = load_config_file(pipeline_config_path)
+
+    prev_stage = config_dict["STAGES"][stage_idx - 1]
+    prev_stage_config_path = get_config(
+        config_dir=config_path / prev_stage,
+        config_name=f"config_{profile}.yaml",
+        get_path_instead=True,
+    )
+    prev_config_name = Path(prev_stage_config_path).name
+    prev_output_name = read_stage_output(
+        stage=prev_stage,
+        config_dir=config_path,
+        config_name=prev_config_name,
+    )
+    stage_input = output_path / profile / prev_stage / prev_output_name
+
+    return stage_input
+
+
 def is_profile_name_valid(profile: str) -> bool:
     if isinstance(profile, str):
         profile = profile.strip("'\"")
@@ -176,7 +212,7 @@ def setup_entry_stage(
     Populate an existing config file for stage 01 with a data path and create
     a corresponding loading script from a template.
     """
-    config_path = Path(get_setting("config_path"))
+
 
     stage01_update_dict = {}
 
@@ -229,7 +265,6 @@ def setup_entry_stage(
 
 
 def get_initial_available_stages():
-    pipeline_path = Path(get_setting("pipeline_path"))
     stages = [
         x.name
         for x in pipeline_path.iterdir()

@@ -1,5 +1,6 @@
 import argparse
 import importlib
+import json
 import os
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from cmd_utils import (
     working_directory
 )
 from pathlib import Path
-from utils.parse import none_or_float, none_or_int
+from utils.parse import none_or_float, none_or_int, none_or_str
 
 pipeline_path = Path(get_setting("pipeline_path"))
 config_path = Path(get_setting("config_path"))
@@ -19,20 +20,32 @@ output_path = Path(get_setting("output_path"))
 myenv = os.environ.copy()
 myenv["PYTHONPATH"] = ":".join(sys.path)
 
+def get_from_CWL_file(stage, obj):
+    cwlfile_path = pipeline_path / stage / "CWLfile.py"
+    spec = importlib.util.spec_from_file_location(cwlfile_path.stem, cwlfile_path)
+    cwlfile = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cwlfile)
+    return getattr(cwlfile, obj)
+
 # Block level
 
-def pythontype_to_cwltype(arg):
-    if arg["type"] is str:
+def pythontype_to_cwltype(arg, is_curation_block=False):
+    if arg["type"] in (str, none_or_str):
         cwl_type = "string"
-    elif arg["type"] in (int,none_or_int):
+    elif arg["type"] in (int, none_or_int):
         cwl_type = "int"
-    elif arg["type"] in (float,none_or_float):
+    elif arg["type"] in (float, none_or_float):
         cwl_type = "float"
     elif arg["type"] is Path:
         cwl_type = "string"
     else:
         cwl_type = "Any"
-    if arg["dest"] in ["data", "original_data"]:
+    if arg["dest"] in ["data"]:
+        if is_curation_block:
+            cwl_type = ["File", "Directory"]
+        else:
+            cwl_type = "File"
+    if arg["dest"] in ["original_data"]:
         cwl_type = "File"
     if arg["nargs"]=="+":
         cwl_type += "[]"
@@ -40,25 +53,15 @@ def pythontype_to_cwltype(arg):
         cwl_type += "?"
     return cwl_type
 
-def parse_CLI_args(block_path):
+def parse_CLI_args(block_path, curation_block=None):
     block_name = block_path.stem
-    #block_CLI = __import__(str(Path(block_name).expanduser().stem)).CLI
-    #block_CLI = importlib.import_module(str(Path(block_name).expanduser().stem)).CLI
+    is_curation_block = curation_block is not None and block_name == curation_block
     # importing CLI dynamically from block script
     spec = importlib.util.spec_from_file_location(block_name, block_path)
     block = importlib.util.module_from_spec(spec)
     sys.modules[block_name] = block
     spec.loader.exec_module(block)
     block_CLI = block.CLI
-    """
-    args = []
-    for arg in block_CLI._actions:
-        if type(arg) is argparse._StoreAction:
-            # this arg is good to be parsed
-            print(arg)
-            args.append(arg.__dict__)
-            #args.append({'name': arg.dest,'type': arg.type,'required': arg.required,'help': arg.help})
-    """
     args = [arg.__dict__ for arg in block_CLI._actions if type(arg) is argparse._StoreAction]
     for arg in args:
         # mapping Python types into CWL types
@@ -66,16 +69,16 @@ def parse_CLI_args(block_path):
         # Be careful with typing of "data" and "output"; are they Any, string, or File?
         # arg["type"] = pythontype_to_cwltype(arg["dest"], arg["type"], arg["nargs"]) \
         # if arg["dest"] not in ["data","output"] else "File"
-        arg["type"] = pythontype_to_cwltype(arg)
+        arg["type"] = pythontype_to_cwltype(arg, is_curation_block)
         if "name" not in arg.keys():
             arg["name"] = arg["dest"]
         arg["value"] = None
     return args
 
-def write_cwl_block_file(block_path, dest_folder):
+def write_cwl_block_file(block_path, dest_folder, curation_block=None):
 
     block = block_path.stem
-    block_args_from_script = parse_CLI_args(block_path)
+    block_args_from_script = parse_CLI_args(block_path, curation_block)
     block_cwl_file = dest_folder / f"{block}.cwl"
 
     with open(block_cwl_file, "w+") as f_out:
@@ -90,7 +93,12 @@ def write_cwl_block_file(block_path, dest_folder):
         f_out.write("inputs:" + "\n")
         for a,arg in enumerate(block_args_from_script):
             f_out.write(f"    {arg['name']}:" + "\n")
-            f_out.write(f"        type: {arg['type']}" + "\n")
+            if isinstance(arg["type"],list):
+                f_out.write("        type:" + "\n")
+                for _ in arg["type"]:
+                    f_out.write(f"            - {_}" + "\n")
+            else:
+                f_out.write(f"        type: {arg['type']}" + "\n")
             f_out.write("        inputBinding:" + "\n")
             f_out.write(f"            position: {a}" + "\n")
             f_out.write(f"            prefix: --{arg['name']}" + "\n")
@@ -108,110 +116,131 @@ def write_cwl_block_file(block_path, dest_folder):
         else:
             f_out.write("outputs: []" + "\n")
 
-def write_yaml_block_file(stage, block, block_args_from_CLI=None, stage_config_path=None, stage_input=None):
+def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, stage_input, block_args_from_CLI):
 
-    stage_path = pipeline_path / stage
+    block = block_path.stem
+    block_args_from_script = parse_CLI_args(block_path)
 
-    block_args_from_script = parse_CLI_args(script_path)
+    # Read from stage-specific config file
+    with open(stage_config_path, "r") as f:
+        try:
+            stage_config = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            raise exc
+    block_list = stage_block_list(stage, stage_config_path)
+    arg_map = get_from_CWL_file(stage, 'ARG_MAP')
+    block_arg_map = arg_map.get(block)
 
-    if block_args_from_CLI:
-        # config parameters are parsed from CLI args
-        block_args_from_CLI = [[_] if "=" not in str(_) else str(_).split("=") for _ in block_args_from_CLI]
-        block_args_from_CLI = [arg for _ in block_args_from_CLI for arg in _]
-        arg_dict = {}
-        key = None
-        for i,arg in enumerate(block_args_from_CLI):
-            if str(arg).startswith("--"):
-                key = arg[2:]
-                key_count = 0
-            else:
-                if key and key_count == 0:
-                    arg_dict[key] = arg
-                    key_count += 1
-                elif key and key_count == 1:
-                    arg_dict[key] = [arg_dict[key], arg]
-                    key_count += 1
-                elif key and key_count > 1:
-                    arg_dict[key].append(arg)
-                    key_count += 1
-        for arg in block_args_from_script:
-            if arg["name"] in arg_dict.keys():
-                arg["value"] = arg_dict[arg["name"]]
-        if "profile" in arg_dict.keys():
-            profile = arg_dict["profile"]
+    if "PROFILE" in stage_config.keys():
+        profile = stage_config["PROFILE"]
 
-    elif stage_config_path:
-        # config parameters are parsed from stage-level yaml config file
-        with open(stage_config_path, "r") as f:
-            try:
-                stage_config = yaml.safe_load(f)
-            except yaml.YAMLError as exc:
-                raise exc
-        block_list = stage_block_list(stage, stage_config_path)
-        dataset_name = None
-        if "PROFILE" in stage_config.keys():
-            profile = stage_config["PROFILE"]
-        for arg in block_args_from_script:
-            if arg["name"].upper() in stage_config.keys():
-                arg["value"] = stage_config[arg["name"].upper()]
-            if arg["name"]=="raw_data" and "DATA_SETS" in stage_config.keys():
-                if isinstance(stage_config["DATA_SETS"],dict):
-                    dataset_name = list(stage_config["DATA_SETS"].keys())[0]
+    if stage=="stage01_data_entry":
+        # TBD refactor so that it is accessible directly at the config dictionary
+        dataset_name = list(stage_config["DATA_SETS"].keys())[0] if isinstance(stage_config["DATA_SETS"],dict) else None
+        curation_block = Path(stage_config['CURATION_SCRIPT']).stem
+
+    for arg in block_args_from_script:
+        if arg["name"].upper() in [_.upper() for _ in stage_config] and arg["name"] not in block_arg_map:
+            arg["value"] = stage_config[arg["name"].upper()]
+        if arg["name"]=="data":
+            if stage=="stage01_data_entry" and block==curation_block:
+                depends_on = "RAW_DATA"
+                if dataset_name:
                     arg["value"] = stage_config["DATA_SETS"][dataset_name]
                 else:
                     arg["value"] = stage_config["DATA_SETS"]
-            if arg["name"]=="data_name":
-                arg["value"] = f"\"{dataset_name}\""
-            if arg["name"]=="data":
-                depends_on = [_["depends_on"] for _ in block_list if _["name"]==block][0]
-                if depends_on=="STAGE_INPUT":
-                    input_path = stage_input
+            else:
+                depends_on = [_["depends_on"] for _ in block_list if _["name"]==block]
+                if len(depends_on) > 0:
+                    depends_on = depends_on[0]
+                    if depends_on=="STAGE_INPUT":
+                        arg["value"] = stage_input
+                    else:
+                        # TBD: if using cwl with --outdir, can we use a relative path?
+                        #arg["value"] = f"{output_path}/{profile}/{stage}/{depends_on}" +
+                        #               f"/{depends_on}.{stage_config['NEO_FORMAT']}"
+                        arg["value"] = f"{output_path}/{profile}/{stage}/{depends_on}/" + \
+                                       arg_map.get(depends_on)["output"](depends_on, stage_config)
                 else:
-                    input_path = f"{output_path}/{profile}/{stage}/{depends_on}" + \
-                                 f"/{depends_on}.{stage_config['NEO_FORMAT']}"
-                arg["type"] = "File"
-                arg["value"] = f"\n    class: File\n    location: \"{input_path}\""
-            if arg["name"]=="original_data":
-                arg["type"] = "File"
-                arg["value"] = f"\n    class: File\n    location: \"{stage_input}\""
+                    depends_on = None
+        if arg["name"] == "original_data":
+            arg["type"] = "File"
+            arg["value"] = stage_input
+        if arg["name"] == "data_name" and dataset_name:
+            arg["value"] = f'{dataset_name.lower()}'
 
-    block_output_path = Path(output_path / profile / stage / block)
-
-    # Filling missing values
+    # Update values with additional CLI args
+    # CLI args are explicitly parsed here
+    # args provided as `--key=value` are going to mapped into `--key value`
+    block_args_from_CLI = [[_] if "=" not in str(_) else str(_).split("=") for _ in block_args_from_CLI]
+    block_args_from_CLI = [arg for _ in block_args_from_CLI for arg in _]
+    arg_dict = {}
+    key = None
+    for i,arg in enumerate(block_args_from_CLI):
+        if str(arg).startswith("--"):
+            key = arg[2:]
+            key_count = 0
+        else:
+            if key and key_count == 0:
+                arg_dict[key] = arg
+                key_count += 1
+            elif key and key_count == 1:
+                arg_dict[key] = [arg_dict[key], arg]
+                key_count += 1
+            elif key and key_count > 1:
+                arg_dict[key].append(arg)
+                key_count += 1
     for arg in block_args_from_script:
+        if arg["name"] in arg_dict.keys():
+            arg["value"] = arg_dict[arg["name"]]
+
+    # Final transformations into CWL types
+    # and retrieving missing values from stage-specific CWLfile
+    for arg in block_args_from_script:
+
+        # Translating python `None` values to CWL `null`
         if arg["value"] in (None,"None"):
             arg["value"] = "null"
-        if arg["name"]=="raw_data":
+
+        # Translating python dictionaries into strings
+        if isinstance(arg["value"],dict):
+            arg["value"] = f"\'{json.dumps(arg['value'])}\'"
+
+        if arg["name"]=="data":
+            if not depends_on and arg["value"]=="null":
+                raise ValueError(f"Block `{block}` is not available in the "
+                                 f"current configuration for stage {stage}. "
+                                  "Please provide explicitly the path to "
+                                  "`--data` through the command line.")
             data_path = Path(arg["value"]).expanduser().resolve()
-            if os.path.isfile(data_path):
+            if data_path.is_file():
                 arg["type"] = "File"
                 arg["value"] = f"\n    class: File\n    location: \"{data_path}\""
-            elif os.path.isdir(data_path):
+            elif data_path.is_dir():
                 arg["type"] = "Directory"
                 arg["value"] = f"\n    class: Directory\n    location: \"{data_path}\""
-        elif arg["name"]=="output":
-            # TBD: output should not be an absolute path
-            # Better to use local paths and then export at the end
-            #arg["value"] = f"\"{block_output_path}/{block}.{stage_config['NEO_FORMAT']}\""
-            arg["value"] = f"\"{block}.{stage_config['NEO_FORMAT']}\""
-        elif arg["name"]=="output_img":
-            arg["value"] = f"\"{block}.{stage_config['PLOT_FORMAT']}\""
-        elif arg["name"]=="output_array":
-            arg["value"] = f"\"{block}.npy\""
-        elif arg["name"]=="output_img_dir":
-            if block=="detrending":
-                arg["value"] = f"\"detrending_plots\""
-            elif block=="logMUA_estimation":
-                arg["value"] = f"\"logMUA_estimation_plots\""
-            elif block=="plot_processed_trace":
-                # TBD: recall t_start and t_stop from stage01 config
-                arg["value"] = f"\"processed_trace_" + \
-                               f"\"{stage_config['PLOT_TSTART']}_{stage_config['PLOT_TSTOP']}\""
+            else:
+                arg["type"] = "File"
+                arg["value"] = f"\n    class: File\n    location: \"{data_path}\""
+
+        if arg["value"]=="null":
+            # Does not overwrite when passed through command-line.
+            # Let's use relative paths, referred to CWL `outdir`
+            # where `outdir` is the block output: output_path / profile / stage / block
+            if block_arg_map:
+                arg_name = arg["name"]
+                if arg_name in block_arg_map:
+                    arg["value"] = block_arg_map[arg_name](block, stage_config)
+        else:
+            # Takes care of `annotations`, expected to be a list
+            # because of `nargs='+'` in the CLA definition,
+            # which is done by the snakemake `params` function
+            # TBD evaluate if snakemake can be made compatible with json standard
+            if "[]" in arg["type"] and not isinstance(arg["value"],list):
+                arg["value"] = [arg["value"]]
 
     # Writing yaml file
-    with open(stage_path / "cwl_steps" / f"{block}.yaml", "w+") as f_out:
-        f_out.write(f"pipeline_path: \"{pipeline_path}\"\n")
-        f_out.write(f"step:\n    class: File\n    location: \"{script_path}\"\n\n")
+    with open(dest_folder / f"{block}.yaml", "w+") as f_out:
         for arg in block_args_from_script:
             if isinstance(arg["value"],list):
                 f_out.write(f"{arg['name']}:\n")
@@ -291,7 +320,11 @@ def stage_block_list(stage, stage_config_path):
             # TBD
 
         case "stage05_channel_wave_characterization":
-            block_list = ["check_input"]
+            depends_on = "STAGE_INPUT"
+            block_list = [{"name": "check_input",
+                           "depends_on": depends_on}]
+            block_list.append({"name": "merge_dataframes",
+                               "depends_on": "check_input"})
             # TBD
 
         case "stage05_wave_characterization":
@@ -300,8 +333,7 @@ def stage_block_list(stage, stage_config_path):
 
     missing_blocks = [block["name"] for block in block_list if block["name"] not in available_blocks]
     if len(missing_blocks)>0:
-    #    raise Exception(f"The following blocks are not available: {missing_blocks}")
-        print(f"The following blocks are not available: {missing_blocks}")
+        raise Exception(f"The following blocks are not available: {missing_blocks}")
 
     return block_list
 
@@ -348,7 +380,6 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
                 block_outputs = yaml_block_file["outputs"]
                 if isinstance(block_outputs,dict):
                     block_outputs = list(block_outputs.keys())
-                print("block_outputs:", block_outputs)
                 has_output = False if len(block_outputs)==0 else True
             except yaml.YAMLError as exc:
                 raise exc
@@ -372,10 +403,6 @@ def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
             if has_output:
                 for output in block_outputs:
                     block_specs[block]["outputs"][output] = yaml_block_file["outputs"][output]
-
-    print("\nglobal_list:\n", global_input_list, "\n")
-    print("detailed_list:\n", detailed_input, "\n")
-    print("block_specs:\n", block_specs, "\n")
 
     wf_path = stage_path / "workflow_NEW.cwl"
     with open(wf_path, "w+") as f_out:
