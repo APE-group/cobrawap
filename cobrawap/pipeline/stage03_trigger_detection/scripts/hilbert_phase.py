@@ -1,5 +1,5 @@
 """
-Detect trigger times (i.e., state transition / local wavefronts onsets) 
+Detect trigger times (i.e., state transition / local wavefronts onsets)
 by finding crossing of a set phase-value in the channel signals.
 """
 
@@ -21,7 +21,7 @@ CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
 CLI.add_argument("--output", nargs='?', type=Path, required=True,
                  help="path of output file")
-CLI.add_argument("--img_dir", nargs='?', type=Path,
+CLI.add_argument("--output_img_dir", nargs='?', type=Path,
                  default=None, help="path of figure directory")
 CLI.add_argument("--img_name", nargs='?', type=str,
                  default='hilbert_phase_channel0.png',
@@ -147,5 +147,5 @@ if __name__ == '__main__':
             plot_hilbert_phase(asig=time_slice(asig, args.plot_tstart, args.plot_tstop),
                                event=time_slice(transition_event, args.plot_tstart, args.plot_tstop),
                                channel=int(channel))
-            output_path = args.img_dir / args.img_name.replace('_channel0', f'_channel{channel}')
+            output_path = args.output_img_dir / args.img_name.replace('_channel0', f'_channel{channel}')
             save_plot(output_path)

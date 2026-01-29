@@ -289,6 +289,8 @@ def stage_block_list(stage, stage_config_path):
                     block_list.append({"name": block,
                                        "depends_on": depends_on})
                     depends_on = block_list[-1]["name"]
+            # TBD condition power_spectrum to be executed only when
+            # frequency_filter is executed, right before it
             block_list.append({"name": "plot_power_spectrum",
                                "depends_on": depends_on})
             block_list.append({"name": "plot_processed_trace",

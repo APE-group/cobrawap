@@ -34,6 +34,8 @@ if hasattr(config, 'NEO_FORMAT'):
     if not '.' in config.STAGE_OUTPUT:
         config.STAGE_OUTPUT += "." + config.NEO_FORMAT
 
+# TBD evaluate if extending this function to all the stages and moving it
+# directly to the main, or somewhere else to be used by both CWL and Snakemake
 if config.STAGE_INPUT is not None:
     config.PLOT_CHANNELS = parse_plot_channels(config.PLOT_CHANNELS,
                                                config.STAGE_INPUT)

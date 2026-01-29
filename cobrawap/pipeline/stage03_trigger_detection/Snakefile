@@ -81,7 +81,7 @@ use rule template as hilbert_phase with:
         script = SCRIPTS / 'hilbert_phase.py'
     output:
         Path('{dir}') / 'hilbert_phase' / config.STAGE_OUTPUT,
-        img_dir = directory(Path('{dir}') / 'hilbert_phase' / 'hilbert_phase_plots')
+        output_img_dir = directory(Path('{dir}') / 'hilbert_phase' / 'hilbert_phase_plots')
     params:
         params('transition_phase', 'plot_channels', 'plot_tstart',
                'plot_tstop', config=config,

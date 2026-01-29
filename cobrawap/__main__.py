@@ -595,6 +595,10 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
 
+        # TBD
+        # Option 1: copy the nix output of the last block into the stage folder
+        # Option 2: do that as an inline command directly into the stage-specific cwl file, same phylosophy as `template_all` rule
+
     return None
 
 def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake",
