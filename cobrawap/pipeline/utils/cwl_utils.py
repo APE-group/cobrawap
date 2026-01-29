@@ -135,8 +135,10 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         profile = stage_config["PROFILE"]
 
     if stage=="stage01_data_entry":
-        # TBD refactor so that it is accessible directly at the config dictionary
-        dataset_name = list(stage_config["DATA_SETS"].keys())[0] if isinstance(stage_config["DATA_SETS"],dict) else None
+        # TBD CWL is safe if DATA_SETS is not a dict, while Snakemake is not
+        # (hard-coded line in the stage 01 Snakefile)
+        dataset_name = list(stage_config["DATA_SETS"].keys())[0] if isinstance(stage_config["DATA_SETS"], dict) else None
+        stage_config['DATA_NAME'] = dataset_name
         curation_block = Path(stage_config['CURATION_SCRIPT']).stem
 
     for arg in block_args_from_script:
@@ -166,8 +168,6 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         if arg["name"] == "original_data":
             arg["type"] = "File"
             arg["value"] = stage_input
-        if arg["name"] == "data_name" and dataset_name:
-            arg["value"] = f'{dataset_name.lower()}'
 
     # Update values with additional CLI args
     # CLI args are explicitly parsed here
