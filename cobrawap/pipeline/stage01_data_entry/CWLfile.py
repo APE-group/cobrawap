@@ -8,9 +8,9 @@ default_block = {
 
 ARG_MAP = {
 
-    'check_input': {},
-
-    'curation_script': default_block,
+    'check_input': {
+        'output': "input.check"
+    },
 
     'enter_data_template': default_block,
 

@@ -7,12 +7,14 @@ Additionally prints a short summary of the data attributes.
 import numpy as np
 import argparse
 from pathlib import Path
-from utils.io_utils import load_neo
+from utils.io_utils import load_neo, write_check
 from utils.neo_utils import analogsignal_to_imagesequence, imagesequence_to_analogsignal
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument("--data", nargs='?', type=Path, required=True,
                  help="path to input data in neo format")
+CLI.add_argument("--output", nargs='?', type=Path, required=True,
+                 help="path of output check file")
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
@@ -51,3 +53,5 @@ if __name__ == '__main__':
 
     print('Grid Dimensions:\t', f'{dim_x} x {dim_y}')
     print('Empty Grid Sites:\t', dim_x*dim_y - num_channels)
+
+    write_check(args.output)

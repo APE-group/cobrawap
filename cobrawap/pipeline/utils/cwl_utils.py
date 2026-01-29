@@ -12,6 +12,7 @@ from cmd_utils import (
 )
 from pathlib import Path
 from utils.parse import none_or_float, none_or_int, none_or_str
+from typing import Callable
 
 pipeline_path = Path(get_setting("pipeline_path"))
 config_path = Path(get_setting("config_path"))
@@ -140,6 +141,8 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         dataset_name = list(stage_config["DATA_SETS"].keys())[0] if isinstance(stage_config["DATA_SETS"], dict) else None
         stage_config['DATA_NAME'] = dataset_name
         curation_block = Path(stage_config['CURATION_SCRIPT']).stem
+        if block==curation_block and block not in arg_map:
+            block_arg_map = arg_map.get("enter_data_template")
 
     for arg in block_args_from_script:
         if arg["name"].upper() in [_.upper() for _ in stage_config] and arg["name"] not in block_arg_map:
@@ -166,7 +169,6 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
                 else:
                     depends_on = None
         if arg["name"] == "original_data":
-            arg["type"] = "File"
             arg["value"] = stage_input
 
     # Update values with additional CLI args
@@ -206,7 +208,7 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         if isinstance(arg["value"],dict):
             arg["value"] = f"\'{json.dumps(arg['value'])}\'"
 
-        if arg["name"]=="data":
+        if arg["name"] in ["data", "original_data"]:
             if not depends_on and arg["value"]=="null":
                 raise ValueError(f"Block `{block}` is not available in the "
                                  f"current configuration for stage {stage}. "
@@ -230,7 +232,10 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
             if block_arg_map:
                 arg_name = arg["name"]
                 if arg_name in block_arg_map:
-                    arg["value"] = block_arg_map[arg_name](block, stage_config)
+                    if isinstance(block_arg_map[arg_name], Callable):
+                        arg["value"] = block_arg_map[arg_name](block, stage_config)
+                    else:
+                        arg["value"] = block_arg_map[arg_name]
         else:
             # Takes care of `annotations`, expected to be a list
             # because of `nargs='+'` in the CLA definition,

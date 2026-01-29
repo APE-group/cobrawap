@@ -665,9 +665,11 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
         write_cwl_block_file(block_dir / f"{block}.py", cwl_step_folder, curation_block=curation_block)
         write_yaml_block_file(block_dir / f"{block}.py", stage, stage_config_path, cwl_step_folder, stage_input, block_args)
 
-        # empty the stage output folder
-        if block_output_path.is_dir():
-            shutil.rmtree(block_output_path)
+        # TBD do we want to empty the block output folder when running `run_block`?
+        #if block_output_path.is_dir():
+        #    shutil.rmtree(block_output_path)
+        if block=="check_input":
+            block_output_path = block_output_path.parent
         block_output_path.mkdir(parents=True, exist_ok=True)
 
         # execute block

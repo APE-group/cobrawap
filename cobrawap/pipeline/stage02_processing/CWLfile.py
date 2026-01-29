@@ -14,7 +14,9 @@ ARG_MAP = {
         'output_array': lambda block, config: "background.npy",
     },
 
-    'check_input': {},
+    'check_input': {
+        'output': "input.check"
+    },
 
     'detrending': {
         'output': default_neo_output,
@@ -42,7 +44,7 @@ ARG_MAP = {
         'output_img': lambda block, config: f"power_spectrum.{config['PLOT_FORMAT']}",
     },
 
-    'plot_processed_traces': {
+    'plot_processed_trace': {
         'output_img_dir': lambda block, config: f"processed_traces_{config['PLOT_TSTART']}-{config['PLOT_TSTOP']}s",
         'img_name': lambda block, config: f"processed_trace_channel0.{config['PLOT_FORMAT']}",
     },

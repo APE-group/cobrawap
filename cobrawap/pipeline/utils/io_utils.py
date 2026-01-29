@@ -55,6 +55,15 @@ def write_neo(filename, block, *args, **kwargs):
     return True
 
 
+def write_check(filename="input.check"):
+    # creates an empty file, typically named `input.check`
+    try:
+        Path(filename).touch(exist_ok=True)
+    except Exception as e:
+        warnings.warn(str(e))
+    return True
+
+
 def save_plot(filename, dpi=300, **kwargs):
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname) and dirname!='':
