@@ -148,7 +148,7 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         if arg["name"].upper() in [_.upper() for _ in stage_config] and arg["name"] not in block_arg_map:
             arg["value"] = stage_config[arg["name"].upper()]
         if arg["name"]=="data":
-            if stage=="stage01_data_entry" and block==curation_block:
+            if stage == "stage01_data_entry" and block == curation_block:
                 depends_on = "RAW_DATA"
                 if dataset_name:
                     arg["value"] = stage_config["DATA_SETS"][dataset_name]
@@ -161,11 +161,17 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
                     if depends_on=="STAGE_INPUT":
                         arg["value"] = stage_input
                     else:
+                        if depends_on == curation_block and depends_on not in arg_map:
+                            previous_block_arg_map = arg_map.get("enter_data_template")
+                        else:
+                            previous_block_arg_map = arg_map.get(depends_on)
+
                         # TBD: if using cwl with --outdir, can we use a relative path?
                         #arg["value"] = f"{output_path}/{profile}/{stage}/{depends_on}" +
                         #               f"/{depends_on}.{stage_config['NEO_FORMAT']}"
                         arg["value"] = f"{output_path}/{profile}/{stage}/{depends_on}/" + \
-                                       arg_map.get(depends_on)["output"](depends_on, stage_config)
+                            previous_block_arg_map["output"](depends_on, stage_config)
+
                 else:
                     depends_on = None
         if arg["name"] == "original_data":
@@ -347,6 +353,98 @@ def stage_block_list(stage, stage_config_path):
 wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "cwlVersion: v1.2\n" + \
             "class: Workflow\n\n"
+
+
+def write_stage_cwl_workflow(stage_cwl_file, stage_yaml_file, block_cwl_files):
+
+    workflow = {
+        "cwlVersion": "v1.2",
+        "class": "Workflow",
+        "inputs": {},
+        "outputs": {},
+        "steps": {},
+        "requirements": {
+            "InlineJavascriptRequirement": {},
+            "StepInputExpressionRequirement": {}
+        }
+    }
+
+    workflow_yaml_inputs = {}
+
+    for block_cwl_path, block_yaml_path in block_cwl_files.items():
+        # This is the name of the block according to the CWL CLI file
+        block_cwl_name = Path(block_cwl_path).stem
+
+        # This is the name of the record that will group all the inputs for the
+        # workflow step corresponding to the block
+        block_inputs = f"{block_cwl_name}_inputs"
+
+        # Load CWL CommandLineTool definition of the block.
+        # We forward the type information from inputs and outputs that is
+        # already processed when producing the block-level CWL files.
+        with open(block_cwl_path, "r") as f:
+            block_cwl = yaml.safe_load(f)
+
+        # Load YAML input file for that block.
+        # The inputs will be grouped under the `block_inputs` as a single
+        # record in the stage workflow YAML file.
+        # This solves duplications in argument names across different blocks.
+        with open(block_yaml_path, "r") as f:
+            block_yaml_inputs = yaml.safe_load(f)
+
+        # Store YAML inputs under the record for the block
+        workflow_yaml_inputs[block_inputs] = block_yaml_inputs
+
+        # Build record type for all the inputs of the block
+        record_fields = []
+        for block_input_name, block_input_spec in block_cwl["inputs"].items():
+            record_fields.append({
+                "name": block_input_name,
+                "type": block_input_spec["type"]
+            })
+
+        workflow["inputs"][block_inputs] = {
+            "type": {
+                "type": "record",
+                "name": block_inputs,
+                "fields": record_fields
+            }
+        }
+
+        # Assign inputs to the block in the workflow step
+        # This is done by extracting the correct attribute from the record
+        # defined as `block_inputs`.
+        step_in = {
+            input_name: {
+                "source": block_inputs,
+                "valueFrom": f"$(self.{input_name})"
+            }
+            for input_name in block_cwl["inputs"].keys()
+        }
+
+        # Define the workflow step for the block
+        block_step_name = f"run_{block_cwl_name}"
+        workflow["steps"][block_step_name] = {
+            "run": str(block_cwl_path),
+            "in": step_in,
+            "out": list(block_cwl.get("outputs", {}).keys())
+        }
+
+        # Expose block outputs at workflow level
+        for stage_output_name, stage_output_spec in block_cwl.get("outputs", {}).items():
+            workflow["outputs"][f"{block_cwl_name}_{stage_output_name}"] = {
+                "type": stage_output_spec["type"],
+                "outputSource": f"{block_step_name}/{stage_output_name}"
+            }
+
+    # Write workflow CWL for the stage
+    with open(stage_cwl_file, "w") as f:
+        yaml.dump(workflow, f, sort_keys=False)
+
+    # Write workflow YAML input file for the stage
+    with open(stage_yaml_file, "w") as f:
+        yaml.dump(workflow_yaml_inputs, f, sort_keys=False)
+
 
 def write_cwl_stage_files(stage, stage_config_path, stage_input=None):
 

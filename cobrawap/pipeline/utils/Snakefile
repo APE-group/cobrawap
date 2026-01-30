@@ -140,8 +140,7 @@ rule check_input:
     shell:
         """
         {ADD_UTILS}
-        python3 {input.script:q} --data {input.data:q}
-        touch {output:q}
+        python3 {input.script:q} --data {input.data:q} --output {output:q}
         """
 
 

@@ -40,7 +40,7 @@ from cmd_utils import (
 from utils.cwl_utils import (
     write_cwl_block_file,
     write_yaml_block_file,
-    write_cwl_stage_files
+    write_stage_cwl_workflow
 )
 
 log = logging.getLogger()
@@ -574,23 +574,35 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         stage_output_path.mkdir(parents=True, exist_ok=True)
 
         # build yaml and cwl workflow files
-        """
-        cwl_cl = ["python3", "utils/cwl_wf_parser.py", "--stage", stage, \
-                  "--configfile", f"{stage_config_path}"]
-        if stage_idx>0:
-            cwl_cl += ["--stage_input", str(stage_input)]
-        log.info(f'Executing `{" ".join(cwl_cl)}`')
-        with working_directory(pipeline_path):
-            subprocess.run(cwl_cl, env=myenv)
-        """
-        if stage_idx==0:
-            write_cwl_stage_files(stage, stage_config_path)
-        else:
-            write_cwl_stage_files(stage, stage_config_path, stage_input=stage_input)
+        cwl_steps_folder = stage_path / "cwl_steps"
 
-        # execute cwl workflow file
-        cwl_cl = ["cwltool", str(stage_path / "workflow_NEW.cwl"), \
-                  str(stage_path / "workflow_2.yaml")]
+        # TBD: needs to retrieve the actual list of blocks for the stage
+        block_list = ["curation_script", "check_input", "plot_traces"] if stage_idx==0 else []
+
+        # TBD: needs to build the files on demand according to the pipeline
+        # configuration
+        block_cwl_files = {}
+        for block in block_list:
+            block_cwl_path = cwl_steps_folder / f"{block}.cwl"
+            block_yaml_path = cwl_steps_folder / f"{block}.yaml"
+
+            block_cwl_files[block_cwl_path] = block_yaml_path
+
+        # if stage_idx==0:
+        #     write_cwl_stage_files(stage, stage_config_path)
+        # else:
+        #     write_cwl_stage_files(stage, stage_config_path, stage_input=stage_input)
+        stage_cwl_file = stage_path / "workflow.cwl"
+        stage_yaml_file = stage_path / "workflow.yaml"
+
+        #write_stage_cwl_workflow(stage_cwl_file, stage_yaml_file,
+        #                         block_cwl_files)
+
+        # execute the cwl workflow file
+        cwl_cl = ["cwltool", "--outdir",
+                  str(stage_output_path),
+                  str(stage_cwl_file),
+                  str(stage_yaml_file)]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
             subprocess.run(cwl_cl, env=myenv)
@@ -677,9 +689,9 @@ def run_block(stage=None, block=None, profile=None, workflow_manager="snakemake"
         block_output_path.mkdir(parents=True, exist_ok=True)
 
         # execute block
-        cwl_cl = ["cwltool", "--outdir", \
-                  str(block_output_path), \
-                  str(cwl_step_folder / f"{block}.cwl"), \
+        cwl_cl = ["cwltool", "--outdir",
+                  str(block_output_path),
+                  str(cwl_step_folder / f"{block}.cwl"),
                   str(cwl_step_folder / f"{block}.yaml")]
         log.info(f'Executing `{" ".join(cwl_cl)}`')
         with working_directory(pipeline_path):
