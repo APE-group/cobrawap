@@ -147,10 +147,10 @@ def get_stage_index(config_path, stage):
     stage_idx = locate_str_in_list(config_dict["STAGES"], stage)
     # stage_idx_global = locate_str_in_list([v for k,v in stages.items()], stage)
     if stage_idx is None:
-        raise IndexError(
-            "Make sure that the selected stage is also specified "
-            "in your top-level config in the list `STAGES`!"
-        )
+        err = f"Can't find stage '{stage}'! Make sure that it is " \
+               "present in the list `STAGES` in your top-level config file."
+        raise IndexError(err)
+
     return stage_idx
 
 

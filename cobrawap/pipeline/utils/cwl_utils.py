@@ -12,6 +12,7 @@ from cmd_utils import (
 )
 from pathlib import Path
 from utils.parse import none_or_float, none_or_int, none_or_str
+from utils.snakefile import locate_str_in_list
 from typing import Callable
 
 pipeline_path = Path(get_setting("pipeline_path"))
@@ -143,6 +144,8 @@ def write_yaml_block_file(block_path, stage, stage_config_path, dest_folder, sta
         curation_block = Path(stage_config['CURATION_SCRIPT']).stem
         if block==curation_block and block not in arg_map:
             block_arg_map = arg_map.get("enter_data_template")
+    else:
+        curation_block = None
 
     for arg in block_args_from_script:
         if arg["name"].upper() in [_.upper() for _ in stage_config] and arg["name"] not in block_arg_map:
@@ -278,27 +281,54 @@ def stage_block_list(stage, stage_config_path):
     match stage:
 
         case "stage01_data_entry":
-            curate_block = Path(stage_config["CURATION_SCRIPT"]).stem
-            block_list = [{"name": curate_block,
-                           "depends_on": "RAW_DATA"},
-                          {"name": "check_input",
-                           "depends_on": curate_block},
-                          {"name": "plot_traces",
-                           "depends_on": curate_block}]
+            block_list = []
+
+            # The block sequence is:
+            # curation_block
+            # -> check_input
+            # -> plot_traces
+
+            # curation_block
+            curation_block = Path(stage_config["CURATION_SCRIPT"]).stem
+            block = curation_block
+            depends_on = "RAW_DATA"
+            block_list.append({"name": block, "depends_on": depends_on})
+
+            # check_input
+            block = "check_input"
+            depends_on = curation_block
+            block_list.append({"name": block, "depends_on": depends_on})
+
+            # plot_traces
+            block = "plot_traces"
+            depends_on = curation_block
+            block_list.append({"name": block, "depends_on": depends_on})
 
         case "stage02_processing":
+            block_list = []
+
+            # The block sequence is:
+            # check_input
+            # -> any of the user-listed processing blocks
+            # -> plot_power_spectrum, if frequency_filter has been selected,
+            #    to be executed right before it
+            # -> plot_processed_trace
+
+            # check_input
+            block = "check_input"
             depends_on = "STAGE_INPUT"
-            block_list = [{"name": "check_input",
-                           "depends_on": depends_on}]
+            block_list.append({"name": block, "depends_on": depends_on})
+
             if "BLOCK_ORDER" in stage_config.keys():
                 for b,block in enumerate(stage_config["BLOCK_ORDER"]):
+                    if block == "frequency_filter":
+                        # "plot_power_spectrum" is executed
+                        # only before frequency_filter
+                        block_list.append({"name": "plot_power_spectrum",
+                                           "depends_on": depends_on})
                     block_list.append({"name": block,
                                        "depends_on": depends_on})
                     depends_on = block_list[-1]["name"]
-            # TBD condition power_spectrum to be executed only when
-            # frequency_filter is executed, right before it
-            block_list.append({"name": "plot_power_spectrum",
-                               "depends_on": depends_on})
             block_list.append({"name": "plot_processed_trace",
                                "depends_on": depends_on})
 
@@ -306,11 +336,11 @@ def stage_block_list(stage, stage_config_path):
             block_list = [{"name": "check_input",
                            "depends_on": "STAGE_INPUT"}]
             try:
-                if stage_config["DETECTION_BLOCK"] in ["hilbert_phase", "minima"]:
-                    detection_block = stage_config["DETECTION_BLOCK"]
-                elif stage_config["DETECTION_BLOCK"]=="threshold":
+                if stage_config["DETECTION_BLOCK"]=="threshold":
                     if stage_config["THRESHOLD_METHOD"] in ["fixed", "fitted"]:
                         detection_block = f"calc_threshold_{stage_config['THRESHOLD_METHOD']}"
+                else:
+                    detection_block = stage_config["DETECTION_BLOCK"]
                 filter_blocks = stage_config["TRIGGER_FILTER"]
                 block_list.append({"name": detection_block,
                                    "depends_on": "STAGE_INPUT"})
@@ -355,7 +385,7 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "class: Workflow\n\n"
 
 
-def write_stage_cwl_workflow(stage_cwl_file, stage_yaml_file, block_cwl_files):
+def write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path, block_cwl_files):
 
     workflow = {
         "cwlVersion": "v1.2",
@@ -438,11 +468,11 @@ def write_stage_cwl_workflow(stage_cwl_file, stage_yaml_file, block_cwl_files):
             }
 
     # Write workflow CWL for the stage
-    with open(stage_cwl_file, "w") as f:
+    with open(stage_cwl_path, "w") as f:
         yaml.dump(workflow, f, sort_keys=False)
 
     # Write workflow YAML input file for the stage
-    with open(stage_yaml_file, "w") as f:
+    with open(stage_yaml_path, "w") as f:
         yaml.dump(workflow_yaml_inputs, f, sort_keys=False)
 
 

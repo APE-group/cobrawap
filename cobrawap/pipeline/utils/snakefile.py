@@ -307,5 +307,5 @@ def locate_str_in_list(str_list, string):
     if string in str_list:
         return [i for i, el in enumerate(str_list) if el == string][0]
     else:
-        logger.error(f"Can't find rule '{string}'! Please check the spelling "
-                      "and the config file.")
+        logger.error(f"Can't find '{string}' in the list.")
+        return None
