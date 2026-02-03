@@ -2,7 +2,6 @@ import argparse
 import importlib
 import json
 import os
-import subprocess
 import sys
 import yaml
 from cmd_utils import (

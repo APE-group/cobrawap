@@ -16,7 +16,6 @@ from pipeline.utils.snakefile import (
     load_config_file,
     locate_str_in_list,
     read_stage_output,
-    set_setting,
     update_configfile,
 )
 

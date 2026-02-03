@@ -5,7 +5,7 @@ temp*/
 .idea/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+**/__pycache__
 *.py[cod]
 *$py.class
 
@@ -77,7 +77,7 @@ doc/source/_toctree/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+**/.ipynb_checkpoints
 
 # pyenv
 .python-version
@@ -110,18 +110,7 @@ ENV/
 .mypy_cache/
 
 # MacOS
-./.DS_Store
-*/.DS_Store
-*/*/.DS_Store
-*/*/*/.DS_Store
-*/*/*/*/.DS_Store
-
-# __pycache__
-./__pycache__/
-*/__pycache__/
-*/*/__pycache__/
-*/*/*/__pycache__/
-*/*/*/*/__pycache__/
+**/.DS_Store
 
 # Config and curate files
 cobrawap/pipeline/*/configs/config_LENS*

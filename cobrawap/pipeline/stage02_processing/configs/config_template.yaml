@@ -27,7 +27,6 @@ PLOT_FORMAT: 'png'
 # and in which order. Execution order is from first to last entry.
 # The available blocks are (in alphabetical order):
 #     "background_subtraction", "detrending", "frequency_filter",
-#     "hemodynamics_subtraction", "hierarchical_spatial_sampling",
 #     "logMUA_estimation", "normalization", "phase_transform", "roi_selection",
 #     "spatial_downsampling", "subsampling", "zscore"
 # Default: empty list [] -> it skips any processing blocks and returns the same
@@ -42,34 +41,14 @@ BLOCK_ORDER: []
 RERUN_MODE: True
 
 # BLOCK - background_subtraction
-#################################
+################################
 # No parameters needed
 
-# BLOCK - hemodynamics_subtraction
-#################################
-# No parameters needed
-
-# BLOCK - spatial_smoothing
-#################################
-MACRO_PIXEL_DIM: 2
-
-# BLOCK - hierarchical_spatial_sampling
-#################################
-# method to use for the exit mode: 'consecutive', 'voting', 'standard'
-EXIT_CONDITION: 'voting'
-# method to evaluate the signal to noise ration of a macro pixel
-SIGNAL_EVALUATION_METHOD: 'shapiro'
-# number of bad nodes in the same branch to meet the exit condition
-N_BAD_NODES: 2
-# only for "voting" method: threshold fraction of
-# "bad children" to keep investigating the tree
-VOTING_THRESHOLD: 0.5
-
-# BLOCK - normalization
-#######################
-# Normalize the data (divide channels-wise) by either:
-# 'mean', 'median', 'max'
-NORMALIZE_BY: 'max'
+# BLOCK - detrending
+####################
+# Detrending: 0 - mean detrending;
+#             1 - mean and slope detrending (linear): this should be the default.
+DETRENDING_ORDER: 1
 
 # BLOCK - frequency_filter
 ##########################
@@ -80,30 +59,13 @@ LOWPASS_FREQUENCY: 150  # in Hz
 FILTER_ORDER: 2
 # filter function used in scipy backend.
 # options: "filtfilt", "lfilter", "sosfiltfilt"
-FILTER_FUNCTION: 'sosfiltfilt'
+FILTER_FUNCTION: "sosfiltfilt"
 # Plotting parameters for the power spectrum
 PSD_FREQUENCY_RESOLUTION: 5  # in Hz
 PSD_OVERLAP: 0.5
 
-# BLOCK - detrending
-####################
-# Detrending: 0 - mean detrending;
-#             1 - mean and slope detrending (linear): this should be the default.
-DETRENDING_ORDER: 1
-
-# BLOCK - subsampling
-#####################
-TARGET_RATE: 200  # in Hz
-
-# BLOCK - img_roi_selection
-###########################
-# Threshold below which the pixels are discarded (set to nan).
-# Given in percent of the range between minimum and maximum intensity.
-INTENSITY_THRESHOLD: 0.5
-CROP_TO_SELECTION: False  # True or False is required
-
 # BLOCK - logMUA_estimation
-########################
+###########################
 MUA_HIGHPASS_FREQUENCY: 50  # in Hz
 MUA_LOWPASS_FREQUENCY: 1200  # in Hz
 # Rate of the logMUA signal. Must be <= the original sampling rate
@@ -114,3 +76,32 @@ logMUA_RATE: 70
 # by the lower bound of the frequency band
 FFT_SLICE: 0.1
 # PSD_OVERLAP: determined by setting in block frequency_filter
+
+# BLOCK - normalization
+#######################
+# Normalize the data (divide channels-wise) by either:
+# "mean", "median", "max"
+NORMALIZE_BY: "max"
+
+# BLOCK - phase_transform
+#########################
+# No parameters needed
+
+# BLOCK - roi_selection
+###########################
+# Threshold below which the pixels are discarded (set to nan).
+# Given in percent of the range between minimum and maximum intensity.
+INTENSITY_THRESHOLD: 0.5
+CROP_TO_SELECTION: False  # True or False is required
+
+# BLOCK - spatial_downsampling
+##############################
+MACRO_PIXEL_DIM: 2
+
+# BLOCK - subsampling
+#####################
+TARGET_RATE: 200  # in Hz
+
+# BLOCK - zscore
+################
+# No parameters needed
