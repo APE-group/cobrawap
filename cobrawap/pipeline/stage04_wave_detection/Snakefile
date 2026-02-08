@@ -12,6 +12,8 @@ use rule template_all as all with:
     input:
         check = OUTPUT_DIR / 'input.check',
         data = OUTPUT_DIR / 'merge_wave_definitions' / config.STAGE_OUTPUT,
+        # movie = OUTPUT_DIR / 'movie' / 'waves.mp4',
+        # gif = OUTPUT_DIR / 'movie' / 'waves.gif'
         # img = OUTPUT_DIR / 'wave_plots'
 
 
@@ -72,8 +74,8 @@ use rule template_plus_plot_script as critical_points with:
     params:
         params(frame_id=0, skip_step=1)
     output:
-        Path('{dir}') / '{rule_name}' / str("critical_points." + config.NEO_FORMAT),
-        img = Path('{dir}') / '{rule_name}' / str("critical_points." + config.PLOT_FORMAT)
+        Path('{dir}') / 'critical_points' / str("critical_points.%s" % config.NEO_FORMAT),
+        img = Path('{dir}') / 'critical_points' / str("critical_points.%s" % config.PLOT_FORMAT)
 
 
 # use rule template as critical_points_clustering with:
@@ -120,7 +122,7 @@ use rule template as plot_waves with:
 
 use rule template as time_slice with:
     input:
-        data = Path('{dir}') / str('{data_name}' + "." + config.NEO_FORMAT),
+        data = Path('{dir}') / config.STAGE_OUTPUT,
         script = SCRIPTS / 'time_slice.py'
     params:
         params()
@@ -188,11 +190,17 @@ rule mp4_to_webm:
 rule mp4_to_gif:
     input:
         Path('{path}.mp4')
+    params:
+        params(quality = config.QUALITY,
+               scale_x = config.SCALE_X,
+               scale_y = config.SCALE_Y)
     output:
-        Path('{path}' + "_" + '{scale}' + "px.gif")
+        #Path('{path}' + "_" + '{scale}' + "px.gif")
+        Path('{path}.gif')
     shell:
         """
         ffmpeg -i {input:q} \
-        -vf "scale={wildcards.scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+        -crf {params.quality} \
+        -vf "scale={params.scale_x}:{params.scale_y}:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
         -loop 0 {output:q}
         """
