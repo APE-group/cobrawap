@@ -69,7 +69,7 @@ def build_timelag_dataframe(waves_evt, normalize=True):
         channel_id = waves_evt.array_annotations['channels'][i]
         # use only first trigger per channel and wave
         if np.isnan(timelag_df[channel_id][wave_id]):
-            timelag_df[channel_id][wave_id] = trigger.magnitude
+            timelag_df[channel_id, wave_id] = trigger.magnitude
 
     if normalize:
         norm_func = lambda row: row - np.nanmean(row)
