@@ -140,6 +140,7 @@ if __name__ == '__main__':
 
     # get average image
     imgseq_array = imgseq.as_array()
+    #imgseq_array = imgseq_array.astype(float)
     dim_t, dim_y, dim_x = imgseq_array.shape
     avg_img = np.mean(imgseq_array, axis=0)
 
@@ -156,7 +157,7 @@ if __name__ == '__main__':
     if args.crop_to_selection:
         imgseq_array = crop_to_selection(imgseq_array)
 
-    # replace analogsingal
+    # replace analogsignal
     tmp_blk = neo.Block()
     tmp_seg = neo.Segment()
     tmp_blk.segments.append(tmp_seg)
