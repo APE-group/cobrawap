@@ -16,10 +16,10 @@ is_first_stage = config["STAGE_NAME"] == get_setting("stages")["1"]
 if is_first_stage:
     config["STAGE_INPUT"] = None
 if "STAGE_INPUT" not in config:
-    err = "No STAGE_INPUT defined for running stage \'" \
-          + config["STAGE_NAME"] + "\' individually! " \
-	  + "You can set it via the command line with " \
-	  + "`--config STAGE_INPUT=/path/to/file`."
+    err = f"No STAGE_INPUT defined for running stage \'"
+          f"{config['STAGE_NAME']}\' individually! "
+	   "You can set it via the command line with "
+	   "`--config STAGE_INPUT=/path/to/file`."
     logger.warning(err)
 
 if "USE_LINK_AS_STAGE_OUTPUT" not in config:
@@ -46,7 +46,7 @@ wildcard_constraints:
     data_name = r"[\w\-]+",
     dir = r".*",
     rule_name = r"\w+",
-    # Allowing integers, floats and "None"
+    # Allowing integers, floats, and "None"
     t_start = r"^[0-9]+$|^[0-9]+.[0-9]+$|^None$",
     t_stop = r"^[0-9]+$|^[0-9]+.[0-9]+$|^None$",
 
