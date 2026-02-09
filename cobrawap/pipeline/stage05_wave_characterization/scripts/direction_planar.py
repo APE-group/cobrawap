@@ -128,11 +128,11 @@ def plot_directions(dataframe, wave_ids,
     cax.set_xlim((-2,2))
     cax.set_ylim((-2,2))
     if orientation_top is not None:
-        cax.text(0, 1,orientation_top, rotation='vertical',
-                        verticalalignment='center', horizontalalignment='right')
+        cax.text(0, 1, orientation_top, rotation='vertical',
+                 verticalalignment='center', horizontalalignment='right')
     if orientation_right is not None:
         cax.text(1, 0, orientation_right,
-                        verticalalignment='top', horizontalalignment='center')
+                 verticalalignment='top', horizontalalignment='center')
 
     sns.despine(left=True, bottom=True)
     return ax
@@ -156,6 +156,14 @@ if __name__ == '__main__':
 
     evts = block.filter(name=args.event_name, objects="Event")[0]
     evts = evts[evts.labels.astype('str') != '-1']
+    if 'orientation_top' in evts.annotations.keys():
+        orientation_top = evts.annotations['orientation_top']
+    else:
+        orientation_top = None
+    if 'orientation_right' in evts.annotations.keys():
+        orientation_right = evts.annotations['orientation_right']
+    else:
+        orientation_right = None
 
     if args.method == 'trigger_interpolation':
         dx_avg, dy_avg, dx_std, dy_std = trigger_interpolation(evts)
@@ -175,8 +183,8 @@ if __name__ == '__main__':
     if args.output_img is not None:
         plot_directions(df,
                         wave_ids=np.unique(evts.labels.astype(int)),
-                        orientation_top=evts.annotations['orientation_top'],
-                        orientation_right=evts.annotations['orientation_right'])
+                        orientation_top=orientation_top,
+                        orientation_right=orientation_right)
         save_plot(args.output_img)
 
     df.to_csv(args.output)

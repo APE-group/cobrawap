@@ -60,7 +60,7 @@ use rule template as plot_power_spectrum with:
         params('highpass_frequency', 'lowpass_frequency', 'psd_frequency_resolution', 'psd_overlap',
                 config=config)
 
-#### PROCESSING BLOCKS (choose any)####
+#### PROCESSING BLOCKS (choose any) ####
 
 use rule template as background_subtraction with:
     input:
@@ -112,15 +112,15 @@ use rule template as detrending with:
         img_dir = directory(Path('{dir}') / '{rule_name}' / 'detrending_plots')
 
 
-use rule template as convolve with:
+use rule template as convolution with:
     input:
         is_clear = is_clear,
         data = input_file,
-        script = SCRIPTS / 'convolve.py'
+        script = SCRIPTS / 'convolution.py'
     params:
         params('kernel_type', 'kernel_params', config=config)
     output:
-        Path('{dir}') / '{rule_name}' / f'convolve.{config.NEO_FORMAT}'
+        Path('{dir}') / '{rule_name}' / str("convolution." + config.NEO_FORMAT)
 
 
 use rule template as frequency_filter with:
