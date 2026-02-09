@@ -4,7 +4,7 @@
 STAGE_NAME: "stage01_data_entry"
 
 # The profile name is the key for this parameter configuration.
-# Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
+# Results are stored in output_path/<PROFILE>/ (`output_path` defined in ~/.cobrawap/config).
 PROFILE: "dataset_key"
 
 # Name of stage output file.
@@ -73,5 +73,5 @@ KWARGS: "None"
 # on the signals and ensure that the data was loaded and annotated correctly
 PLOT_TSTART: 0  # float (in s) or "None" -> starting time of the input signal is used
 PLOT_TSTOP: 10  # float (in s) or "None" -> stopping time of the input signal is used
-PLOT_CHANNELS: "None"  # int, or list of int, or "None" -> randomly chosen channel
+PLOT_CHANNELS: "None"  # int or "None" -> randomly selected (default, automatic creation of reports will fail)
 PLOT_FORMAT: "png"  # file extension for storing the plot
