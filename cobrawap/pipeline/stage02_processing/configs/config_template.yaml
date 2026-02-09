@@ -3,7 +3,8 @@
 # Name of stage, must be identical with folder name
 STAGE_NAME: "stage02_processing"
 
-# The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
+# The profile name is the key for this parameter configuration.
+# Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
 PROFILE: "dataset_key"
 
 # Name of the output file
@@ -41,18 +42,14 @@ BLOCK_ORDER: []
 RERUN_MODE: True
 
 # BLOCK - background_subtraction
-#################################
+################################
 # No parameters needed
 
-# BLOCK - spatial_smoothing
-#################################
-MACRO_PIXEL_DIM: 2
-
-# BLOCK - normalization
-#######################
-# Normalize the data (divide channels-wise) by either:
-# "mean", "median", "max"
-NORMALIZE_BY: "max"
+# BLOCK - detrending
+####################
+# order: 0 - mean detrending;
+#        1 - mean and slope detrending (linear): this should be the default.
+DETRENDING_ORDER: 1
 
 # BLOCK - frequency_filter
 ##########################
@@ -68,23 +65,6 @@ FILTER_FUNCTION: "sosfiltfilt"
 PSD_FREQUENCY_RESOLUTION: 5  # in Hz
 PSD_OVERLAP: 0.5
 
-# BLOCK - detrending
-####################
-# Detrending: 0 - mean detrending;
-#             1 - mean and slope detrending (linear): this should be the default.
-DETRENDING_ORDER: 1
-
-# BLOCK - subsampling
-#####################
-TARGET_RATE: 200  # in Hz
-
-# BLOCK - img_roi_selection
-###########################
-# Threshold below which the pixels are discarded (set to nan).
-# Given in percent of the range between minimum and maximum intensity.
-INTENSITY_THRESHOLD: 0.5
-CROP_TO_SELECTION: True
-
 # BLOCK - logMUA_estimation
 ########################
 MUA_HIGHPASS_FREQUENCY: 50  # in Hz
@@ -97,3 +77,24 @@ logMUA_RATE: 70
 # by the lower bound of the frequency band
 FFT_SLICE: 0.1
 # PSD_OVERLAP: determined by setting in block frequency_filter
+
+# BLOCK - normalization
+#######################
+# Normalize the data (divide channels-wise) by either:
+# "mean", "median", "max"
+NORMALIZE_BY: "max"
+
+# BLOCK - roi_selection
+#######################
+# Threshold below which the pixels are discarded (set to nan).
+# Given in percent of the range between minimum and maximum intensity.
+INTENSITY_THRESHOLD: 0.5
+CROP_TO_SELECTION: True
+
+# BLOCK - spatial_smoothing
+###########################
+MACRO_PIXEL_DIM: 2
+
+# BLOCK - subsampling
+#####################
+TARGET_RATE: 200  # in Hz

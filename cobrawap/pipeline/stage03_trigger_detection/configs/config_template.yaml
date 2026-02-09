@@ -3,7 +3,8 @@
 # Name of stage, must be identical with folder name
 STAGE_NAME: "stage03_trigger_detection"
 
-# The profile name is the key for this parameter configuration. Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
+# The profile name is the key for this parameter configuration.
+# Results are stored in output_path/<PROFILE>/ (output_path is defined in settings.py)
 PROFILE: "dataset_key"
 
 # Name of the stage output file
@@ -25,17 +26,17 @@ PLOT_FORMAT: "png"
 
 # DETECTION BLOCK
 #################
-# Available Blocks: "threshold", "hilbert_phase", "minima"
+# Available methods: ["threshold", "hilbert_phase", "minima"]
 DETECTION_BLOCK: "threshold"
 
 # TRIGGER FILTER
-#################
-# Available Blocks: "remove_short_states"
+################
+# Available methods: ["remove_short_states"]
 TRIGGER_FILTER: ["remove_short_states"]
 
-# BLOCK - Threshold
+# BLOCK - threshold
 ###################
-# Threshold method: "fixed", "fitted"
+# Available threshold methods: ["fixed", "fitted"]
 THRESHOLD_METHOD: "fixed"
 
 # Fitting Parameters
@@ -51,12 +52,12 @@ SIGMA_FACTOR: 2
 # Fixed Parameters
 FIXED_THRESHOLD: 0
 
-# BLOCK - Hilbert_phase
+# BLOCK - hilbert_phase
 #######################
 # Phase at which to define the upward transition [-pi, 0]
 TRANSITION_PHASE: -1.570796
 
-# BLOCK - Minima
+# BLOCK - minima
 ################
 # Number of points to be used in the parabolic interpolation
 # 0 skips the interpolation (recommended)
@@ -71,7 +72,7 @@ MAXIMA_THRESHOLD_WINDOW: "None"
 # minimum time the signal must be increasing after a minima candidate (s)
 MINIMA_PERSISTENCE: 0.16
 
-# BLOCK - Remove Short States
+# BLOCK - remove_short_states
 #############################
 # minimum duration of UP and DOWN states (in s)
 # If there are no DOWN transitions, UP transitions are removed closer than
