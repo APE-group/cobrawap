@@ -580,12 +580,11 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
         cwl_steps_folder.mkdir(parents=True, exist_ok=True)
 
         # Retrieve the actual list of blocks for the stage
-        block_list = stage_block_list(stage, stage_config_path)
-        block_list = [_["name"] for _ in block_list]
+        block_dependencies = stage_block_list(stage, stage_config_path)
 
         # Build the files on demand according to the pipeline configuration
-        block_cwl_files = {}
-        for block in block_list:
+        block_cwl_file_paths = {}
+        for block in [_["name"] for _ in block_dependencies]:
 
             # Check if block is partly (or completely) custom
             block_dir = pipeline_path / stage / "scripts"
@@ -601,13 +600,9 @@ def run_stage(stage=None, profile=None, workflow_manager="snakemake",
             block_cwl_path = cwl_steps_folder / f"{block}.cwl"
             block_yaml_path = cwl_steps_folder / f"{block}.yaml"
 
-            block_cwl_files[block_cwl_path] = block_yaml_path
+            block_cwl_file_paths[block_cwl_path] = block_yaml_path
 
-        stage_cwl_path = stage_path / "workflow.cwl"
-        stage_yaml_path = stage_path / "workflow.yaml"
-
-        write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path,
-                                 block_cwl_files)
+        stage_cwl_path, stage_yaml_path = write_stage_cwl_workflow(stage_path, block_cwl_file_paths, block_dependencies)
 
         # execute the cwl workflow file
         cwl_cl = ["cwltool", "--outdir",

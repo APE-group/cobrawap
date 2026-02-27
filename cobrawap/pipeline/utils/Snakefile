@@ -36,6 +36,9 @@ if hasattr(config, 'NEO_FORMAT'):
 
 # TBD evaluate if extending this function to all the stages and moving it
 # directly to the main, or somewhere else to be used by both CWL and Snakemake
+# Actually, channel indexing may change after processing stages,
+# so a specific channel may exist up before, but not later.
+# Probably this check should be performed at the beginning of every single block with plots.
 if config.STAGE_INPUT is not None:
     config.PLOT_CHANNELS = parse_plot_channels(config.PLOT_CHANNELS,
                                                config.STAGE_INPUT)

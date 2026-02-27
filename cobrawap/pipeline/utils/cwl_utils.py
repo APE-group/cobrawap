@@ -384,7 +384,10 @@ wf_header = "#!/usr/bin/env cwltool\n\n" + \
             "class: Workflow\n\n"
 
 
-def write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path, block_cwl_files):
+def write_stage_cwl_workflow(stage_path, block_cwl_file_paths, block_dependencies):
+
+    stage_cwl_path = stage_path / "workflow.cwl"
+    stage_yaml_path = stage_path / "workflow.yaml"
 
     workflow = {
         "cwlVersion": "v1.2",
@@ -400,7 +403,7 @@ def write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path, block_cwl_files):
 
     workflow_yaml_inputs = {}
 
-    for block_cwl_path, block_yaml_path in block_cwl_files.items():
+    for block_cwl_path, block_yaml_path in block_cwl_file_paths.items():
         # This is the name of the block according to the CWL CLI file
         block_cwl_name = Path(block_cwl_path).stem
 
@@ -466,6 +469,21 @@ def write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path, block_cwl_files):
                 "outputSource": f"{block_step_name}/{stage_output_name}"
             }
 
+    # Check if block inputs comes from actual files or from previous blocks
+    for block in block_dependencies:
+        if block["depends_on"] not in ["RAW_DATA", "STAGE_INPUT"]:
+            # record fields
+            fields = workflow["inputs"][f"{block['name']}_inputs"]["type"]["fields"]
+            fields = [_ for _ in fields if _["name"] not in ["data"]]
+            # the list above can be expanded by including the `check_input` dependency
+            workflow["inputs"][f"{block['name']}_inputs"]["type"]["fields"] = fields
+            # step inputs
+            step_in = workflow["steps"][f"run_{block['name']}"]["in"]
+            for input in step_in.keys():
+                if input in ["data"]:
+                    # the list above can be expanded by including the `check_input` dependency
+                    step_in[input] = [f"run_{block['depends_on']}/output"]
+
     # Write workflow CWL for the stage
     with open(stage_cwl_path, "w") as f:
         yaml.dump(workflow, f, sort_keys=False)
@@ -473,6 +491,8 @@ def write_stage_cwl_workflow(stage_cwl_path, stage_yaml_path, block_cwl_files):
     # Write workflow YAML input file for the stage
     with open(stage_yaml_path, "w") as f:
         yaml.dump(workflow_yaml_inputs, f, sort_keys=False)
+
+    return stage_cwl_path, stage_yaml_path
 
 
 def write_cwl_stage_files(stage, stage_config_path, stage_input=None):

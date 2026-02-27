@@ -6,7 +6,7 @@ import argparse
 import quantities as pq
 from pathlib import Path
 import neo
-from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str, str_to_bool
+from utils.parse import parse_string2dict, none_or_float, none_or_int, none_or_str
 from utils.neo_utils import imagesequence_to_analogsignal, merge_analogsignals
 from utils.neo_utils import flip_image, rotate_image, time_slice
 from utils.io_utils import load_neo, write_neo
@@ -38,10 +38,6 @@ CLI.add_argument("--array_annotations", nargs='+', type=none_or_str,
                  default=None, help="channel-wise metadata")
 CLI.add_argument("--kwargs", nargs='+', type=none_or_str, default=None,
                  help="additional optional arguments")
-CLI.add_argument("--hemodynamics_correction", nargs='?', type=str_to_bool, const=True, default=False,
-                 help="whether hemodynamics correction is applicable")
-CLI.add_argument("--data_sets_reflectance", nargs='?', type=str, default=None,
-                 help="path to reflectance data")
 
 if __name__ == '__main__':
     args, unknown = CLI.parse_known_args()
@@ -60,11 +56,6 @@ if __name__ == '__main__':
     asig = block.segments[0].analogsignals[0]
 
     asig = time_slice(asig, args.t_start, args.t_stop)
-
-    # Append reflectance dataset after the original analog signal, if any
-    # if args.hemodynamics_correction is True:
-    #     asig_refl = ...
-    #     asig_refl = time_slice(asig_refl, args.t_start, args.t_stop)
 
     # Add metadata from ANNOTATION dict
     asig.annotations.update(parse_string2dict(args.annotations))
@@ -90,10 +81,6 @@ if __name__ == '__main__':
 
     # Update the annotated AnalogSignal object in the Neo Block
     block.segments[0].analogsignals[0] = asig
-
-    # if hemodynamics_correction is True
-    # block.segments[0].analogsignals.append(asig_refl)
-    # Add metadata also to block.segments[0].analogsignals[1]
 
     # Save data to file
     write_neo(args.output, block)

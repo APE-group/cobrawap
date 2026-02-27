@@ -52,8 +52,10 @@ For further developments and feature requests refer to the `Github Issues <https
 
 Reach out to the Cobrawap development team at: contact♥cobrawap•org
 
+
 Citation
 ========
+
 To refer to the Cobrawap software package in publications, please use:
 
 Cobrawap (`doi:10.5281/zenodo.10198748 <https://doi.org/10.5281/zenodo.10198748>`_;
@@ -70,11 +72,13 @@ Gutzen, R., De Bonis, G., De Luca, C., Pastorelli, E., Capone, C., Allegra Masca
 
 License
 =======
+
 Cobrawap is open-source software and is licensed under the `GNU General Public License v3 <https://github.com/NeuralEnsemble/cobrawap/blob/master/LICENSE>`_.
 
 
 The Cobrawap Community
 ======================
+
 Cobrawap is currently provided as a `tool <https://www.ebrains.eu/tools/cobrawap>`_ of the `EBRAINS <https://www.ebrains.eu>`_ infrastructure and included in the `EBRAINS-Italy <https://www.ebrains-italy.eu/>`_ initiative. Further details on funding and resources are in the `Acknowledgments <https://github.com/NeuralEnsemble/cobrawap/blob/master/doc/source/acknowledgments.rst>`_ file in the doc folder.
 
 The **Cobrawap Core Team** is in charge of defining the scientific address of the project and taking care of the continuous maintenance and development of the software. This collaborative endeavor is jointly carried by *Forschungszentrum Jülich, Germany* and *Istituto Nazionale di Fisica Nucleare (INFN), Roma, Italy* and currently includes:
@@ -126,6 +130,7 @@ The further **Cobrawap Community** includes people and partners that offer techn
 **Cobrawap Partnering Projects**:
 
 Sleep Wave Analysis Visualization Engine (SWAVE): A data visualization tool that takes Cobrawap outputs and visualizes these to show dynamic wave-like activity patterns found in the data. Developed at Washington University in St. Louis, USA: https://github.com/cilantroxiao/SWAVE
+
 
 Further Context
 ===============
