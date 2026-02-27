@@ -1,87 +1,143 @@
-#!/usr/bin/env cwltool
-
 cwlVersion: v1.2
 class: Workflow
-
 inputs:
-
-  data: string
-  pipeline_path: string
-  curate_LENS_Ketamine_APE_output:
-    type: string?
-    default: "curate_LENS_Ketamine_APE.nix"
-  curate_LENS_Ketamine_APE_sampling_rate: Any?
-  curate_LENS_Ketamine_APE_spatial_scale: float
-  curate_LENS_Ketamine_APE_data_name: string?
-  curate_LENS_Ketamine_APE_annotations: Any?
-  curate_LENS_Ketamine_APE_array_annotations: Any?
-  curate_LENS_Ketamine_APE_kwargs: Any?
-  curate_LENS_Ketamine_APE_t_start: Any?
-  curate_LENS_Ketamine_APE_t_stop: Any?
-  curate_LENS_Ketamine_APE_trial: Any?
-  curate_LENS_Ketamine_APE_orientation_top: string
-  curate_LENS_Ketamine_APE_orientation_right: string
-  curate_LENS_Ketamine_APE_hemodynamics_correction: Any?
-  curate_LENS_Ketamine_APE_path_to_reflectance_data: string?
-  plot_traces_output:
-    type: string?
-    default: "plot.png"
-  plot_traces_t_start: Any?
-  plot_traces_t_stop: Any?
-  plot_traces_channels: Any?
+  curation_script_inputs:
+    type:
+      type: record
+      name: curation_script_inputs
+      fields:
+      - name: data
+        type:
+        - File
+        - Directory
+      - name: output
+        type: string
+      - name: sampling_rate
+        type: float?
+      - name: spatial_scale
+        type: float
+      - name: data_name
+        type: string?
+      - name: annotations
+        type: string[]?
+      - name: array_annotations
+        type: string[]?
+      - name: kwargs
+        type: string[]?
+      - name: t_start
+        type: float?
+      - name: t_stop
+        type: float?
+      - name: orientation_top
+        type: string
+      - name: orientation_right
+        type: string
+  check_input_inputs:
+    type:
+      type: record
+      name: check_input_inputs
+      fields:
+#      - name: data
+#        type: File
+      - name: output
+        type: string
+  plot_traces_inputs:
+    type:
+      type: record
+      name: plot_traces_inputs
+      fields:
+#      - name: data
+#        type: File
+      - name: output_img
+        type: string
+      - name: plot_tstart
+        type: float?
+      - name: plot_tstop
+        type: float?
+      - name: plot_channels
+        type: int[]?
 
 outputs:
-
-  curate_LENS_Ketamine_APE_output:
+  curation_script_block_output:
     type: File
-    outputSource: curate_LENS_Ketamine_APE/curate_LENS_Ketamine_APE_output
-
-  plot_traces_output:
+    outputSource: run_curation_script/block_output
+  check_input_output:
     type: File
-    outputSource: plot_traces/plot_traces_output
-
-  final_output:
+    outputSource: run_check_input/output
+  plot_traces_output_img:
     type: File
-    outputSource: plot_traces/plot_traces_output
+    outputSource: run_plot_traces/output_img
 
 steps:
-
-  curate_LENS_Ketamine_APE:
-    run: cwl_steps/curate_LENS_Ketamine_APE.cwl
+  run_curation_script:
+    run: /users/koehler/projects/cobrawap_ape/cobrawap/pipeline/stage01_data_entry/cwl_steps/curation_script.cwl
     in:
-      pipeline_path: pipeline_path
-      data: data
-      output: curate_LENS_Ketamine_APE_output
-      sampling_rate: curate_LENS_Ketamine_APE_sampling_rate
-      spatial_scale: curate_LENS_Ketamine_APE_spatial_scale
-      data_name: curate_LENS_Ketamine_APE_data_name
-      annotations: curate_LENS_Ketamine_APE_annotations
-      array_annotations: curate_LENS_Ketamine_APE_array_annotations
-      kwargs: curate_LENS_Ketamine_APE_kwargs
-      t_start: curate_LENS_Ketamine_APE_t_start
-      t_stop: curate_LENS_Ketamine_APE_t_stop
-      trial: curate_LENS_Ketamine_APE_trial
-      orientation_top: curate_LENS_Ketamine_APE_orientation_top
-      orientation_right: curate_LENS_Ketamine_APE_orientation_right
-      hemodynamics_correction: curate_LENS_Ketamine_APE_hemodynamics_correction
-      path_to_reflectance_data: curate_LENS_Ketamine_APE_path_to_reflectance_data
-    out: [curate_LENS_Ketamine_APE_output]
-
-  check_input:
-    run: cwl_steps/check_input.cwl
+      data:
+        source: curation_script_inputs
+        valueFrom: $(self.data)
+      output:
+        source: curation_script_inputs
+        valueFrom: $(self.output)
+      sampling_rate:
+        source: curation_script_inputs
+        valueFrom: $(self.sampling_rate)
+      spatial_scale:
+        source: curation_script_inputs
+        valueFrom: $(self.spatial_scale)
+      data_name:
+        source: curation_script_inputs
+        valueFrom: $(self.data_name)
+      annotations:
+        source: curation_script_inputs
+        valueFrom: $(self.annotations)
+      array_annotations:
+        source: curation_script_inputs
+        valueFrom: $(self.array_annotations)
+      kwargs:
+        source: curation_script_inputs
+        valueFrom: $(self.kwargs)
+      t_start:
+        source: curation_script_inputs
+        valueFrom: $(self.t_start)
+      t_stop:
+        source: curation_script_inputs
+        valueFrom: $(self.t_stop)
+      orientation_top:
+        source: curation_script_inputs
+        valueFrom: $(self.orientation_top)
+      orientation_right:
+        source: curation_script_inputs
+        valueFrom: $(self.orientation_right)
+    out:
+    - block_output
+  run_check_input:
+    run: /users/koehler/projects/cobrawap_ape/cobrawap/pipeline/stage01_data_entry/cwl_steps/check_input.cwl
     in:
-      pipeline_path: pipeline_path
-      data: curate_LENS_Ketamine_APE/curate_LENS_Ketamine_APE_output
-    out: [check_input_output]
-
-  plot_traces:
-    run: cwl_steps/plot_traces.cwl
+      data: [run_curation_script/block_output]
+      output:
+        source: check_input_inputs
+        valueFrom: $(self.output)
+    out:
+    - output
+  run_plot_traces:
+    run: /users/koehler/projects/cobrawap_ape/cobrawap/pipeline/stage01_data_entry/cwl_steps/plot_traces.cwl
     in:
-      pipeline_path: pipeline_path
-      data: curate_LENS_Ketamine_APE/curate_LENS_Ketamine_APE_output
-      output: plot_traces_output
-      t_start: plot_traces_t_start
-      t_stop: plot_traces_t_stop
-      channels: plot_traces_channels
-    out: [plot_traces_output]
-
+      data: [run_curation_script/block_output]
+#      check: [run_check_input/output]
+      output_img:
+        source: plot_traces_inputs
+        valueFrom: $(self.output_img)
+      plot_tstart:
+        source: plot_traces_inputs
+        valueFrom: $(self.plot_tstart)
+      plot_tstop:
+        source: plot_traces_inputs
+        valueFrom: $(self.plot_tstop)
+      plot_channels:
+        source: plot_traces_inputs
+        valueFrom: $(self.plot_channels)
+    out:
+    - output_img
+requirements:
+  InlineJavascriptRequirement: {}
+  StepInputExpressionRequirement: {}
